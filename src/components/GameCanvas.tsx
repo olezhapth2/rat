@@ -328,7 +328,7 @@ export default function GameCanvas() {
           }}
         >
             <img
-              src="/secret-gang/hud.png"
+              src="./hud.png"
               alt="HUD"
               style={{ width: '100%', display: 'block', objectFit: 'fill' }}
             />

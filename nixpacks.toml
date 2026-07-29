@@ -1,6 +1,0 @@
-[phases]
-setup = ["npm install"]
-build = ["npm run build"]
-
-[deploy]
-start = "npm start"

@@ -86,19 +86,21 @@ function savePartial(state: GameState) {
   );
 }
 
-export function createInitialState(authUser?: { email: string; charId: string; name: string } | null): GameState {
+export function createInitialState(authUser?: { charId: string; name: string; color?: string; role?: string } | null): GameState {
   const saved = loadState();
   const today = new Date().toISOString().slice(0, 10);
 
   const charId = authUser?.charId || (saved?.charId as string) || 'pers4';
   const name = authUser?.name || (saved?.name as string) || 'Ты';
+  const authColor = authUser?.color || '#4ecca3';
+  const authRole = authUser?.role || 'Разработчик';
 
   const player = {
     ...createPlayer(),
     name,
     av: (saved?.av as string) || '🧑‍🚀',
-    color: '#4ecca3',
-    role: (saved?.role as string) || 'Разработчик',
+    color: authColor,
+    role: (saved?.role as string) || authRole,
     coins: (saved?.coins as number) ?? 100,
     daily: (saved?.daily as string) || null,
     furniture: (saved?.furniture as string[]) || [],

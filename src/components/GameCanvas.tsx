@@ -17,7 +17,7 @@ import {
   onConnected, onDisconnected, onItems,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
-import { register, login, getCurrentUser, logout, getCharMeta } from '../game/auth';
+import { login, getCurrentUser, logout } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, type InteractionZone } from '../game/interactions';
 
 interface CtxItem {
@@ -28,14 +28,12 @@ interface CtxItem {
 
 export default function GameCanvas() {
   const [authUser, setAuthUser] = useState(() => getCurrentUser());
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [authEmail, setAuthEmail] = useState('');
+  const [authName, setAuthName] = useState('');
   const [authPass, setAuthPass] = useState('');
   const [authError, setAuthError] = useState('');
 
   const handleAuth = () => {
-    const fn = authMode === 'register' ? register : login;
-    const res = fn(authEmail, authPass);
+    const res = login(authName, authPass);
     if (res.ok) {
       setAuthUser(getCurrentUser());
       setAuthError('');
@@ -50,15 +48,11 @@ export default function GameCanvas() {
         <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 320, boxShadow: '0 8px 32px rgba(0,0,0,.3)' }}>
           <div style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', marginBottom: 6, color: '#333' }}>SECRET GANG</div>
           <div style={{ fontSize: 11, color: '#999', textAlign: 'center', marginBottom: 20 }}>Офис-симулятор</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-            <button onClick={() => { setAuthMode('login'); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: authMode === 'login' ? '#333' : '#eee', color: authMode === 'login' ? '#fff' : '#666', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Войти</button>
-            <button onClick={() => { setAuthMode('register'); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: authMode === 'register' ? '#333' : '#eee', color: authMode === 'register' ? '#fff' : '#666', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Регистрация</button>
-          </div>
           <input
-            type="email"
-            placeholder="Email"
-            value={authEmail}
-            onChange={(e) => setAuthEmail(e.target.value)}
+            type="text"
+            placeholder="Имя"
+            value={authName}
+            onChange={(e) => setAuthName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
             style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }}
           />
@@ -71,15 +65,20 @@ export default function GameCanvas() {
             style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' }}
           />
           {authError && <div style={{ color: '#e94560', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>{authError}</div>}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginBottom: 12 }}>
+            {['Аня', 'Саша', 'Кирилл', 'Олег', 'Алиса'].map(n => (
+              <span key={n} onClick={() => setAuthName(n)} style={{
+                padding: '3px 8px', borderRadius: 6, background: '#f0f0f0', fontSize: 10, color: '#666',
+                cursor: 'pointer', border: authName.toLowerCase() === n.toLowerCase() ? '1px solid #4ecca3' : '1px solid transparent',
+              }}>{n}</span>
+            ))}
+          </div>
           <button
             onClick={handleAuth}
             style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: 'none', background: '#4ecca3', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
           >
-            {authMode === 'register' ? 'Создать аккаунт' : 'Войти'}
+            Войти
           </button>
-          <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginTop: 12 }}>
-            {authMode === 'register' ? 'Персонаж создаётся автоматически по email' : ''}
-          </div>
         </div>
       </div>
     );

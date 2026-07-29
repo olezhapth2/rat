@@ -75,8 +75,8 @@ app.prepare().then(() => {
         name: data.name,
         charId: data.charId,
         hatId: data.hatId,
-        x: 30 * 40 + 20,
-        y: 36 * 40 + 20,
+        x: 16 * 40 + 20,
+        y: 13 * 40 + 20,
         color: data.color,
       };
       players.set(socket.id, player);

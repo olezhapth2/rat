@@ -12,9 +12,10 @@ import { preloadTileTextures } from '../game/tiles';
 import {
   connectMultiplayer, disconnectMultiplayer, sendPosition,
   sendRpsInvite, acceptRpsInvite, declineRpsInvite, sendRpsChoice, cancelRps,
+  sendItemPlace, sendItemRemove,
   onPlayers, onPlayerMove, onInviteReceived, onInviteSent, onGameStarted, onGameResult, onGameDeclined, onGameCancelled,
-  onConnected, onDisconnected,
-  type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult,
+  onConnected, onDisconnected, onItems,
+  type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 
 interface CtxItem {
@@ -105,6 +106,11 @@ export default function GameCanvas() {
         toast(res.msg, 'ok');
         s.player.targetX = null;
         s.player.targetY = null;
+        const lastItem = s.player.placedItems[s.player.placedItems.length - 1];
+        if (lastItem) {
+          const def = ALL_ITEMS.find(i => i.id === lastItem.id);
+          sendItemPlace({ id: lastItem.id, x: lastItem.x, y: lastItem.y, w: def?.w || 1, h: def?.h || 1 });
+        }
       } else {
         toast(res.msg, 'info');
       }
@@ -201,6 +207,21 @@ export default function GameCanvas() {
       setRpsGameState(null);
       setRpsMyChoice(null);
       setRpsSentChoice(false);
+    });
+
+    onItems((items: SharedItem[]) => {
+      const s = stateRef.current;
+      s.player.placedItems = items.map(si => {
+        const def = ALL_ITEMS.find(i => i.id === si.id);
+        return {
+          id: si.id,
+          x: si.x,
+          y: si.y,
+          surface: def?.surface || 'floor',
+          placedBy: 'server',
+        };
+      });
+      persistState(s);
     });
 
     return () => disconnectMultiplayer();
@@ -303,8 +324,9 @@ export default function GameCanvas() {
           icon: '📦',
           text: `Взять: ${piDef?.e || ''} ${piDef?.n || ''}`,
           fn: () => {
+            const removedItem = s.player.placedItems[nearestPlacedIdx];
             const res = pickUpItem(s, nearestPlacedIdx);
-            if (res.ok) toast(res.msg, 'ok');
+            if (res.ok) { toast(res.msg, 'ok'); sendItemRemove(nearestPlacedIdx, removedItem?.id || ''); }
             else toast(res.msg, 'info');
           }
         });
@@ -312,9 +334,11 @@ export default function GameCanvas() {
           icon: '🔄',
           text: `Переставить: ${piDef?.e || ''} ${piDef?.n || ''}`,
           fn: () => {
+            const removedItem = s.player.placedItems[nearestPlacedIdx];
             const res = pickUpItem(s, nearestPlacedIdx);
             if (res.ok) {
               s.player.carrying = pi.id;
+              sendItemRemove(nearestPlacedIdx, removedItem?.id || '');
               toast(`Переставь ${piDef?.e || ''}`, 'ok');
             } else toast(res.msg, 'info');
           }
@@ -332,8 +356,14 @@ export default function GameCanvas() {
             const dropX = preview ? preview.x : s.player.x - (carryDef?.w || 1) * TILE / 2;
             const dropY = preview ? preview.y : s.player.y + TILE / 2;
             const res = dropItem(s, dropX, dropY);
-            if (res.ok) toast(res.msg, 'ok');
-            else toast(res.msg, 'info');
+            if (res.ok) {
+              toast(res.msg, 'ok');
+              const lastItem = s.player.placedItems[s.player.placedItems.length - 1];
+              if (lastItem) {
+                const def = ALL_ITEMS.find(i => i.id === lastItem.id);
+                sendItemPlace({ id: lastItem.id, x: lastItem.x, y: lastItem.y, w: def?.w || 1, h: def?.h || 1 });
+              }
+            } else toast(res.msg, 'info');
           }
         });
         items.push({

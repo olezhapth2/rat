@@ -35,6 +35,16 @@ let socket: Socket | null = null;
 let myId: string | null = null;
 let registered = false;
 
+// === Shared item types ===
+export interface SharedItem {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color?: string;
+}
+
 // === Callbacks ===
 let onPlayersUpdate: ((players: RemotePlayer[]) => void) | null = null;
 let onPlayerMoved: ((data: { id: string; x: number; y: number }) => void) | null = null;
@@ -46,6 +56,7 @@ let onRpsCancelled: ((data: { gameId: string }) => void) | null = null;
 let onRpsInviteSent: ((data: { gameId: string; targetId: string; targetName: string }) => void) | null = null;
 let onConnect: (() => void) | null = null;
 let onDisconnect: (() => void) | null = null;
+let onItemsSync: ((items: SharedItem[]) => void) | null = null;
 
 // === Public API ===
 
@@ -102,6 +113,10 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
   socket.on('rps:cancelled', (data: { gameId: string }) => {
     onRpsCancelled?.(data);
   });
+
+  socket.on('items:sync', (items: SharedItem[]) => {
+    onItemsSync?.(items);
+  });
 }
 
 export function disconnectMultiplayer(): void {
@@ -139,6 +154,16 @@ export function sendRpsChoice(gameId: string, choice: 'rock' | 'paper' | 'scisso
 export function cancelRps(gameId: string): void {
   if (!socket?.connected) return;
   socket.emit('rps:cancel', { gameId });
+}
+
+export function sendItemPlace(item: SharedItem): void {
+  if (!socket?.connected) return;
+  socket.emit('item:place', item);
+}
+
+export function sendItemRemove(index: number, id: string): void {
+  if (!socket?.connected) return;
+  socket.emit('item:remove', { index, id });
 }
 
 export function getMyId(): string | null {
@@ -189,4 +214,8 @@ export function onConnected(cb: () => void): void {
 
 export function onDisconnected(cb: () => void): void {
   onDisconnect = cb;
+}
+
+export function onItems(cb: (items: SharedItem[]) => void): void {
+  onItemsSync = cb;
 }

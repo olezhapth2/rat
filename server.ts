@@ -46,6 +46,17 @@ app.prepare().then(() => {
   const rpsGames = new Map<string, RpsGame>();
   let rpsCounter = 0;
 
+  // === Shared placed items (visible to all players) ===
+  interface PlacedItem {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    color?: string;
+  }
+  const sharedItems: PlacedItem[] = [];
+
   function broadcastPlayers() {
     const list = Array.from(players.values());
     io.emit('players:list', list);
@@ -54,6 +65,9 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log(`[+] Player connected: ${socket.id}`);
 
+    // Send current shared items to new player
+    socket.emit('items:sync', sharedItems);
+
     // Player registers
     socket.on('player:register', (data: { name: string; charId: string; hatId: string; color: string }) => {
       const player: ServerPlayer = {
@@ -61,7 +75,7 @@ app.prepare().then(() => {
         name: data.name,
         charId: data.charId,
         hatId: data.hatId,
-        x: 30 * 40 + 20, // default spawn
+        x: 30 * 40 + 20,
         y: 36 * 40 + 20,
         color: data.color,
       };
@@ -75,8 +89,23 @@ app.prepare().then(() => {
       if (p) {
         p.x = data.x;
         p.y = data.y;
-        // Broadcast to others (not self)
         socket.broadcast.emit('player:moved', { id: socket.id, x: data.x, y: data.y });
+      }
+    });
+
+    // === Shared items ===
+    socket.on('item:place', (data: PlacedItem) => {
+      sharedItems.push({ ...data, _owner: socket.id } as any);
+      console.log(`[Items] Placed: ${data.id} at (${data.x},${data.y}) by ${socket.id}`);
+      io.emit('items:sync', sharedItems);
+    });
+
+    socket.on('item:remove', (data: { index: number; id: string }) => {
+      const idx = sharedItems.findIndex((item, i) => i === data.index && item.id === data.id);
+      if (idx !== -1) {
+        sharedItems.splice(idx, 1);
+        console.log(`[Items] Removed: ${data.id} at index ${data.index}`);
+        io.emit('items:sync', sharedItems);
       }
     });
 

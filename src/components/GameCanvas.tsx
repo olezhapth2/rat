@@ -83,6 +83,11 @@ export default function GameCanvas() {
       </div>
     );
   }
+
+  return <GameInner authUser={authUser} />;
+}
+
+function GameInner({ authUser }: { authUser: { name: string; charId: string; color: string; role: string } }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cameraRef = useRef(createCamera());
   const inputRef = useRef(createInputState());

@@ -126,3 +126,8 @@ canvas {
   0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
   100% { opacity: 0; transform: translateY(350px) rotate(720deg) scale(0.2); }
 }
+
+@keyframes pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+}

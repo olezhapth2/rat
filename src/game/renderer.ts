@@ -104,19 +104,6 @@ export function render(
     );
   }
 
-  // ===== 4. CURSOR =====
-  if (player.targetX !== null && player.targetY !== null) {
-    ctx.beginPath();
-    ctx.arc(player.targetX, player.targetY, 4, 0, Math.PI * 2);
-    ctx.strokeStyle = '#4ecca380';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(player.targetX, player.targetY, 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#4ecca3';
-    ctx.fill();
-  }
-
   // ===== 5. DEPTH-SORTED RENDERING (objects + characters by Y) =====
   // Collect all entities with sortY
   interface SortEntity {
@@ -162,12 +149,6 @@ export function render(
           ? (playerAnim ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 })
           : (botAnims?.[c.bot?.id] ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 });
         drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name, c.color);
-
-        // Name tag
-        ctx.fillStyle = c.isPlayer ? '#2a8a6a' : '#333';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(c.name, c.x, bobY - 30);
 
         // Carried item for player
         if (c.isPlayer && carrying) {

@@ -86,13 +86,16 @@ function savePartial(state: GameState) {
   );
 }
 
-export function createInitialState(): GameState {
+export function createInitialState(authUser?: { email: string; charId: string; name: string } | null): GameState {
   const saved = loadState();
   const today = new Date().toISOString().slice(0, 10);
 
+  const charId = authUser?.charId || (saved?.charId as string) || 'pers4';
+  const name = authUser?.name || (saved?.name as string) || 'Ты';
+
   const player = {
     ...createPlayer(),
-    name: (saved?.name as string) || 'Ты',
+    name,
     av: (saved?.av as string) || '🧑‍🚀',
     color: '#4ecca3',
     role: (saved?.role as string) || 'Разработчик',
@@ -108,7 +111,7 @@ export function createInitialState(): GameState {
     visitedRooms: ['hall'] as string[],
     _lastEmoji: null as string | null,
     _emojiTime: 0,
-    charId: (saved?.charId as string) || 'pers4',
+    charId,
     hatId: (saved?.hatId as string) || 'none',
     anim: createAnimState(),
     petId: 'pet1',
@@ -240,27 +243,29 @@ export function canPlaceItem(state: GameState, def: { w: number; h: number; surf
     }
   }
 
-  // Check collision with existing placed items
+  // Check collision with existing placed items (lenient — allow overlap)
   for (const pi of state.player.placedItems) {
     const piDef = ALL_ITEMS.find(i => i.id === pi.id);
     if (!piDef) continue;
-    if ((piDef as any).noCollision) continue; // skip carpets, wall items
+    if ((piDef as any).noCollision) continue;
+    const margin = TILE * 0.3;
     if (
-      x < pi.x + piDef.w * TILE &&
-      x + def.w * TILE > pi.x &&
-      y < pi.y + piDef.h * TILE &&
-      y + def.h * TILE > pi.y
+      x + margin < pi.x + piDef.w * TILE - margin &&
+      x + def.w * TILE - margin > pi.x + margin &&
+      y + margin < pi.y + piDef.h * TILE - margin &&
+      y + def.h * TILE - margin > pi.y + margin
     ) return false;
   }
 
-  // Check collision with furniture
+  // Check collision with furniture (lenient)
   for (const obj of state.objects) {
     if (!obj.solid || obj.noCollision) continue;
+    const margin = TILE * 0.3;
     if (
-      x < obj.x + obj.w * TILE &&
-      x + def.w * TILE > obj.x &&
-      y < obj.y + obj.h * TILE &&
-      y + def.h * TILE > obj.y
+      x + margin < obj.x + obj.w * TILE - margin &&
+      x + def.w * TILE - margin > obj.x + margin &&
+      y + margin < obj.y + obj.h * TILE - margin &&
+      y + def.h * TILE - margin > obj.y + margin
     ) return false;
   }
 
@@ -515,13 +520,13 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   // Kryska patrols between rooms, looking for food (items to steal)
   if (bot._roomTimer <= 0) {
     const targets = [
-      { x: 22 * TILE, y: 5 * TILE },    // inside office1
-      { x: 10 * TILE, y: 15 * TILE },   // in Зал
-      { x: 25 * TILE, y: 20 * TILE },   // Зал center
-      { x: 52 * TILE, y: 10 * TILE },   // chill
-      { x: 52 * TILE, y: 23 * TILE },   // smoking
-      { x: 22 * TILE, y: 20 * TILE },   // Зал near offices
-      { x: 45 * TILE, y: 35 * TILE },   // inside office6
+      { x: 15 * TILE, y: 4 * TILE },    // inside office1
+      { x: 10 * TILE, y: 12 * TILE },   // in Зал
+      { x: 17 * TILE, y: 14 * TILE },   // Зал center
+      { x: 36 * TILE, y: 6 * TILE },    // chill
+      { x: 36 * TILE, y: 16 * TILE },   // smoking
+      { x: 15 * TILE, y: 14 * TILE },   // Зал near offices
+      { x: 29 * TILE, y: 25 * TILE },   // inside office6
     ];
     const t = targets[Math.floor(Math.random() * targets.length)];
     bot.wanderTargetX = t.x;
@@ -627,11 +632,7 @@ let bossCallCooldown = 0;
 export function updateBossCall(state: GameState, dt: number) {
   bossCallCooldown -= dt;
   if (bossCallCooldown > 0) return;
-
-  // Random chance to trigger boss call every ~60 seconds
-  if (Math.random() < 0.0003 * dt && !state.bossCall.active) {
-    triggerBossCall(state);
-  }
+  bossCallCooldown = 99999;
 }
 
 export function triggerBossCall(state: GameState) {

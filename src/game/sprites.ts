@@ -187,13 +187,6 @@ export function drawCharacterSprite(
   }
   // No fallback — skip rendering if sprite not loaded
 
-  // Name tag below
-  if (name) {
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(name, x, y + CHAR_H / 2 + 12);
-  }
 }
 
 // === Draw Pet ===

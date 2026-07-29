@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updateDropPreview, updatePet } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -17,6 +17,8 @@ import {
   onConnected, onDisconnected, onItems,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
+import { register, login, getCurrentUser, logout, getCharMeta } from '../game/auth';
+import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, type InteractionZone } from '../game/interactions';
 
 interface CtxItem {
   icon: string;
@@ -25,11 +27,68 @@ interface CtxItem {
 }
 
 export default function GameCanvas() {
+  const [authUser, setAuthUser] = useState(() => getCurrentUser());
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPass, setAuthPass] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  const handleAuth = () => {
+    const fn = authMode === 'register' ? register : login;
+    const res = fn(authEmail, authPass);
+    if (res.ok) {
+      setAuthUser(getCurrentUser());
+      setAuthError('');
+    } else {
+      setAuthError(res.msg);
+    }
+  };
+
+  if (!authUser) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 320, boxShadow: '0 8px 32px rgba(0,0,0,.3)' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', marginBottom: 6, color: '#333' }}>SECRET GANG</div>
+          <div style={{ fontSize: 11, color: '#999', textAlign: 'center', marginBottom: 20 }}>Офис-симулятор</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            <button onClick={() => { setAuthMode('login'); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: authMode === 'login' ? '#333' : '#eee', color: authMode === 'login' ? '#fff' : '#666', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Войти</button>
+            <button onClick={() => { setAuthMode('register'); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: authMode === 'register' ? '#333' : '#eee', color: authMode === 'register' ? '#fff' : '#666', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Регистрация</button>
+          </div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={authEmail}
+            onChange={(e) => setAuthEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }}
+          />
+          <input
+            type="password"
+            placeholder="Пароль"
+            value={authPass}
+            onChange={(e) => setAuthPass(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' }}
+          />
+          {authError && <div style={{ color: '#e94560', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>{authError}</div>}
+          <button
+            onClick={handleAuth}
+            style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: 'none', background: '#4ecca3', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+          >
+            {authMode === 'register' ? 'Создать аккаунт' : 'Войти'}
+          </button>
+          <div style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginTop: 12 }}>
+            {authMode === 'register' ? 'Персонаж создаётся автоматически по email' : ''}
+          </div>
+        </div>
+      </div>
+    );
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cameraRef = useRef(createCamera());
   const inputRef = useRef(createInputState());
   const frameRef = useRef(0);
-  const stateRef = useRef<GameState>(createInitialState());
+  const stateRef = useRef<GameState>(createInitialState(authUser));
   const [, setTick] = useState(0);
   const [modalType, setModalType] = useState<string | null>(null);
   const [modalData, setModalData] = useState<Record<string, unknown>>({});
@@ -46,6 +105,11 @@ export default function GameCanvas() {
   const [rpsMyChoice, setRpsMyChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
   const [rpsSentChoice, setRpsSentChoice] = useState(false);
   const lastPosSentRef = useRef(0);
+
+  // Interaction + smoking minigame
+  const [nearInteraction, setNearInteraction] = useState<InteractionZone | null>(null);
+  const [smokingGame, setSmokingGame] = useState<{ active: boolean; startTime: number; taps: number; targetTaps: number } | null>(null);
+  const [smokingResult, setSmokingResult] = useState<{ time: number; board: ReturnType<typeof getSmokingLeaderboard> } | null>(null);
 
   const state = stateRef.current;
   const player = state.player;
@@ -79,10 +143,7 @@ export default function GameCanvas() {
 
   // Input listeners
   useEffect(() => {
-    const cleanup = setupInputListeners(inputRef.current, canvasRef, cameraRef, (wx: number, wy: number) => {
-      stateRef.current.player.targetX = wx;
-      stateRef.current.player.targetY = wy;
-    });
+    const cleanup = setupInputListeners(inputRef.current, canvasRef);
     return cleanup;
   }, []);
 
@@ -104,8 +165,6 @@ export default function GameCanvas() {
       const res = dropItem(s, dropX, dropY);
       if (res.ok) {
         toast(res.msg, 'ok');
-        s.player.targetX = null;
-        s.player.targetY = null;
         const lastItem = s.player.placedItems[s.player.placedItems.length - 1];
         if (lastItem) {
           const def = ALL_ITEMS.find(i => i.id === lastItem.id);
@@ -348,13 +407,12 @@ export default function GameCanvas() {
       // Currently carrying — drop option
       if (s.player.carrying) {
         const carryDef = ALL_ITEMS.find(item => item.id === s.player.carrying);
-        const preview = s.player._dropPreview;
         items.push({
           icon: '📥',
-          text: preview ? `Поставить: ${carryDef?.e || ''}` : `${carryDef?.e || ''} (нет места)`,
+          text: `Поставить: ${carryDef?.e || ''}`,
           fn: () => {
-            const dropX = preview ? preview.x : s.player.x - (carryDef?.w || 1) * TILE / 2;
-            const dropY = preview ? preview.y : s.player.y + TILE / 2;
+            const dropX = s.player.x - (carryDef?.w || 1) * TILE / 2;
+            const dropY = s.player.y + TILE * 0.3;
             const res = dropItem(s, dropX, dropY);
             if (res.ok) {
               toast(res.msg, 'ok');
@@ -465,17 +523,17 @@ export default function GameCanvas() {
         }
       }
 
-      // Cursor world position for drop preview
-      const cursorWorldX = input.mouseX / cam.zoom + cam.x;
-      const cursorWorldY = input.mouseY / cam.zoom + cam.y;
-      updateDropPreview(s, cursorWorldX, cursorWorldY);
       updateBossCall(s, dt);
       updateBossCallTimer(s, dt);
       checkBossCallReward(s);
       updateRoomIncome(s, dt);
+
+      // Check interaction zones
+      const zone = checkInteractions(s.player.x, s.player.y);
+      setNearInteraction(zone);
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, null, s.player.anim, s.botAnims, remotePlayersRef.current);
 
       // Send position to server every 5 frames (~80ms)
       if (frameRef.current % 5 === 0) {
@@ -502,6 +560,126 @@ export default function GameCanvas() {
   return (
     <>
       <canvas ref={canvasRef} />
+
+      {/* Interaction button — ПЕРЕКУР */}
+      {nearInteraction && !smokingGame && !smokingResult && (
+        <button
+          onClick={() => setSmokingGame({ active: true, startTime: Date.now(), taps: 0, targetTaps: 30 })}
+          style={{
+            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+            padding: '14px 36px', borderRadius: 16, border: 'none',
+            background: 'linear-gradient(135deg, #e94560, #c62828)',
+            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(233,69,96,.5)',
+            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          <span style={{ fontSize: 24 }}>🚬</span> ПЕРЕКУР
+        </button>
+      )}
+
+      {/* Smoking minigame overlay */}
+      {smokingGame?.active && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 20, padding: 30, textAlign: 'center',
+            width: 300, boxShadow: '0 8px 40px rgba(0,0,0,.4)',
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>🚬</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Быстрее! Пали!</div>
+            <div style={{ fontSize: 11, color: '#999', marginBottom: 16 }}>
+              Нажимай на кнопку как можно быстрее
+            </div>
+            <div style={{
+              width: '100%', height: 12, background: '#eee', borderRadius: 6,
+              overflow: 'hidden', marginBottom: 16,
+            }}>
+              <div style={{
+                width: `${(smokingGame.taps / smokingGame.targetTaps) * 100}%`,
+                height: '100%', background: 'linear-gradient(90deg, #4ecca3, #45b7d1)',
+                borderRadius: 6, transition: 'width 0.1s',
+              }} />
+            </div>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+              {smokingGame.taps} / {smokingGame.targetTaps}
+            </div>
+            <button
+              onClick={() => {
+                const newTaps = smokingGame.taps + 1;
+                if (newTaps >= smokingGame.targetTaps) {
+                  const elapsed = Date.now() - smokingGame.startTime;
+                  const board = saveSmokingRecord(state.player.name, elapsed);
+                  setSmokingGame(null);
+                  setSmokingResult({ time: elapsed, board });
+                  logActivity(stateRef.current, '🚬', `Покурил за ${(elapsed / 1000).toFixed(1)}с`);
+                } else {
+                  setSmokingGame({ ...smokingGame, taps: newTaps });
+                }
+              }}
+              style={{
+                width: 120, height: 120, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #e94560, #c62828)',
+                border: '4px solid #ff6b6b', color: '#fff', fontSize: 36,
+                cursor: 'pointer', boxShadow: '0 4px 20px rgba(233,69,96,.4)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >🚬</button>
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => setSmokingGame(null)}
+                style={{ padding: '6px 16px', borderRadius: 8, border: '1px solid #ddd', background: '#f5f5f5', fontSize: 11, cursor: 'pointer' }}
+              >Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Smoking result + leaderboard */}
+      {smokingResult && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 20, padding: 24, textAlign: 'center',
+            width: 320, boxShadow: '0 8px 40px rgba(0,0,0,.4)',
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 6 }}>🏆</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#333', marginBottom: 4 }}>
+              {(smokingResult.time / 1000).toFixed(1)} сек
+            </div>
+            <div style={{ fontSize: 11, color: '#999', marginBottom: 16 }}>Твоё время</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8, textAlign: 'left' }}>
+              🏅 Таблица лидеров
+            </div>
+            {smokingResult.board.slice(0, 3).map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                background: i === 0 ? '#fff8e1' : i === 1 ? '#f5f5f5' : '#fafafa',
+                borderRadius: 8, marginBottom: 4, textAlign: 'left',
+              }}>
+                <span style={{ fontSize: 16, width: 24 }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                </span>
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#333' }}>{r.name}</span>
+                <span style={{ fontSize: 11, color: '#999' }}>{(r.time / 1000).toFixed(1)}с</span>
+              </div>
+            ))}
+            <button
+              onClick={() => setSmokingResult(null)}
+              style={{
+                marginTop: 14, padding: '8px 24px', borderRadius: 10,
+                border: 'none', background: '#4ecca3', color: '#fff',
+                fontWeight: 700, fontSize: 12, cursor: 'pointer',
+              }}
+            >Ок</button>
+          </div>
+        </div>
+      )}
 
       {/* Context Menu */}
       <div
@@ -802,7 +980,12 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 10 }}>Выбери предмет для своего кабинета</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, color: '#999' }}>Выбери предмет для своего кабинета</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#4ecca3', background: '#f0f0f0', padding: '3px 10px', borderRadius: 8 }}>
+          🪙 {state.player.coins} алт
+        </div>
+      </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
         {Object.keys(SHOP).map((c) => (
           <button
@@ -1050,39 +1233,17 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
 // ===== PROFILE =====
 function ProfileView({ state }: { state: GameState }) {
   const p = state.player;
-  const chars = ['pers1', 'pers2', 'pers3', 'pers4', 'pers5'];
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
-      <div style={{ fontSize: 48, marginBottom: 8 }} suppressHydrationWarning>{p.av}</div>
+      <div style={{ width: 64, height: 64, borderRadius: 12, overflow: 'hidden', margin: '0 auto 8px', background: '#f5f5f5' }}>
+        <img src={`/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      </div>
       <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>
       <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>{p.role}</div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.coins}</div><div style={{ fontSize: 9, color: '#999' }}>алт</div></div>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.furniture.length}</div><div style={{ fontSize: 9, color: '#999' }}>предметов</div></div>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.achievements.length}</div><div style={{ fontSize: 9, color: '#999' }}>ачивок</div></div>
-      </div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 6 }}>Персонаж</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
-        {chars.map((c) => (
-          <div
-            key={c}
-            onClick={() => { p.charId = c; persistState(state); }}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background: c === p.charId ? '#e8f5e9' : '#f5f5f5',
-              border: `2px solid ${c === p.charId ? '#4ecca3' : 'transparent'}`,
-              overflow: 'hidden',
-            }}
-          >
-            <img src={`/sprites/pers/${c}.png`} alt={c} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
-        ))}
       </div>
       <input
         style={{ width: '100%', padding: 8, border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 12, textAlign: 'center', marginBottom: 6 }}
@@ -1096,6 +1257,10 @@ function ProfileView({ state }: { state: GameState }) {
         onChange={(e) => { p.role = e.target.value; persistState(state); }}
         placeholder="Роль"
       />
+      <button
+        onClick={() => { logout(); window.location.reload(); }}
+        style={{ marginTop: 14, padding: '8px 20px', borderRadius: 8, border: '1px solid #e94560', background: 'transparent', color: '#e94560', fontWeight: 600, fontSize: 11, cursor: 'pointer' }}
+      >Выйти из аккаунта</button>
     </div>
   );
 }

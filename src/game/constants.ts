@@ -16,38 +16,36 @@ export interface Room {
 }
 
 /*
-  Layout from location.html (7 cols × 4 rows, gap:0):
-    grid-template-columns: 360fr 87fr 213fr 237fr 103fr 127fr 278fr
-    grid-template-rows:    260fr 225fr 240fr 430fr
+  Scaled down ~1.5x from original 60×44 → 40×29
 
   Column groups (walls = 1 tile between each):
-    A (boss)  447fr → 17 tiles  x=1..17
-    B (kab1)  213fr →  8 tiles  x=19..26
-    C (kab2)  237fr →  9 tiles  x=28..36
-    D (kab3)  230fr →  9 tiles  x=38..46
-    E (chil)  278fr → 11 tiles  x=48..58
+    A (boss)   11 tiles  x=1..11
+    B (kab1)    5 tiles  x=13..17
+    C (kab2)    6 tiles  x=19..24
+    D (kab3)    6 tiles  x=26..31
+    E (chil)    7 tiles  x=33..39
 
   Row groups:
-    Row0 260fr → 9 tiles  y=1..9
-    Row1 225fr → 8 tiles  y=11..18
-    Row2 240fr → 8 tiles  y=19..26
-    Row3 430fr → 15 tiles y=28..42
+    Row0   6 tiles  y=1..6
+    Row1  11 tiles  y=8..18
+    Row2   5 tiles  y=20..24
+    Row3  10 tiles  y=26..35
 */
 export const ROOMS: Room[] = [
-  { id: 'boss',    name: 'Босс',      fx: 1,  fy: 1,  fw: 17, fh: 9,  color1: '#dcb98a', color2: '#c8a97a' },
-  { id: 'office1', name: 'Кабинет 1', fx: 19, fy: 1,  fw: 8,  fh: 9,  color1: '#c9c2b6', color2: '#b9b2a6' },
-  { id: 'office2', name: 'Кабинет 2', fx: 28, fy: 1,  fw: 9,  fh: 9,  color1: '#c9b8d1', color2: '#b9a8c1' },
-  { id: 'office3', name: 'Кабинет 3', fx: 38, fy: 1,  fw: 9,  fh: 9,  color1: '#d1abb7', color2: '#c19ba7' },
-  { id: 'chill',   name: 'Чил',       fx: 48, fy: 1,  fw: 11, fh: 17, color1: '#e0b98a', color2: '#d0a97a' },
-  { id: 'hall',    name: 'Зал',       fx: 1,  fy: 11, fw: 47, fh: 16, color1: '#cbb896', color2: '#bba886' },
-  { id: 'smoking', name: 'Курилка',   fx: 48, fy: 19, fw: 11, fh: 8,  color1: '#c99a9a', color2: '#b98a8a' },
-  { id: 'office4', name: 'Кабинет 4', fx: 19, fy: 28, fw: 8,  fh: 15, color1: '#a9c2ab', color2: '#99b29b' },
-  { id: 'office5', name: 'Кабинет 5', fx: 28, fy: 28, fw: 9,  fh: 15, color1: '#cbb87c', color2: '#bba86c' },
-  { id: 'office6', name: 'Кабинет 6', fx: 38, fy: 28, fw: 21, fh: 15, color1: '#8fc0be', color2: '#7fb0ae' },
+  { id: 'boss',    name: 'Босс',      fx: 1,  fy: 1,  fw: 11, fh: 6,  color1: '#dcb98a', color2: '#c8a97a' },
+  { id: 'office1', name: 'Кабинет 1', fx: 13, fy: 1,  fw: 5,  fh: 6,  color1: '#c9c2b6', color2: '#b9b2a6' },
+  { id: 'office2', name: 'Кабинет 2', fx: 19, fy: 1,  fw: 6,  fh: 6,  color1: '#c9b8d1', color2: '#b9a8c1' },
+  { id: 'office3', name: 'Кабинет 3', fx: 26, fy: 1,  fw: 6,  fh: 6,  color1: '#d1abb7', color2: '#c19ba7' },
+  { id: 'chill',   name: 'Чил',       fx: 33, fy: 1,  fw: 7,  fh: 11, color1: '#e0b98a', color2: '#d0a97a' },
+  { id: 'hall',    name: 'Зал',       fx: 1,  fy: 8,  fw: 31, fh: 11, color1: '#cbb896', color2: '#bba886' },
+  { id: 'smoking', name: 'Курилка',   fx: 33, fy: 13, fw: 7,  fh: 5,  color1: '#c99a9a', color2: '#b98a8a' },
+  { id: 'office4', name: 'Кабинет 4', fx: 13, fy: 20, fw: 5,  fh: 10, color1: '#a9c2ab', color2: '#99b29b' },
+  { id: 'office5', name: 'Кабинет 5', fx: 19, fy: 20, fw: 6,  fh: 10, color1: '#cbb87c', color2: '#bba86c' },
+  { id: 'office6', name: 'Кабинет 6', fx: 26, fy: 20, fw: 14, fh: 10, color1: '#8fc0be', color2: '#7fb0ae' },
 ];
 
-export const MAP_W = 60;
-export const MAP_H = 44;
+export const MAP_W = 40;
+export const MAP_H = 29;
 export const MAP_PW = MAP_W * TILE;
 export const MAP_PH = MAP_H * TILE;
 
@@ -90,61 +88,61 @@ export function buildMap(): number[][] {
   for (let y = 0; y < MAP_H; y++) { map[y][0] = W; map[y][MAP_W - 1] = W; }
 
   // 4. Vertical walls between rooms
-  // x=18: Boss|kab1 (y=1..9)
-  for (let y = 1; y <= 9; y++) map[y][18] = W;
-  // x=27: kab1|kab2 (y=1..9), kab4|kab5 (y=28..42)
-  for (let y = 1; y <= 9; y++) map[y][27] = W;
-  for (let y = 28; y <= 42; y++) map[y][27] = W;
-  // x=37: kab2|kab3 (y=1..9), kab5|kab6 (y=28..42)
-  for (let y = 1; y <= 9; y++) map[y][37] = W;
-  for (let y = 28; y <= 42; y++) map[y][37] = W;
-  // x=47: kab3|chil (y=1..9), zal|right-col (y=11..26)
-  for (let y = 1; y <= 9; y++) map[y][47] = W;
-  for (let y = 11; y <= 26; y++) map[y][47] = W;
+  // x=12: Boss|kab1 (y=1..6)
+  for (let y = 1; y <= 6; y++) map[y][12] = W;
+  // x=18: kab1|kab2 (y=1..6), kab4|kab5 (y=20..29)
+  for (let y = 1; y <= 6; y++) map[y][18] = W;
+  for (let y = 20; y <= 29; y++) map[y][18] = W;
+  // x=25: kab2|kab3 (y=1..6), kab5|kab6 (y=20..29)
+  for (let y = 1; y <= 6; y++) map[y][25] = W;
+  for (let y = 20; y <= 29; y++) map[y][25] = W;
+  // x=32: kab3|chil (y=1..6), zal|smoking (y=8..18)
+  for (let y = 1; y <= 6; y++) map[y][32] = W;
+  for (let y = 8; y <= 18; y++) map[y][32] = W;
 
   // 5. Horizontal walls
-  // y=10: row0 | zal (x=0..47)
-  for (let x = 0; x <= 47; x++) map[10][x] = W;
-  // y=18: chil | kurilka (x=48..58)
-  for (let x = 48; x <= 58; x++) map[18][x] = W;
-  // y=27: row2 | row3 (x=0..59)
-  for (let x = 0; x <= 59; x++) map[27][x] = W;
+  // y=7: row0 | zal (x=0..32)
+  for (let x = 0; x <= 32; x++) map[7][x] = W;
+  // y=12: chil | smoking (x=33..39)
+  for (let x = 33; x <= 39; x++) map[12][x] = W;
+  // y=19: row2 | row3 (x=0..39)
+  for (let x = 0; x <= 39; x++) map[19][x] = W;
 
-  // 6. Doorways — 3-tile breaks in walls (replace W with F)
-  // Top wall y=10: Boss→Zal, kab1→Zal, kab2→Zal, kab3→Zal
-  for (const cx of [9, 23, 32, 42]) {
-    for (let dx = -1; dx <= 1; dx++) map[10][cx + dx] = F;
+  // 6. Doorways — 3-tile breaks in walls
+  // Top wall y=7: Boss→Zal, kab1→Zal, kab2→Zal, kab3→Zal
+  for (const cx of [5, 15, 22, 29]) {
+    for (let dx = -1; dx <= 1; dx++) map[7][cx + dx] = F;
   }
-  // Bottom wall y=27: Zal→kab4, Zal→kab5, Zal→kab6
-  for (const cx of [21, 32, 42]) {
-    for (let dx = -1; dx <= 1; dx++) map[27][cx + dx] = F;
+  // Bottom wall y=19: Zal→kab4, Zal→kab5, Zal→kab6
+  for (const cx of [15, 22, 29]) {
+    for (let dx = -1; dx <= 1; dx++) map[19][cx + dx] = F;
   }
-  // Vertical wall x=47: Zal↔Chil, Zal↔Kurilka
-  for (const cy of [15, 23]) {
-    for (let dy = -1; dy <= 1; dy++) map[cy + dy][47] = F;
+  // Vertical wall x=32: Zal↔Chil, Zal↔Smoking
+  for (const cy of [10, 16]) {
+    for (let dy = -1; dy <= 1; dy++) map[cy + dy][32] = F;
   }
 
   // 7. Wall-window cutouts — replace S with F where doorways enter through wall-window
-  // Zal wall-window (y=11..13) cutouts at doorway x positions
-  for (const cx of [9, 23, 32, 42]) {
+  // Zal wall-window (y=8..10) cutouts at doorway x positions
+  for (const cx of [5, 15, 22, 29]) {
     for (let dx = -1; dx <= 1; dx++) {
-      for (let y = 11; y <= 13; y++) {
+      for (let y = 8; y <= 10; y++) {
         if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
       }
     }
   }
-  // Bottom rooms wall-window (y=28..30) cutouts
-  for (const cx of [21, 32, 42]) {
+  // Bottom rooms wall-window (y=20..22) cutouts
+  for (const cx of [15, 22, 29]) {
     for (let dx = -1; dx <= 1; dx++) {
-      for (let y = 28; y <= 30; y++) {
+      for (let y = 20; y <= 22; y++) {
         if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
       }
     }
   }
-  // Kurilka side cutout for Zal↔Kurilka passage (x=48..49, y=19..21)
-  for (let y = 19; y <= 21; y++) {
-    map[y][48] = F;
-    map[y][49] = F;
+  // Smoking side cutout for Zal↔Smoking passage (x=33..34, y=13..15)
+  for (let y = 13; y <= 15; y++) {
+    map[y][33] = F;
+    map[y][34] = F;
   }
 
   return map;
@@ -171,7 +169,7 @@ export interface GameObject {
   sprite?: string;
 }
 
-const SOLID_ZONE_RATIO = 0.6;
+const SOLID_ZONE_RATIO = 0.35;
 
 export function canMove(
   map: number[][],
@@ -194,7 +192,6 @@ export function canMove(
     const t = map[gy]?.[gx];
     if (t === W || t === E) return false;
     if (t === S) {
-      if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) return false;
       const below = map[gy + 1]?.[gx];
       if (below !== F) return false;
     }
@@ -204,10 +201,9 @@ export function canMove(
     if (!obj.solid || obj.noCollision) continue;
     const objLeft = obj.x;
     const objRight = obj.x + obj.w * TILE;
-    const objBottom = obj.y + obj.h * TILE;
     if (px + r <= objLeft || px - r >= objRight) continue;
-    const solidTop = obj.y + (obj.h * TILE) * 0.5;
-    const solidBottom = objBottom;
+    const solidTop = obj.y + (obj.h * TILE) * SOLID_ZONE_RATIO;
+    const solidBottom = obj.y + obj.h * TILE;
     if (py + r > solidTop && py < solidBottom) return false;
   }
   return true;
@@ -219,16 +215,14 @@ export function createObjects(): GameObject[] {
 
 export interface Player {
   x: number; y: number;
-  targetX: number | null; targetY: number | null;
   speed: number; radius: number;
   vx: number; vy: number;
 }
 
 export function createPlayer(): Player {
   return {
-    x: 24 * TILE + TILE / 2,
-    y: 20 * TILE + TILE / 2,
-    targetX: null, targetY: null,
+    x: 16 * TILE + TILE / 2,
+    y: 13 * TILE + TILE / 2,
     speed: 3, radius: 6,
     vx: 0, vy: 0,
   };
@@ -249,65 +243,65 @@ export interface Bot {
 
 export function createBots(): Bot[] {
   return [
-    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 23 * TILE, y: 7 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 33 * TILE, y: 7 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 43 * TILE, y: 7 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 25 * TILE, y: 20 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 53 * TILE, y: 24 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 15 * TILE, y: 4 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 22 * TILE, y: 4 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 29 * TILE, y: 4 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 13 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 36 * TILE, y: 16 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
   ];
 }
 
 export const EMOJI_CHAT = ['👋', '😂', '👍', '❤️', '🔥', '💀', '👀', '🎮'];
 
 export const ROOM_CENTERS: Record<string, { x: number; y: number }> = {
-  boss:    { x: (1 + 17 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
-  office1: { x: (19 + 8 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
-  office2: { x: (28 + 9 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
-  office3: { x: (38 + 9 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
-  chill:   { x: (48 + 11 / 2) * TILE, y: (1 + 17 / 2) * TILE },
-  hall:    { x: (1 + 47 / 2) * TILE,  y: (11 + 16 / 2) * TILE },
-  smoking: { x: (48 + 11 / 2) * TILE, y: (19 + 8 / 2) * TILE },
-  office4: { x: (19 + 8 / 2) * TILE,  y: (28 + 15 / 2) * TILE },
-  office5: { x: (28 + 9 / 2) * TILE,  y: (28 + 15 / 2) * TILE },
-  office6: { x: (38 + 21 / 2) * TILE, y: (28 + 15 / 2) * TILE },
+  boss:    { x: (1 + 11 / 2) * TILE,  y: (1 + 6 / 2) * TILE },
+  office1: { x: (13 + 5 / 2) * TILE,  y: (1 + 6 / 2) * TILE },
+  office2: { x: (19 + 6 / 2) * TILE,  y: (1 + 6 / 2) * TILE },
+  office3: { x: (26 + 6 / 2) * TILE,  y: (1 + 6 / 2) * TILE },
+  chill:   { x: (33 + 7 / 2) * TILE,  y: (1 + 11 / 2) * TILE },
+  hall:    { x: (1 + 31 / 2) * TILE,  y: (8 + 11 / 2) * TILE },
+  smoking: { x: (33 + 7 / 2) * TILE,  y: (13 + 5 / 2) * TILE },
+  office4: { x: (13 + 5 / 2) * TILE,  y: (20 + 10 / 2) * TILE },
+  office5: { x: (19 + 6 / 2) * TILE,  y: (20 + 10 / 2) * TILE },
+  office6: { x: (26 + 14 / 2) * TILE, y: (20 + 10 / 2) * TILE },
 };
 
 export const BOT_PHRASES: Record<string, string[]> = {
   pers1: [
-    'Нужно закрыть спринт',
+    'Надо дела закрыть',
     'Дедлайн завтра!',
     'Кто взял задачу?',
-    'Ставлю оценки...',
-    'Петя опять деплой сломал',
-    'Кто на standup?',
+    'Ставлю приоритеты...',
+    'Опять совещание',
+    'Кто на созвон?',
   ],
   pers2: [
     'Дизайн готов!',
-    'Обновила макет',
-    'Нужен ревью',
+    'Обновила презентацию',
+    'Нужно согласовать',
     'Красиво получилось',
-    'Ещё иконку нарисую',
-    'Figma лагает...',
+    'Ещё одну деталь дорисую',
+    'Принтер опять лагает...',
   ],
   pers3: [
-    'Баг в проде!',
-    'Тестирую фичу',
-    'Всё падает',
-    'Написал автотесты',
-    'Кто деплоил?',
-    'Регрессия...',
+    'Проблема в отчёте!',
+    'Проверяю документы',
+    'Всё не сходится',
+    'Написала резюме',
+    'Кто подписал?',
+    'Надо перепроверить...',
   ],
   pers4: [
-    'Код готов к ревью',
-    'Рефакторю модуль',
-    'CI прошёл',
-    'Пулл-реквест отправлен',
+    'Документ готов к отправке',
+    'Дорабатываю раздел',
+    'Смета прошла',
+    'Отчёт отправлен',
   ],
   pers5: [
-    'Нужно провести собес',
-    'Обновила базу кандидатов',
-    'HR-отчёт готов',
-    'Ищем нового сотрудника',
+    'Нужно провести совещание',
+    'Обновила график',
+    'Отчёт для руководства готов',
+    'Ищем нового специалиста',
   ],
   kryska: [
     '*пии-пии*',
@@ -326,12 +320,12 @@ export const BOT_REACTIONS: Record<string, string[]> = {
 };
 
 export const BOT_CONVERSATIONS: string[][] = [
-  ['Петя', 'Сергей', 'Баги пофикшены?', 'Почти...'],
-  ['Аня', 'Петя', 'Макет готов', 'Ок смотрю'],
-  ['Аня', 'Сергей', 'Дизайн ок?', 'Нужны правки'],
+  ['Петя', 'Сергей', 'Документы готовы?', 'Почти...'],
+  ['Аня', 'Петя', 'Презентация готова', 'Ок смотрю'],
+  ['Аня', 'Сергей', 'Смета ок?', 'Нужны правки'],
   ['Петя', 'Аня', 'Сколько осталось?', 'День-два'],
-  ['Сергей', 'Петя', 'Кто деплоил?', 'Не я!'],
-  ['Аня', 'Сергей', 'Тест пройден?', 'Есть баг'],
+  ['Сергей', 'Петя', 'Кто подписал?', 'Не я!'],
+  ['Аня', 'Сергей', 'Отчёт пройден?', 'Есть замечания'],
 ];
 
 export interface ShopItem {

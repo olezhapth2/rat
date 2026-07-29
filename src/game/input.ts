@@ -34,6 +34,9 @@ export function setupInputListeners(
   const onMouseMove = (e: MouseEvent) => {
     input.mouseX = e.clientX;
     input.mouseY = e.clientY;
+    // Only track cursor on canvas, not on UI overlays
+    const target = e.target as HTMLElement;
+    if (!target || target.tagName !== 'CANVAS') return;
     const canvas = canvasRef.current;
     const cam = cameraRef.current;
     if (!canvas || !cam) return;
@@ -62,7 +65,7 @@ export function updatePlayer(
   map: number[][],
   objects: GameObject[],
   dt: number
-): void {
+): { vx: number; vy: number } {
   let wdx = 0,
     wdy = 0;
   if (input.keys['w'] || input.keys['arrowup']) wdy = -1;
@@ -86,7 +89,7 @@ export function updatePlayer(
     player.vy = 0;
     player.targetX = null;
     player.targetY = null;
-    return;
+    return { vx: wdx * SPEED, vy: wdy * SPEED };
   }
 
   if (player.targetX !== null && player.targetY !== null) {
@@ -127,4 +130,6 @@ export function updatePlayer(
       else player.vy = 0;
     }
   }
+
+  return { vx: player.vx, vy: player.vy };
 }

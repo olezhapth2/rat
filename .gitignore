@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# source assets (raw exports, not needed in deploy)
+/public/ast/
+MacBook Air - 1.png
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

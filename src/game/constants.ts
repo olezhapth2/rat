@@ -1,44 +1,53 @@
 export const TILE = 40;
 
-// Tile types
 const E = 0; // empty (void)
 const F = 1; // floor (walkable)
-const W = 2; // top wall (solid, impassable)
-const S = 3; // side wall (solid, impassable — visual blue zone below top walls)
+const W = 2; // wall (solid)
+const S = 3; // side wall — visual-only wall-window overlay on floor (walkable)
 
-export const SIDE_WALL_DEPTH = 3; // side wall is 3 tiles deep
+export const SIDE_WALL_DEPTH = 3; // S = 3 tiles tall
 
 export interface Room {
   id: string;
   name: string;
-  // Floor area (walkable, multiples of 3)
-  fx: number;
-  fy: number;
-  fw: number;
-  fh: number;
+  fx: number; fy: number; fw: number; fh: number;
   color1: string;
   color2: string;
 }
 
-// All floor dimensions are multiples of 3
+/*
+  Layout from location.html (7 cols × 4 rows, gap:0):
+    grid-template-columns: 360fr 87fr 213fr 237fr 103fr 127fr 278fr
+    grid-template-rows:    260fr 225fr 240fr 430fr
+
+  Column groups (walls = 1 tile between each):
+    A (boss)  447fr → 17 tiles  x=1..17
+    B (kab1)  213fr →  8 tiles  x=19..26
+    C (kab2)  237fr →  9 tiles  x=28..36
+    D (kab3)  230fr →  9 tiles  x=38..46
+    E (chil)  278fr → 11 tiles  x=48..58
+
+  Row groups:
+    Row0 260fr → 9 tiles  y=1..9
+    Row1 225fr → 8 tiles  y=11..18
+    Row2 240fr → 8 tiles  y=19..26
+    Row3 430fr → 15 tiles y=28..42
+*/
 export const ROOMS: Room[] = [
-  // Top row: colleague offices
-  { id: 'office1',  name: 'Офис 1',       fx: 2,  fy: 2,  fw: 15, fh: 15, color1: '#f0ede6', color2: '#e5e0d8' },
-  { id: 'office2',  name: 'Офис 2',       fx: 24, fy: 2,  fw: 15, fh: 15, color1: '#eee8e0', color2: '#e3ddd5' },
-  { id: 'office3',  name: 'Офис 3',       fx: 46, fy: 2,  fw: 15, fh: 15, color1: '#f0ede6', color2: '#e5e0d8' },
-
-  // Bottom row
-  { id: 'smoking',  name: 'Курилка',      fx: 2,  fy: 27, fw: 12, fh: 12, color1: '#e8e0d4', color2: '#ddd5c9' },
-  { id: 'lobby',    name: 'Лобби',        fx: 21, fy: 27, fw: 21, fh: 21, color1: '#f5f0e8', color2: '#eae5dd' },
-  { id: 'gamezone', name: 'Game Zone',     fx: 49, fy: 27, fw: 12, fh: 12, color1: '#e0e8f0', color2: '#d5dde5' },
-
-  // Bottom: boss (elongated) + my office
-  { id: 'boss',     name: 'Кабинет босса', fx: 2,  fy: 45, fw: 21, fh: 15, color1: '#f0ebe3', color2: '#e5e0d8' },
-  { id: 'myoffice', name: 'Мой кабинет',   fx: 30, fy: 45, fw: 15, fh: 15, color1: '#f0f0e8', color2: '#e5e5dd' },
+  { id: 'boss',    name: 'Босс',      fx: 1,  fy: 1,  fw: 17, fh: 9,  color1: '#dcb98a', color2: '#c8a97a' },
+  { id: 'office1', name: 'Кабинет 1', fx: 19, fy: 1,  fw: 8,  fh: 9,  color1: '#c9c2b6', color2: '#b9b2a6' },
+  { id: 'office2', name: 'Кабинет 2', fx: 28, fy: 1,  fw: 9,  fh: 9,  color1: '#c9b8d1', color2: '#b9a8c1' },
+  { id: 'office3', name: 'Кабинет 3', fx: 38, fy: 1,  fw: 9,  fh: 9,  color1: '#d1abb7', color2: '#c19ba7' },
+  { id: 'chill',   name: 'Чил',       fx: 48, fy: 1,  fw: 11, fh: 17, color1: '#e0b98a', color2: '#d0a97a' },
+  { id: 'hall',    name: 'Зал',       fx: 1,  fy: 11, fw: 47, fh: 16, color1: '#cbb896', color2: '#bba886' },
+  { id: 'smoking', name: 'Курилка',   fx: 48, fy: 19, fw: 11, fh: 8,  color1: '#c99a9a', color2: '#b98a8a' },
+  { id: 'office4', name: 'Кабинет 4', fx: 19, fy: 28, fw: 8,  fh: 15, color1: '#a9c2ab', color2: '#99b29b' },
+  { id: 'office5', name: 'Кабинет 5', fx: 28, fy: 28, fw: 9,  fh: 15, color1: '#cbb87c', color2: '#bba86c' },
+  { id: 'office6', name: 'Кабинет 6', fx: 38, fy: 28, fw: 21, fh: 15, color1: '#8fc0be', color2: '#7fb0ae' },
 ];
 
-export const MAP_W = 66;
-export const MAP_H = 64;
+export const MAP_W = 60;
+export const MAP_H = 44;
 export const MAP_PW = MAP_W * TILE;
 export const MAP_PH = MAP_H * TILE;
 
@@ -60,107 +69,91 @@ function carve(map: number[][], rx: number, ry: number, rw: number, rh: number) 
 export function buildMap(): number[][] {
   const map: number[][] = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(E));
 
-  // 1. Carve room floors
+  // 1. Carve room interiors as floor
   for (const r of ROOMS) {
     carve(map, r.fx, r.fy, r.fw, r.fh);
   }
 
-  // 2. Carve corridors (3 tiles wide)
-  // Office1 ↔ Office2
-  carve(map, 17, 7, 7, 3);
-  // Office2 ↔ Office3
-  carve(map, 39, 7, 7, 3);
-  // Office1 ↔ Lobby (vertical)
-  carve(map, 7, 17, 3, 10);
-  // Office2 ↔ Lobby
-  carve(map, 30, 17, 3, 10);
-  // Office3 ↔ Lobby
-  carve(map, 53, 17, 3, 10);
-  // Lobby ↔ Smoking
-  carve(map, 14, 33, 7, 3);
-  // Lobby ↔ Game Zone
-  carve(map, 42, 33, 7, 3);
-  // Lobby ↔ Boss
-  carve(map, 30, 48, 3, 3);
-  // Lobby ↔ My Office
-  carve(map, 37, 48, 3, 3);
-  // Boss ↔ My Office
-  carve(map, 23, 51, 7, 3);
-
-  // 3. Build walls: every empty tile adjacent (4-dir) to floor → wall (always 1 tile thick)
-  const wallMap = map.map((row) => [...row]);
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      if (map[y][x] === F) {
-        const dirs: [number, number][] = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-        for (const [dx, dy] of dirs) {
-          const ny = y + dy;
-          const nx = x + dx;
-          if (ny >= 0 && ny < MAP_H && nx >= 0 && nx < MAP_W && wallMap[ny][nx] === E) {
-            wallMap[ny][nx] = W;
-          }
-        }
-      }
-    }
-  }
-
-  // 4. Side walls: ONLY room top walls → 3 tiles DOWN of floor → solid (S)
-  //    Side walls must NOT appear in corridors (corridor floor below walls stays F)
+  // 2. Wall-window (S): top SIDE_WALL_DEPTH rows of each room
   for (const r of ROOMS) {
-    const topWallY = r.fy - 1;
-    if (topWallY < 0) continue;
-    for (let x = r.fx; x < r.fx + r.fw; x++) {
-      if (wallMap[topWallY]?.[x] !== W) continue;
-      // Convert floor tiles below this room-top wall into side walls
-      for (let d = 1; d <= SIDE_WALL_DEPTH; d++) {
-        const dy = topWallY + d;
-        if (dy < MAP_H && wallMap[dy]?.[x] === F) {
-          // Only if this F tile is inside THIS room (not a corridor passing through)
-          if (dy >= r.fy && dy < r.fy + r.fh && x >= r.fx && x < r.fx + r.fw) {
-            wallMap[dy][x] = S;
-          }
-        }
+    for (let d = 0; d < SIDE_WALL_DEPTH; d++) {
+      const sy = r.fy + d;
+      if (sy >= r.fy + r.fh) continue;
+      for (let x = r.fx; x < r.fx + r.fw; x++) {
+        if (map[sy]?.[x] === F) map[sy][x] = S;
       }
     }
   }
 
-  // 5. Open passages: 2 tiles below each side wall row → floor (walkable)
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      if (wallMap[y][x] !== S) continue;
-      for (let d = 1; d <= 2; d++) {
-        const dy = y + d;
-        if (dy < MAP_H && wallMap[dy][x] === W) {
-          wallMap[dy][x] = F;
-        }
+  // 3. Outer walls
+  for (let x = 0; x < MAP_W; x++) { map[0][x] = W; map[MAP_H - 1][x] = W; }
+  for (let y = 0; y < MAP_H; y++) { map[y][0] = W; map[y][MAP_W - 1] = W; }
+
+  // 4. Vertical walls between rooms
+  // x=18: Boss|kab1 (y=1..9)
+  for (let y = 1; y <= 9; y++) map[y][18] = W;
+  // x=27: kab1|kab2 (y=1..9), kab4|kab5 (y=28..42)
+  for (let y = 1; y <= 9; y++) map[y][27] = W;
+  for (let y = 28; y <= 42; y++) map[y][27] = W;
+  // x=37: kab2|kab3 (y=1..9), kab5|kab6 (y=28..42)
+  for (let y = 1; y <= 9; y++) map[y][37] = W;
+  for (let y = 28; y <= 42; y++) map[y][37] = W;
+  // x=47: kab3|chil (y=1..9), zal|right-col (y=11..26)
+  for (let y = 1; y <= 9; y++) map[y][47] = W;
+  for (let y = 11; y <= 26; y++) map[y][47] = W;
+
+  // 5. Horizontal walls
+  // y=10: row0 | zal (x=0..47)
+  for (let x = 0; x <= 47; x++) map[10][x] = W;
+  // y=18: chil | kurilka (x=48..58)
+  for (let x = 48; x <= 58; x++) map[18][x] = W;
+  // y=27: row2 | row3 (x=0..59)
+  for (let x = 0; x <= 59; x++) map[27][x] = W;
+
+  // 6. Doorways — 3-tile breaks in walls (replace W with F)
+  // Top wall y=10: Boss→Zal, kab1→Zal, kab2→Zal, kab3→Zal
+  for (const cx of [9, 23, 32, 42]) {
+    for (let dx = -1; dx <= 1; dx++) map[10][cx + dx] = F;
+  }
+  // Bottom wall y=27: Zal→kab4, Zal→kab5, Zal→kab6
+  for (const cx of [21, 32, 42]) {
+    for (let dx = -1; dx <= 1; dx++) map[27][cx + dx] = F;
+  }
+  // Vertical wall x=47: Zal↔Chil, Zal↔Kurilka
+  for (const cy of [15, 23]) {
+    for (let dy = -1; dy <= 1; dy++) map[cy + dy][47] = F;
+  }
+
+  // 7. Wall-window cutouts — replace S with F where doorways enter through wall-window
+  // Zal wall-window (y=11..13) cutouts at doorway x positions
+  for (const cx of [9, 23, 32, 42]) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let y = 11; y <= 13; y++) {
+        if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
       }
     }
   }
-
-  // 6. Cleanup orphaned walls: remove W tiles with no adjacent F (floor/side)
-  //    These are thick wall blocks between rooms that aren't part of any room border
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      if (wallMap[y][x] !== W) continue;
-      const hasAdjacentFloor = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(([dx, dy]) => {
-        const ny = y + dy;
-        const nx = x + dx;
-        if (ny < 0 || ny >= MAP_H || nx < 0 || nx >= MAP_W) return false;
-        const t = wallMap[ny][nx];
-        return t === F || t === S;
-      });
-      if (!hasAdjacentFloor) {
-        wallMap[y][x] = E; // remove orphaned wall → void
+  // Bottom rooms wall-window (y=28..30) cutouts
+  for (const cx of [21, 32, 42]) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let y = 28; y <= 30; y++) {
+        if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
       }
     }
   }
+  // Kurilka side cutout for Zal↔Kurilka passage (x=48..49, y=19..21)
+  for (let y = 19; y <= 21; y++) {
+    map[y][48] = F;
+    map[y][49] = F;
+  }
 
-  return wallMap;
+  return map;
 }
 
 export function isWalkable(map: number[][], gx: number, gy: number): boolean {
   if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) return false;
-  return map[gy]?.[gx] === F; // only F=1 is walkable; W=2 (wall) and S=3 (side wall) block movement
+  const t = map[gy]?.[gx];
+  return t === F;
 }
 
 export interface GameObject {
@@ -171,10 +164,14 @@ export interface GameObject {
   w: number;
   h: number;
   solid: boolean;
+  noCollision?: boolean;
   color?: string;
   label?: string;
   room?: string;
+  sprite?: string;
 }
+
+const SOLID_ZONE_RATIO = 0.6;
 
 export function canMove(
   map: number[][],
@@ -191,124 +188,234 @@ export function canMove(
     [px + r, py + r],
   ];
   for (const [cx, cy] of corners) {
-    if (!isWalkable(map, Math.floor(cx / TILE), Math.floor(cy / TILE))) return false;
+    const gx = Math.floor(cx / TILE);
+    const gy = Math.floor(cy / TILE);
+    if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) return false;
+    const t = map[gy]?.[gx];
+    if (t === W || t === E) return false;
+    if (t === S) {
+      if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) return false;
+      const below = map[gy + 1]?.[gx];
+      if (below !== F) return false;
+    }
   }
+
   for (const obj of objects) {
-    if (!obj.solid) continue;
-    if (
-      px > obj.x && px < obj.x + obj.w * TILE &&
-      py > obj.y && py < obj.y + obj.h * TILE
-    ) return false;
+    if (!obj.solid || obj.noCollision) continue;
+    const objLeft = obj.x;
+    const objRight = obj.x + obj.w * TILE;
+    const objBottom = obj.y + obj.h * TILE;
+    if (px + r <= objLeft || px - r >= objRight) continue;
+    const solidTop = obj.y + (obj.h * TILE) * 0.5;
+    const solidBottom = objBottom;
+    if (py + r > solidTop && py < solidBottom) return false;
   }
   return true;
 }
 
 export function createObjects(): GameObject[] {
-  return [
-    // Office1
-    { id: 'table1', type: 'furniture', x: 5 * TILE, y: 7 * TILE, w: 6, h: 3, solid: true, color: '#fff', label: 'Стол', room: 'office1' },
-    { id: 'chair1', type: 'furniture', x: 7 * TILE, y: 11 * TILE, w: 3, h: 3, solid: true, color: '#fff', label: 'Стул', room: 'office1' },
-    // Office2
-    { id: 'table2', type: 'furniture', x: 27 * TILE, y: 7 * TILE, w: 6, h: 3, solid: true, color: '#fff', label: 'Стол', room: 'office2' },
-    { id: 'chair2', type: 'furniture', x: 29 * TILE, y: 11 * TILE, w: 3, h: 3, solid: true, color: '#fff', label: 'Стул', room: 'office2' },
-    // Office3
-    { id: 'table3', type: 'furniture', x: 49 * TILE, y: 7 * TILE, w: 6, h: 3, solid: true, color: '#fff', label: 'Стол', room: 'office3' },
-    { id: 'chair3', type: 'furniture', x: 51 * TILE, y: 11 * TILE, w: 3, h: 3, solid: true, color: '#fff', label: 'Стул', room: 'office3' },
-    // Lobby
-    { id: 'sofa1', type: 'furniture', x: 24 * TILE, y: 30 * TILE, w: 6, h: 3, solid: true, color: '#e8d5b7', label: 'Диван', room: 'lobby' },
-    { id: 'plant1', type: 'furniture', x: 39 * TILE, y: 30 * TILE, w: 3, h: 3, solid: true, color: '#4ecca3', label: '🌿', room: 'lobby' },
-    // Game Zone
-    { id: 'dartboard', type: 'furniture', x: 55 * TILE, y: 30 * TILE, w: 3, h: 3, solid: true, color: '#e94560', label: '🎯', room: 'gamezone' },
-    { id: 'arcade', type: 'furniture', x: 50 * TILE, y: 30 * TILE, w: 3, h: 6, solid: true, color: '#333', label: '🕹️', room: 'gamezone' },
-    // Smoking
-    { id: 'ashtray', type: 'furniture', x: 4 * TILE, y: 30 * TILE, w: 3, h: 3, solid: true, color: '#888', label: '🪣', room: 'smoking' },
-    { id: 'bench_smoke', type: 'furniture', x: 8 * TILE, y: 33 * TILE, w: 3, h: 3, solid: true, color: '#a0856e', label: 'Скамейка', room: 'smoking' },
-    // Boss
-    { id: 'boss_desk', type: 'furniture', x: 8 * TILE, y: 50 * TILE, w: 9, h: 3, solid: true, color: '#c8b89a', label: 'Стол босса', room: 'boss' },
-    // My Office
-    { id: 'my_desk', type: 'furniture', x: 33 * TILE, y: 50 * TILE, w: 6, h: 3, solid: true, color: '#fff', label: 'Мой стол', room: 'myoffice' },
-  ];
+  return [];
 }
 
 export interface Player {
-  x: number;
-  y: number;
-  targetX: number | null;
-  targetY: number | null;
-  speed: number;
-  radius: number;
-  vx: number;
-  vy: number;
+  x: number; y: number;
+  targetX: number | null; targetY: number | null;
+  speed: number; radius: number;
+  vx: number; vy: number;
 }
 
 export function createPlayer(): Player {
   return {
-    x: 30 * TILE + TILE / 2,
-    y: 36 * TILE + TILE / 2,
-    targetX: null,
-    targetY: null,
-    speed: 3,
-    radius: 8,
-    vx: 0,
-    vy: 0,
+    x: 24 * TILE + TILE / 2,
+    y: 20 * TILE + TILE / 2,
+    targetX: null, targetY: null,
+    speed: 3, radius: 6,
+    vx: 0, vy: 0,
   };
 }
 
 export interface Bot {
-  id: string;
-  name: string;
-  color: string;
-  x: number;
-  y: number;
-  radius: number;
-  role: string;
-  room: string;
+  id: string; name: string; color: string;
+  x: number; y: number; radius: number;
+  role: string; room: string;
   wanderTimer: number;
-  wanderTargetX: number | null;
-  wanderTargetY: number | null;
+  wanderTargetX: number | null; wanderTargetY: number | null;
+  _speechBubble: string | null; _speechTime: number;
+  _emoji: string | null; _emojiTime: number;
+  _targetRoomId: string | null; _roomTimer: number;
+  _stealCooldown: number;
+  _lastVx: number; _lastVy: number;
 }
 
 export function createBots(): Bot[] {
   return [
-    { id: 'petr', name: 'Петя', color: '#e94560', x: 9 * TILE, y: 10 * TILE, radius: 8, role: 'PM', room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null },
-    { id: 'anya', name: 'Аня', color: '#ffa726', x: 31 * TILE, y: 10 * TILE, radius: 8, role: 'Дизайнер', room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null },
-    { id: 'sergey', name: 'Сергей', color: '#2196f3', x: 53 * TILE, y: 10 * TILE, radius: 8, role: 'QA', room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null },
-    { id: 'kryska', name: 'Крыска 🐀', color: '#888', x: 6 * TILE, y: 33 * TILE, radius: 6, role: 'крыса', room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null },
+    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 23 * TILE, y: 7 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 33 * TILE, y: 7 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 43 * TILE, y: 7 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 25 * TILE, y: 20 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 53 * TILE, y: 24 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
   ];
 }
 
 export const EMOJI_CHAT = ['👋', '😂', '👍', '❤️', '🔥', '💀', '👀', '🎮'];
 
-export const SHOP = {
-  desks: [
-    { id: 'desk_wood', n: 'Деревянный стол', e: '🪵', p: 150, w: 3, h: 3 },
+export const ROOM_CENTERS: Record<string, { x: number; y: number }> = {
+  boss:    { x: (1 + 17 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
+  office1: { x: (19 + 8 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
+  office2: { x: (28 + 9 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
+  office3: { x: (38 + 9 / 2) * TILE,  y: (1 + 9 / 2) * TILE },
+  chill:   { x: (48 + 11 / 2) * TILE, y: (1 + 17 / 2) * TILE },
+  hall:    { x: (1 + 47 / 2) * TILE,  y: (11 + 16 / 2) * TILE },
+  smoking: { x: (48 + 11 / 2) * TILE, y: (19 + 8 / 2) * TILE },
+  office4: { x: (19 + 8 / 2) * TILE,  y: (28 + 15 / 2) * TILE },
+  office5: { x: (28 + 9 / 2) * TILE,  y: (28 + 15 / 2) * TILE },
+  office6: { x: (38 + 21 / 2) * TILE, y: (28 + 15 / 2) * TILE },
+};
+
+export const BOT_PHRASES: Record<string, string[]> = {
+  pers1: [
+    'Нужно закрыть спринт',
+    'Дедлайн завтра!',
+    'Кто взял задачу?',
+    'Ставлю оценки...',
+    'Петя опять деплой сломал',
+    'Кто на standup?',
   ],
-  chairs: [
-    { id: 'chair_white', n: 'Белый стул', e: '🪑', p: 80, w: 3, h: 3 },
+  pers2: [
+    'Дизайн готов!',
+    'Обновила макет',
+    'Нужен ревью',
+    'Красиво получилось',
+    'Ещё иконку нарисую',
+    'Figma лагает...',
   ],
-  plants: [
-    { id: 'plant_small', n: 'Кактус', e: '🌵', p: 60, w: 3, h: 3 },
-    { id: 'plant_big', n: 'Пальма', e: '🌴', p: 120, w: 3, h: 6 },
+  pers3: [
+    'Баг в проде!',
+    'Тестирую фичу',
+    'Всё падает',
+    'Написал автотесты',
+    'Кто деплоил?',
+    'Регрессия...',
   ],
-  hats: [
-    { id: 'hat_crown', n: 'Корона', e: '👑', p: 200, w: 3, h: 3 },
+  pers4: [
+    'Код готов к ревью',
+    'Рефакторю модуль',
+    'CI прошёл',
+    'Пулл-реквест отправлен',
   ],
-  decor: [
-    { id: 'poster1', n: 'Постер', e: '🖼️', p: 100, w: 6, h: 3 },
-    { id: 'lamp1', n: 'Лампа', e: '💡', p: 70, w: 3, h: 3 },
+  pers5: [
+    'Нужно провести собес',
+    'Обновила базу кандидатов',
+    'HR-отчёт готов',
+    'Ищем нового сотрудника',
+  ],
+  kryska: [
+    '*пии-пии*',
+    '*грызёт провода*',
+    '*ночью вылезу*',
   ],
 };
 
-export const ALL_ITEMS = Object.values(SHOP).flat();
+export const BOT_REACTIONS: Record<string, string[]> = {
+  pers1: ['👋', '🤔', '📋', '😅'],
+  pers2: ['👋', '🎨', '✨', '😊'],
+  pers3: ['👋', '🐛', '😤', '🔍'],
+  pers4: ['👋', '💻', '🔧', '🚀'],
+  pers5: ['👋', '📋', '💼', '🤝'],
+  kryska: ['🐀', '🧀', '👀', '💀'],
+};
+
+export const BOT_CONVERSATIONS: string[][] = [
+  ['Петя', 'Сергей', 'Баги пофикшены?', 'Почти...'],
+  ['Аня', 'Петя', 'Макет готов', 'Ок смотрю'],
+  ['Аня', 'Сергей', 'Дизайн ок?', 'Нужны правки'],
+  ['Петя', 'Аня', 'Сколько осталось?', 'День-два'],
+  ['Сергей', 'Петя', 'Кто деплоил?', 'Не я!'],
+  ['Аня', 'Сергей', 'Тест пройден?', 'Есть баг'],
+];
+
+export interface ShopItem {
+  id: string; n: string; e: string; p: number;
+  w: number; h: number;
+  surface: 'floor' | 'wall';
+  noCollision?: boolean;
+  sprite: string;
+}
+
+export const SHOP: Record<string, ShopItem[]> = {
+  desks: [
+    { id: 'table_2', n: 'Стол классик', e: '🪵', p: 150, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_2.png' },
+    { id: 'table_3', n: 'Стол стекло', e: '🪵', p: 180, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_3.png' },
+    { id: 'table_4', n: 'Стол минимал', e: '🪵', p: 120, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_4.png' },
+    { id: 'table_5', n: 'Стол тёмный', e: '🪵', p: 160, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_5.png' },
+    { id: 'table_6', n: 'Стол светлый', e: '🪵', p: 140, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_6.png' },
+    { id: 'table_7', n: 'Стол офис', e: '🪵', p: 170, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_7.png' },
+  ],
+  chairs: [
+    { id: 'chear_1', n: 'Стул дерево', e: '🪑', p: 80, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_1.png' },
+    { id: 'chear_2', n: 'Стул белый', e: '🪑', p: 90, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_2.png' },
+    { id: 'chear_3', n: 'Стул чёрный', e: '🪑', p: 85, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_3.png' },
+    { id: 'chear_4', n: 'Стул офис', e: '🪑', p: 100, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_4.png' },
+    { id: 'chear_5', n: 'Стул зелёный', e: '🪑', p: 95, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_5.png' },
+    { id: 'chear_6', n: 'Стул винтаж', e: '🪑', p: 110, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_6.png' },
+  ],
+  sofas: [
+    { id: 'sofa_1', n: 'Диван беж', e: '🛋️', p: 200, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_1.png' },
+    { id: 'sofa_2', n: 'Диван серый', e: '🛋️', p: 220, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_2.png' },
+    { id: 'sofa_3', n: 'Диван зелёный', e: '🛋️', p: 210, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_3.png' },
+    { id: 'sofa_4', n: 'Скамейка', e: '🛋️', p: 120, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_4.png' },
+    { id: 'sofa_5', n: 'Диван фиолет', e: '🛋️', p: 250, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_5.png' },
+  ],
+  lights: [
+    { id: 'Lighht_1', n: 'Светильник 1', e: '💡', p: 70, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_1.png' },
+    { id: 'Lighht_2', n: 'Светильник 2', e: '💡', p: 80, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_2.png' },
+    { id: 'Lighht_3', n: 'Светильник 3', e: '💡', p: 75, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_3.png' },
+  ],
+  small: [
+    { id: 'Object2.1_1', n: 'Цветы', e: '🌿', p: 40, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_1.png' },
+    { id: 'Object2.1_3', n: 'Ёлка', e: '🎄', p: 60, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_3.png' },
+    { id: 'Object2.1_4', n: 'Подсолнух', e: '🌻', p: 35, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_4.png' },
+    { id: 'Object2.1_5', n: 'Пицца', e: '🍕', p: 50, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_5.png' },
+  ],
+  wall: [
+    { id: 'wall_window1', n: 'Окно пейзаж', e: '🪟', p: 150, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window1.png' },
+    { id: 'wall_window2', n: 'Окно закат', e: '🪟', p: 150, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window2.png' },
+    { id: 'wall_window3', n: 'Окно горы', e: '🪟', p: 160, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window3.png' },
+    { id: 'wall_window4', n: 'Окно море', e: '🪟', p: 160, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window4.png' },
+    { id: 'wall_window5', n: 'Окно ночь', e: '🪟', p: 170, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window5.png' },
+    { id: 'wall_decor1', n: 'Картина', e: '🖼️', p: 120, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_decor1.png' },
+    { id: 'wall_rat', n: 'Крыса на стене', e: '🐀', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_rat.png' },
+  ],
+};
+
+export const ALL_ITEMS: ShopItem[] = Object.values(SHOP).flat();
+
+if (typeof window !== 'undefined') {
+  (window as any).__itemEmojis = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.e]));
+  (window as any).__itemDefs = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, { w: i.w, h: i.h }]));
+}
 
 export const AVATARS = ['🧑‍🚀', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🔧', '👩‍🔬', '🧑‍🍳', '🦊', '🐱', '🐨', '🐸', '👻'];
 
 export const ACHIEVEMENTS = [
-  { id: 'first_talk', name: 'Первый разговор', icon: '💬', desc: 'Поговори с кем-нибудь' },
-  { id: 'smoker', name: 'Курильщик', icon: '🚬', desc: 'Прокури в курилке' },
-  { id: 'rps_win', name: 'Азартный', icon: '🎲', desc: 'Выиграй в КНБ' },
-  { id: 'rich', name: 'Богач', icon: '💰', desc: 'Накопи 500 алт' },
-  { id: 'decorator', name: 'Дизайнер', icon: '🎨', desc: 'Оформи кабинет' },
-  { id: 'social', name: 'Социальный', icon: '🤝', desc: 'Посети 3 кабинета' },
-  { id: 'kryska_victim', name: 'Жертва Крыски', icon: '🐀', desc: 'Крыска украла твой предмет' },
+  { id: 'first_talk',    name: 'Первый разговор',      icon: '💬', desc: 'Поговори с кем-нибудь' },
+  { id: 'smoker',        name: 'Курильщик',            icon: '🚬', desc: 'Прокури в курилке' },
+  { id: 'rps_win',       name: 'Азартный',             icon: '🎲', desc: 'Выиграй в КНБ' },
+  { id: 'rich',          name: 'Богач',                icon: '💰', desc: 'Накопи 500 алт' },
+  { id: 'decorator',     name: 'Дизайнер',             icon: '🎨', desc: 'Оформи кабинет' },
+  { id: 'social',        name: 'Социальный',           icon: '🤝', desc: 'Посети 3 кабинета' },
+  { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твой предмет' },
+  { id: 'boss_meeting',  name: 'На приеме у босса',    icon: '👔', desc: 'Дойди до кабинета босса по вызову' },
+];
+
+export interface DailyQuest {
+  id: string; name: string; desc: string; icon: string; target: number; reward: number;
+}
+
+export const DAILY_QUESTS: DailyQuest[] = [
+  { id: 'talk_3',  name: 'Болтун',       desc: 'Поговори с 3 ботами',               icon: '💬', target: 3, reward: 30 },
+  { id: 'visit_2', name: 'Турист',       desc: 'Посети 2 разных комнаты',            icon: '🚶', target: 2, reward: 25 },
+  { id: 'emoji_5', name: 'Эмодзи-кинг',  desc: 'Используй 5 эмодзи',                icon: '😀', target: 5, reward: 20 },
+  { id: 'rps_3',   name: 'Игрок',        desc: 'Сыграй в КНБ 3 раза',               icon: '✊', target: 3, reward: 35 },
+  { id: 'smoke_1', name: 'Расслабься',   desc: 'Прокури в курилке',                 icon: '🚬', target: 1, reward: 25 },
 ];

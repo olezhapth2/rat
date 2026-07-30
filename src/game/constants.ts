@@ -90,12 +90,12 @@ export function buildMap(): number[][] {
   // 4. Vertical walls between rooms
   // x=12: Boss|kab1 (y=1..6)
   for (let y = 1; y <= 6; y++) map[y][12] = W;
-  // x=18: kab1|kab2 (y=1..6), kab4|kab5 (y=20..29)
+  // x=18: kab1|kab2 (y=1..6), kab4|kab5 (y=20..28)
   for (let y = 1; y <= 6; y++) map[y][18] = W;
-  for (let y = 20; y <= 29; y++) map[y][18] = W;
-  // x=25: kab2|kab3 (y=1..6), kab5|kab6 (y=20..29)
+  for (let y = 20; y < MAP_H; y++) map[y][18] = W;
+  // x=25: kab2|kab3 (y=1..6), kab5|kab6 (y=20..28)
   for (let y = 1; y <= 6; y++) map[y][25] = W;
-  for (let y = 20; y <= 29; y++) map[y][25] = W;
+  for (let y = 20; y < MAP_H; y++) map[y][25] = W;
   // x=32: kab3|chil (y=1..6), zal|smoking (y=8..18)
   for (let y = 1; y <= 6; y++) map[y][32] = W;
   for (let y = 8; y <= 18; y++) map[y][32] = W;

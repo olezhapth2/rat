@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -27,10 +27,16 @@ interface CtxItem {
 }
 
 export default function GameCanvas() {
-  const [authUser, setAuthUser] = useState(() => getCurrentUser());
+  const [authUser, setAuthUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [authName, setAuthName] = useState('');
   const [authPass, setAuthPass] = useState('');
   const [authError, setAuthError] = useState('');
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setAuthUser(getCurrentUser());
+    setReady(true);
+  }, []);
 
   const handleAuth = () => {
     const res = login(authName, authPass);
@@ -151,31 +157,40 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     return cleanup;
   }, []);
 
-  // Left-click to place carried item
+  // Left-click: place carried item OR click-to-move
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onLeftClick = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      // Ignore clicks on UI elements
+      if ((e.target as HTMLElement).tagName !== 'CANVAS') return;
       const s = stateRef.current;
-      if (!s.player.carrying) return;
       const cam = cameraRef.current;
       const worldX = e.clientX / cam.zoom + cam.x;
       const worldY = e.clientY / cam.zoom + cam.y;
-      const def = ALL_ITEMS.find(i => i.id === s.player.carrying);
-      if (!def) return;
-      const dropX = worldX - (def.w * TILE) / 2;
-      const dropY = worldY - (def.h * TILE) / 2;
-      const res = dropItem(s, dropX, dropY);
-      if (res.ok) {
-        toast(res.msg, 'ok');
-        const lastItem = s.player.placedItems[s.player.placedItems.length - 1];
-        if (lastItem) {
-          const def = ALL_ITEMS.find(i => i.id === lastItem.id);
-          sendItemPlace({ id: lastItem.id, x: lastItem.x, y: lastItem.y, w: def?.w || 1, h: def?.h || 1 });
+
+      if (s.player.carrying) {
+        // Place carried item
+        const def = ALL_ITEMS.find(i => i.id === s.player.carrying);
+        if (!def) return;
+        const dropX = worldX - (def.w * TILE) / 2;
+        const dropY = worldY - (def.h * TILE) / 2;
+        const res = dropItem(s, dropX, dropY);
+        if (res.ok) {
+          toast(res.msg, 'ok');
+          const lastItem = s.player.placedItems[s.player.placedItems.length - 1];
+          if (lastItem) {
+            const d = ALL_ITEMS.find(i => i.id === lastItem.id);
+            sendItemPlace({ id: lastItem.id, x: lastItem.x, y: lastItem.y, w: d?.w || 1, h: d?.h || 1 });
+          }
+        } else {
+          toast(res.msg, 'info');
         }
       } else {
-        toast(res.msg, 'info');
+        // Click-to-move
+        inputRef.current.clickTargetX = worldX;
+        inputRef.current.clickTargetY = worldY;
       }
     };
     canvas.addEventListener('click', onLeftClick);
@@ -535,9 +550,19 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       // Check interaction zones
       const zone = checkInteractions(s.player.x, s.player.y);
       setNearInteraction(zone);
+
+      // Update drop preview for carried item — follows mouse cursor in real-time
+      if (s.player.carrying && input.mouseX !== null && input.mouseY !== null) {
+        const worldMX = input.mouseX / cam.zoom + cam.x;
+        const worldMY = input.mouseY / cam.zoom + cam.y;
+        updateDropPreview(s, worldMX, worldMY);
+      } else {
+        updateDropPreview(s);
+      }
+
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, null, s.player.anim, s.botAnims, remotePlayersRef.current);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current);
 
       // Send position to server every 5 frames (~80ms)
       if (frameRef.current % 5 === 0) {

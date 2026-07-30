@@ -6,10 +6,14 @@ const STOP_THRESHOLD = 0.05;
 
 export interface InputState {
   keys: Record<string, boolean>;
+  clickTargetX: number | null;
+  clickTargetY: number | null;
+  mouseX: number | null;
+  mouseY: number | null;
 }
 
 export function createInputState(): InputState {
-  return { keys: {} };
+  return { keys: {}, clickTargetX: null, clickTargetY: null, mouseX: null, mouseY: null };
 }
 
 export function setupInputListeners(
@@ -25,13 +29,19 @@ export function setupInputListeners(
   const onKeyUp = (e: KeyboardEvent) => {
     input.keys[e.key.toLowerCase()] = false;
   };
+  const onMouseMove = (e: MouseEvent) => {
+    input.mouseX = e.clientX;
+    input.mouseY = e.clientY;
+  };
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('mousemove', onMouseMove);
 
   return () => {
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('mousemove', onMouseMove);
   };
 }
 
@@ -62,7 +72,29 @@ export function updatePlayer(
     if (canMove(map, objects, player.x, ny, ph)) player.y = ny;
     player.vx = 0;
     player.vy = 0;
+    input.clickTargetX = null;
+    input.clickTargetY = null;
     return { vx: wdx * SPEED, vy: wdy * SPEED };
+  }
+
+  // Click-to-move: walk toward target
+  if (input.clickTargetX !== null && input.clickTargetY !== null) {
+    const dx = input.clickTargetX - player.x;
+    const dy = input.clickTargetY - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 4) {
+      const spd = SPEED * dt;
+      const nx = player.x + (dx / dist) * spd;
+      const ny = player.y + (dy / dist) * spd;
+      if (canMove(map, objects, nx, player.y, ph)) player.x = nx;
+      if (canMove(map, objects, player.x, ny, ph)) player.y = ny;
+      player.vx = (dx / dist) * SPEED;
+      player.vy = (dy / dist) * SPEED;
+      return { vx: player.vx, vy: player.vy };
+    } else {
+      input.clickTargetX = null;
+      input.clickTargetY = null;
+    }
   }
 
   player.vx *= DRIFT_DAMPING;

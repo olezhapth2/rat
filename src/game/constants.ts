@@ -210,7 +210,11 @@ export function canMove(
 }
 
 export function createObjects(): GameObject[] {
-  return [];
+  return [
+    { id: 'marlboro', type: 'furniture', x: 34 * TILE, y: 15 * TILE, w: 1, h: 1, solid: false, noCollision: true, color: '#ddd0c8', label: 'Сигареты', room: 'smoking' },
+    { id: 'bookshelf', type: 'furniture', x: 34 * TILE, y: 3 * TILE, w: 2, h: 3, solid: true, color: '#8B4513', label: 'Книжный шкаф', room: 'chill', sprite: '/ast/obj/wall_book3.3.png' },
+    { id: 'basket_hoop', type: 'furniture', x: 4 * TILE, y: 10 * TILE, w: 2, h: 3, solid: true, color: '#ff6600', label: 'Корзина', room: 'hall', sprite: '/sprites/objects/small/basket_hoop.png' },
+  ];
 }
 
 export interface Player {
@@ -239,15 +243,17 @@ export interface Bot {
   _targetRoomId: string | null; _roomTimer: number;
   _stealCooldown: number;
   _lastVx: number; _lastVy: number;
+  _stolenItemId: string | null;
+  _stolenItemOriginalIdx: number;
 }
 
 export function createBots(): Bot[] {
   return [
-    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 15 * TILE, y: 4 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 22 * TILE, y: 4 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 29 * TILE, y: 4 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 13 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
-    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 36 * TILE, y: 16 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0 },
+    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 15 * TILE, y: 4 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
+    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 22 * TILE, y: 4 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
+    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 29 * TILE, y: 4 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
+    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 13 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
+    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 36 * TILE, y: 16 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
   ];
 }
 

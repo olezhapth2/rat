@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -18,7 +18,7 @@ import {
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
-import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, type InteractionZone } from '../game/interactions';
+import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 
 interface CtxItem {
   icon: string;
@@ -373,6 +373,13 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       if (foundBot) {
         if (foundBot.id === 'kryska') {
           items.push({ icon: '💬', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
+          if ((foundBot as any)._stolenItemId) {
+            const stolenDef = ALL_ITEMS.find(i => i.id === (foundBot as any)._stolenItemId);
+            items.push({ icon: '📦', text: `Отнять: ${stolenDef?.e || ''} ${stolenDef?.n || ''}`, fn: () => {
+              const res = takeBackFromKryska(stateRef.current, 'kryska');
+              toast(res.msg, res.ok ? 'ok' : 'info');
+            }});
+          }
         } else {
           items.push({ icon: '💬', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
           items.push({ icon: '✊', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
@@ -590,8 +597,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     <>
       <canvas ref={canvasRef} />
 
-      {/* Interaction button — ПЕРЕКУР */}
-      {nearInteraction && !smokingGame && !smokingResult && (
+      {/* Interaction buttons — ПЕРЕКУР or КНИГА */}
+      {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'ashtray' && (
         <button
           onClick={() => setSmokingGame({ active: true, startTime: Date.now(), taps: 0, targetTaps: 30 })}
           style={{
@@ -605,6 +612,41 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           }}
         >
           <span style={{ fontSize: 24 }}>🚬</span> ПЕРЕКУР
+        </button>
+      )}
+      {nearInteraction && nearInteraction.id === 'bookshelf' && (
+        <button
+          onClick={() => {
+            const idx = Math.floor(Math.random() * BOOK_PREDICTIONS.length);
+            openModal('book_prediction', { prediction: BOOK_PREDICTIONS[idx] });
+          }}
+          style={{
+            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+            padding: '14px 36px', borderRadius: 16, border: 'none',
+            background: 'linear-gradient(135deg, #8B4513, #654321)',
+            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(139,69,19,.5)',
+            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          <span style={{ fontSize: 24 }}>📖</span> ГРНУТЬ КНИГУ
+        </button>
+      )}
+      {nearInteraction && nearInteraction.id === 'basketball' && (
+        <button
+          onClick={() => openModal('basketball')}
+          style={{
+            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+            padding: '14px 36px', borderRadius: 16, border: 'none',
+            background: 'linear-gradient(135deg, #ff6600, #cc5500)',
+            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(255,102,0,.5)',
+            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          <span style={{ fontSize: 24 }}>🏀</span> БАСКЕТБОЛ
         </button>
       )}
 
@@ -934,6 +976,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
               {modalType === 'smoke' && <SmokeView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'microwave' && <MicrowaveView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'mp_rps' && <MpRpsView data={modalData} myChoice={rpsMyChoice} sentChoice={rpsSentChoice} result={rpsResult} onChoice={(c) => { setRpsMyChoice(c); setRpsSentChoice(true); sendRpsChoice(modalData.gameId as string, c); }} onClose={closeModal} onToast={toast} />}
+              {modalType === 'book_prediction' && <BookPredictionView prediction={modalData.prediction as string} />}
+              {modalType === 'basketball' && <BasketballView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
             </div>
           </div>
         </div>
@@ -997,6 +1041,8 @@ function getModalTitle(type: string): string {
     smoke: 'Курилка',
     microwave: 'Кухня — Микроволновка',
     mp_rps: 'КНБ с игроком',
+    book_prediction: '📖 Книга Судеб',
+    basketball: '🏀 Баскетбол',
   };
   return t[type] || '';
 }
@@ -1741,6 +1787,271 @@ function MpRpsView({ data, myChoice, sentChoice, result, onChoice, onClose, onTo
       {sentChoice && (
         <div style={{ fontSize: 36 }}>{choiceEmoji[myChoice || ''] || '?'}</div>
       )}
+    </div>
+  );
+}
+
+// ===== BASKETBALL =====
+function BasketballView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [score, setScore] = useState(0);
+  const [attempts, setAttempts] = useState(10);
+  const [ballState, setBallState] = useState<{ x: number; y: number; vx: number; vy: number; flying: boolean; scored: boolean } | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
+  const gameRef = useRef({ score: 0, attempts: 10, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null, frame: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = 400;
+    canvas.height = 400;
+    let running = true;
+
+    const HOOP_X = 320;
+    const HOOP_Y = 120;
+    const HOOP_W = 40;
+    const GRAVITY = 0.15;
+    const BALL_R = 10;
+    const BALL_START_X = 80;
+    const BALL_START_Y = 320;
+
+    function loop() {
+      if (!running || !ctx) return;
+      const g = gameRef.current;
+      g.frame++;
+      ctx.clearRect(0, 0, 400, 400);
+
+      // Background
+      ctx.fillStyle = '#f5e6c8';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Court lines
+      ctx.strokeStyle = '#8B451340';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 400; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
+      }
+
+      // Backboard
+      ctx.fillStyle = '#8B4513';
+      ctx.fillRect(HOOP_X + HOOP_W / 2 + 2, HOOP_Y - 30, 8, 60);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
+      ctx.strokeStyle = '#e94560';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
+
+      // Hoop ring
+      ctx.strokeStyle = '#ff6600';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(HOOP_X - HOOP_W / 2, HOOP_Y);
+      ctx.lineTo(HOOP_X + HOOP_W / 2, HOOP_Y);
+      ctx.stroke();
+
+      // Net (simple lines)
+      ctx.strokeStyle = '#ffffff80';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const nx = HOOP_X - HOOP_W / 2 + (HOOP_W / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(nx, HOOP_Y);
+        ctx.lineTo(nx + (i - 2) * 3, HOOP_Y + 25);
+        ctx.stroke();
+      }
+
+      // Ball physics
+      if (g.ball.flying) {
+        g.ball.vy += GRAVITY;
+        g.ball.x += g.ball.vx;
+        g.ball.y += g.ball.vy;
+
+        // Score detection
+        if (!g.ball.scored &&
+          g.ball.x > HOOP_X - HOOP_W / 2 && g.ball.x < HOOP_X + HOOP_W / 2 &&
+          g.ball.y > HOOP_Y - 5 && g.ball.y < HOOP_Y + 10 &&
+          g.ball.vy > 0) {
+          g.ball.scored = true;
+          g.score++;
+          setScore(g.score);
+          onToast('🏀 Забросил! +1', 'ok');
+        }
+
+        // Out of bounds or stopped
+        if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
+          g.ball.flying = false;
+          g.ball.x = BALL_START_X;
+          g.ball.y = BALL_START_Y;
+          g.ball.vx = 0;
+          g.ball.vy = 0;
+          g.attempts--;
+          setAttempts(g.attempts);
+          if (g.attempts <= 0) {
+            const coins = g.score * 15;
+            addCoins(state, coins);
+            onToast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10 → +${coins} алт` : `${g.score}/10 → +${coins} алт`, g.score >= 7 ? 'ok' : 'info');
+            if (g.score >= 7) onConfetti();
+            g.score = 0;
+            g.attempts = 10;
+            setScore(0);
+            setAttempts(10);
+          }
+        }
+      }
+
+      // Draw drag line
+      if (g.dragStart && !g.ball.flying) {
+        ctx.strokeStyle = '#e9456080';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(g.dragStart.x, g.dragStart.y);
+        ctx.lineTo(g.ball.x, g.ball.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw ball
+      ctx.fillStyle = '#ff6600';
+      ctx.beginPath();
+      ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#cc5500';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Ball lines
+      ctx.strokeStyle = '#cc550040';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(g.ball.x - BALL_R, g.ball.y);
+      ctx.lineTo(g.ball.x + BALL_R, g.ball.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(g.ball.x, g.ball.y - BALL_R);
+      ctx.lineTo(g.ball.x, g.ball.y + BALL_R);
+      ctx.stroke();
+
+      // UI
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`🏀 ${g.score} / ${10 - (10 - g.attempts)}`, 10, 25);
+      ctx.fillText(`Попытки: ${g.attempts}`, 10, 45);
+
+      if (!g.ball.flying && g.attempts > 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Зажми и потяни от мяча, отпусти для броска', 200, 380);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+    return () => { running = false; };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (400 / rect.width);
+    const y = (e.clientY - rect.top) * (400 / rect.height);
+    const g = gameRef.current;
+    const dx = x - g.ball.x;
+    const dy = y - g.ball.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 30 && !g.ball.flying && g.attempts > 0) {
+      g.dragStart = { x, y };
+      setDragStart({ x, y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!gameRef.current.dragStart) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragEnd({
+      x: (e.clientX - rect.left) * (400 / rect.width),
+      y: (e.clientY - rect.top) * (400 / rect.height),
+    });
+  };
+
+  const handleMouseUp = () => {
+    const g = gameRef.current;
+    if (!g.dragStart) return;
+    // Launch direction is from drag point toward ball (opposite of pull)
+    const dx = g.ball.x - g.dragStart.x;
+    const dy = g.ball.y - g.dragStart.y;
+    const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.12, 12);
+    const angle = Math.atan2(dy, dx);
+    g.ball.vx = Math.cos(angle) * power;
+    g.ball.vy = Math.sin(angle) * power;
+    g.ball.flying = true;
+    g.ball.scored = false;
+    g.dragStart = null;
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{
+          width: '100%', maxWidth: 400, borderRadius: 12,
+          border: '2px solid #8B4513', cursor: 'crosshair',
+          touchAction: 'none',
+        }}
+      />
+      <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>
+        Забей максимум из 10 попыток! +15 алт за мяч
+      </div>
+    </div>
+  );
+}
+
+// ===== BOOK PREDICTION =====
+function BookPredictionView({ prediction }: { prediction: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '10px 0' }}>
+      <div style={{
+        background: '#f5e6c8', border: '4px solid #8B4513', borderRadius: 4,
+        padding: 4, boxShadow: '4px 4px 0 #654321, inset 0 0 20px rgba(139,69,19,.15)',
+        position: 'relative', width: 280,
+      }}>
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: 20,
+          background: 'linear-gradient(90deg, #654321, #8B4513)', borderRight: '2px solid #5a3a1a',
+          borderRadius: '4px 0 0 4px',
+        }} />
+        <div style={{
+          marginLeft: 24, padding: '20px 16px', minHeight: 140,
+          background: '#fffbf0', borderLeft: '1px solid #d4c4a0',
+          fontFamily: 'serif',
+        }}>
+          <div style={{
+            textAlign: 'center', fontSize: 10, color: '#8B4513', fontWeight: 700,
+            marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase',
+          }}>
+            ✦ Предсказание дня ✦
+          </div>
+          <div style={{
+            fontSize: 15, lineHeight: 1.5, color: '#4a3728', textAlign: 'center',
+            fontStyle: 'italic',
+          }}>
+            «{prediction}»
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize: 10, color: '#999', textAlign: 'center' }}>
+        📖 Шкаф в зоне отдыха
+      </div>
     </div>
   );
 }

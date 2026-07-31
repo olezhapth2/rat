@@ -1963,7 +1963,7 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
     const g = gameRef.current;
     const dx = x - g.ball.x;
     const dy = y - g.ball.y;
-    if (Math.sqrt(dx * dx + dy * dy) < 30 && !g.ball.flying && g.attempts > 0) {
+    if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.attempts > 0) {
       g.dragStart = { x, y };
       setDragStart({ x, y });
     }
@@ -1981,7 +1981,6 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
   const handleMouseUp = () => {
     const g = gameRef.current;
     if (!g.dragStart) return;
-    // Launch direction is from drag point toward ball (opposite of pull)
     const dx = g.ball.x - g.dragStart.x;
     const dy = g.ball.y - g.dragStart.y;
     const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.12, 12);
@@ -1995,6 +1994,29 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
     setDragEnd(null);
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const t = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (t.clientX - rect.left) * (400 / rect.width);
+    const y = (t.clientY - rect.top) * (400 / rect.height);
+    const g = gameRef.current;
+    const dx = x - g.ball.x;
+    const dy = y - g.ball.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 50 && !g.ball.flying && g.attempts > 0) {
+      g.dragStart = { x, y };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!gameRef.current.dragStart) return;
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    handleMouseUp();
+  };
+
   return (
     <div style={{ textAlign: 'center' }}>
       <canvas
@@ -2003,6 +2025,9 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           width: '100%', maxWidth: 400, borderRadius: 12,
           border: '2px solid #8B4513', cursor: 'crosshair',

@@ -51,19 +51,19 @@ export default function GameCanvas() {
   if (!authUser) {
     return (
       <div style={{ minHeight: '100vh', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
-        <div className="px-panel" style={{ padding: 0, width: 360 }}>
+        <div className="px-panel" style={{ padding: 0, width: 420 }}>
           {/* Title bar */}
           <div className="px-panel-header">
             <span>SECRET GANG v1.0</span>
-            <span style={{ fontSize: 7, color: '#a09880' }}>FRI 09:45PM</span>
+            <span style={{ fontSize: 9, color: '#a09880' }}>FRI 09:45PM</span>
           </div>
           {/* Content */}
           <div style={{ padding: 24 }}>
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 16, color: 'var(--px-title)', marginBottom: 6, letterSpacing: 2 }}>
+              <div style={{ fontSize: 20, color: 'var(--px-title)', marginBottom: 8, letterSpacing: 2 }}>
                 SECRET GANG
               </div>
-              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', letterSpacing: 1 }}>
+              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', letterSpacing: 1 }}>
                 OFFICE SIMULATOR
               </div>
             </div>
@@ -86,7 +86,7 @@ export default function GameCanvas() {
               />
             </div>
             {authError && (
-              <div style={{ color: 'var(--px-danger)', fontSize: 7, marginBottom: 12, textAlign: 'center', padding: '6px 8px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+              <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
                 {authError}
               </div>
             )}
@@ -99,7 +99,7 @@ export default function GameCanvas() {
                 }}>{n}</span>
               ))}
             </div>
-            <button onClick={handleAuth} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '10px 0', fontSize: 9 }}>
+            <button onClick={handleAuth} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12 }}>
               LOGIN
             </button>
           </div>
@@ -520,8 +520,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     el.innerHTML = items
       .map((i, idx) => `<div class="ctx-item" data-idx="${idx}"><span class="ctx-icon">${i.icon}</span><span class="ctx-text">${i.text}</span></div>`)
       .join('');
-    el.style.left = Math.min(x, window.innerWidth - 220) + 'px';
-    el.style.top = Math.min(y, window.innerHeight - items.length * 40 - 16) + 'px';
+    el.style.left = Math.min(x, window.innerWidth - 250) + 'px';
+    el.style.top = Math.min(y, window.innerHeight - items.length * 44 - 16) + 'px';
     el.style.display = 'block';
     el.querySelectorAll('.ctx-item').forEach((itemEl) => {
       itemEl.addEventListener('click', (e) => {
@@ -622,7 +622,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           className="px-btn danger"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '10px 24px', fontSize: 10, zIndex: 50,
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
             animation: 'pulse 1.5s infinite',
           }}
         >
@@ -638,7 +638,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           className="px-btn"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '10px 24px', fontSize: 10, zIndex: 50,
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
             animation: 'pulse 1.5s infinite',
           }}
         >
@@ -651,7 +651,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           className="px-btn"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '10px 24px', fontSize: 10, zIndex: 50,
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
             background: '#ff6600', borderColor: '#cc5500', color: '#fff',
             animation: 'pulse 1.5s infinite',
           }}
@@ -666,21 +666,21 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
         }}>
-          <div className="px-panel" style={{ width: 320, textAlign: 'center' }}>
+          <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
             <div className="px-panel-header">
               <span>SMOKING BREAK</span>
             </div>
             <div style={{ padding: 24 }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🚬</div>
-              <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>TAP FAST!</div>
-              <div style={{ width: '100%', height: 10, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', marginBottom: 12 }}>
+              <div style={{ fontSize: 44, marginBottom: 10 }}>🚬</div>
+              <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 8 }}>TAP FAST!</div>
+              <div style={{ width: '100%', height: 12, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', marginBottom: 14 }}>
                 <div style={{
                   width: `${(smokingGame.taps / smokingGame.targetTaps) * 100}%`,
                   height: '100%', background: 'var(--px-accent)',
                   transition: 'width 0.1s',
                 }} />
               </div>
-              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--px-text-dim)', marginBottom: 16 }}>
                 {smokingGame.taps} / {smokingGame.targetTaps}
               </div>
               <button
@@ -697,7 +697,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
                   }
                 }}
                 className="px-btn danger"
-                style={{ width: 100, height: 100, fontSize: 32, padding: 0, justifyContent: 'center' }}
+                style={{ width: 110, height: 110, fontSize: 38, padding: 0, justifyContent: 'center' }}
               >🚬</button>
               <div style={{ marginTop: 10 }}>
                 <button onClick={() => setSmokingGame(null)} className="px-btn small">CANCEL</button>
@@ -713,17 +713,17 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
         }}>
-          <div className="px-panel" style={{ width: 320, textAlign: 'center' }}>
+          <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
             <div className="px-panel-header">
               <span>LEADERBOARD</span>
             </div>
             <div style={{ padding: 20 }}>
-              <div style={{ fontSize: 28, marginBottom: 4 }}>🏆</div>
-              <div style={{ fontSize: 14, color: 'var(--px-title)', marginBottom: 2 }}>
+              <div style={{ fontSize: 34, marginBottom: 6 }}>🏆</div>
+              <div style={{ fontSize: 18, color: 'var(--px-title)', marginBottom: 3 }}>
                 {(smokingResult.time / 1000).toFixed(1)}s
               </div>
-              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 14 }}>YOUR TIME</div>
-              <div style={{ fontSize: 8, color: 'var(--px-text)', marginBottom: 8, textAlign: 'left' }}>
+              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 16 }}>YOUR TIME</div>
+              <div style={{ fontSize: 11, color: 'var(--px-text)', marginBottom: 10, textAlign: 'left' }}>
                 🏅 TOP 3
               </div>
               {smokingResult.board.slice(0, 3).map((r, i) => (
@@ -732,9 +732,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
                   background: i === 0 ? '#3a3020' : 'var(--px-bg)',
                   border: i === 0 ? '1px solid var(--px-title)' : '1px solid var(--px-border-dark)',
                 }}>
-                  <span style={{ fontSize: 10 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                  <span style={{ flex: 1, fontSize: 7, color: 'var(--px-text)' }}>{r.name}</span>
-                  <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(r.time / 1000).toFixed(1)}s</span>
+                  <span style={{ fontSize: 13 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                  <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
+                  <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>{(r.time / 1000).toFixed(1)}s</span>
                 </div>
               ))}
               <button onClick={() => setSmokingResult(null)} className="px-btn accent" style={{ marginTop: 12 }}>OK</button>
@@ -754,9 +754,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           WebkitBackdropFilter: 'blur(12px)',
           borderRadius: 14,
           boxShadow: '0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08)',
-          padding: 6,
+          padding: 8,
           zIndex: 100,
-          minWidth: 200,
+          minWidth: 230,
           border: '1px solid rgba(0,0,0,.06)',
         }}
       />
@@ -764,10 +764,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {/* Activity Feed */}
       <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10, pointerEvents: 'none' }}>
         {player.activities.slice(0, 3).map((a: Activity, i: number) => (
-          <div key={i} className="px-panel" style={{ padding: '5px 10px', marginBottom: 3, fontSize: 7, color: 'var(--px-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div key={i} className="px-panel" style={{ padding: '6px 12px', marginBottom: 4, fontSize: 9, color: 'var(--px-text)', display: 'flex', alignItems: 'center', gap: 7 }}>
             <span>{a.icon}</span>
             <span>{a.text}</span>
-            <span style={{ color: 'var(--px-text-dim)', fontSize: 6, marginLeft: 'auto' }}>{a.time}</span>
+            <span style={{ color: 'var(--px-text-dim)', fontSize: 8, marginLeft: 'auto' }}>{a.time}</span>
           </div>
         ))}
       </div>
@@ -776,7 +776,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {currentRoom && (
         <div className="px-panel" style={{
           position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)',
-          padding: '5px 14px', fontSize: 7, color: 'var(--px-title)', zIndex: 10, pointerEvents: 'none',
+          padding: '6px 16px', fontSize: 9, color: 'var(--px-title)', zIndex: 10, pointerEvents: 'none',
         }}>
           &gt; {currentRoom.name}
         </div>
@@ -786,11 +786,11 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {state.bossCall.active && (
         <div className="px-panel" style={{
           position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)',
-          padding: '8px 16px', fontSize: 8, color: 'var(--px-title)', zIndex: 100, pointerEvents: 'none',
-          display: 'flex', alignItems: 'center', gap: 8, borderColor: 'var(--px-danger)',
+          padding: '10px 20px', fontSize: 11, color: 'var(--px-title)', zIndex: 100, pointerEvents: 'none',
+          display: 'flex', alignItems: 'center', gap: 10, borderColor: 'var(--px-danger)',
         }}>
           <span>👔 BOSS CALL!</span>
-          <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
+          <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
             {Math.ceil(state.bossCall.timer)}s +{state.bossCall.reward}
           </span>
         </div>
@@ -810,24 +810,24 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             pointerEvents: 'auto', cursor: 'pointer',
             background: 'var(--px-panel)', border: '2px solid var(--px-border)',
             boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark), 2px 2px 0 var(--px-shadow)',
-            padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 200,
+            padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, minWidth: 240,
           }}
         >
           <div style={{
-            width: 36, height: 36, border: '2px solid var(--px-border)',
+            width: 44, height: 44, border: '2px solid var(--px-border)',
             background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20,
+            fontSize: 24,
           }} suppressHydrationWarning>{player.av}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 8, color: 'var(--px-title)', marginBottom: 2 }}>{player.name}</div>
-            <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>{player.role}</div>
+            <div style={{ fontSize: 11, color: 'var(--px-title)', marginBottom: 3 }}>{player.name}</div>
+            <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{player.role}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 10 }}>🪙</span>
-              <span style={{ fontSize: 8, color: 'var(--px-title)' }}>{player.coins}</span>
+              <span style={{ fontSize: 13 }}>🪙</span>
+              <span style={{ fontSize: 11, color: 'var(--px-title)' }}>{player.coins}</span>
             </div>
-            <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>
+            <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>
               {player.placedItems.length} items
             </div>
           </div>
@@ -837,7 +837,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
           boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '6px 8px', pointerEvents: 'auto', display: 'flex', gap: 3, alignSelf: 'flex-end',
+          padding: '8px 10px', pointerEvents: 'auto', display: 'flex', gap: 4, alignSelf: 'flex-end',
         }}>
           {EMOJI_CHAT.map((em) => (
             <div key={em} onClick={() => sendEmoji(em)} className="emoji-btn">{em}</div>
@@ -848,16 +848,16 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
           boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '8px 12px', pointerEvents: 'auto', alignSelf: 'flex-end',
+          padding: '10px 14px', pointerEvents: 'auto', alignSelf: 'flex-end',
           display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 6, height: 6, background: mpConnected ? 'var(--px-accent)' : 'var(--px-danger)' }} />
-            <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
+            <div style={{ width: 8, height: 8, background: mpConnected ? 'var(--px-accent)' : 'var(--px-danger)' }} />
+            <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
               {mpConnected ? `${remotePlayers.length + 1} ONLINE` : 'OFFLINE'}
             </span>
           </div>
-          <div style={{ fontSize: 7, color: 'var(--px-title)' }}>
+          <div style={{ fontSize: 9, color: 'var(--px-title)' }}>
             🏆 {player.achievements.length}
           </div>
         </div>
@@ -869,10 +869,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,26,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="px-panel" style={{ width: 500, maxHeight: '80vh', overflow: 'hidden' }}>
+          <div className="px-panel" style={{ width: 560, maxHeight: '80vh', overflow: 'hidden' }}>
             <div className="px-panel-header">
               <span>{getModalTitle(modalType)}</span>
-              <button onClick={closeModal} className="px-btn small" style={{ padding: '2px 6px', fontSize: 8, lineHeight: 1 }}>
+              <button onClick={closeModal} className="px-btn small" style={{ padding: '4px 10px', fontSize: 14, lineHeight: 1 }}>
                 X
               </button>
             </div>
@@ -900,12 +900,12 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {rpsInvite && (
         <div className="px-panel" style={{
           position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
-          padding: '10px 16px', zIndex: 200, display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 20px', zIndex: 200, display: 'flex', alignItems: 'center', gap: 14,
           borderColor: 'var(--px-accent)',
         }}>
           <div>
-            <div style={{ fontSize: 8, color: 'var(--px-title)' }}>🎮 RPS FROM {rpsInvite.fromName}</div>
-            <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>ACCEPT?</div>
+            <div style={{ fontSize: 11, color: 'var(--px-title)' }}>🎮 RPS FROM {rpsInvite.fromName}</div>
+            <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginTop: 3 }}>ACCEPT?</div>
           </div>
           <button onClick={() => { acceptRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn accent small">YES</button>
           <button onClick={() => { declineRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn small">NO</button>
@@ -916,7 +916,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {toastMsg && (
         <div className="px-panel" style={{
           position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-          padding: '8px 16px', fontSize: 8, color: toastType === 'ok' ? 'var(--px-accent)' : 'var(--px-text)',
+          padding: '10px 20px', fontSize: 11, color: toastType === 'ok' ? 'var(--px-accent)' : 'var(--px-text)',
           zIndex: 200, pointerEvents: 'none', borderColor: toastType === 'ok' ? 'var(--px-accent)' : 'var(--px-border)',
         }}>
           {toastType === 'ok' ? '> ' : '! '}{toastMsg}
@@ -958,8 +958,8 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>CHOOSE FURNITURE</div>
-        <div className="px-panel" style={{ padding: '4px 10px', fontSize: 7 }}>
+        <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>CHOOSE FURNITURE</div>
+        <div className="px-panel" style={{ padding: '6px 14px', fontSize: 10 }}>
           <span style={{ color: 'var(--px-accent)' }}>🪙 {state.player.coins}</span>
         </div>
       </div>
@@ -969,7 +969,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
             key={c}
             onClick={() => { setCat(c); setPreview(null); }}
             className={`px-btn small${cat === c ? ' accent' : ''}`}
-            style={{ fontSize: 7 }}
+            style={{ fontSize: 10 }}
           >
             {labels[c] || c}
           </button>
@@ -985,9 +985,9 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
               <img src={pItem.sprite} alt={pItem.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 9, color: 'var(--px-title)', marginBottom: 4 }}>{pItem.n}</div>
-              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 4 }}>{pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · {pItem.w}×{pItem.h}</div>
-              <div style={{ fontSize: 8, color: 'var(--px-accent)', marginBottom: 8 }}>{pItem.p} COINS</div>
+              <div style={{ fontSize: 12, color: 'var(--px-title)', marginBottom: 4 }}>{pItem.n}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 4 }}>{pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · {pItem.w}×{pItem.h}</div>
+              <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>{pItem.p} COINS</div>
               <button
                 onClick={() => {
                   const res = buyItem(state, pItem.id);
@@ -995,7 +995,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                   else onToast(res.msg, 'info');
                 }}
                 className="px-btn accent"
-                style={{ fontSize: 7 }}
+                style={{ fontSize: 10 }}
               >BUY</button>
             </div>
           </div>
@@ -1020,8 +1020,8 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
               <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 120 }}>
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
-              <div style={{ fontSize: 7, color: 'var(--px-text)' }}>{item.n}</div>
-              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{item.n}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
             </div>
           );
         })}
@@ -1047,14 +1047,14 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
   return (
     <div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-        <button onClick={() => setTab('all')} className={`px-btn small${tab === 'all' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+        <button onClick={() => setTab('all')} className={`px-btn small${tab === 'all' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
           OWNED ({state.player.furniture.length})
         </button>
-        <button onClick={() => setTab('placed')} className={`px-btn small${tab === 'placed' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+        <button onClick={() => setTab('placed')} className={`px-btn small${tab === 'placed' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
           PLACED ({placed.length})
         </button>
         {state.player.carrying && (
-          <button onClick={() => setTab('carrying')} className={`px-btn small${tab === 'carrying' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+          <button onClick={() => setTab('carrying')} className={`px-btn small${tab === 'carrying' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
             CARRYING
           </button>
         )}
@@ -1062,10 +1062,10 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
       {tab === 'all' && (
         <div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 8 }}>CLICK TO HOLD, THEN RIGHT-CLICK → PLACE</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 8 }}>CLICK TO HOLD, THEN RIGHT-CLICK → PLACE</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {state.player.furniture.length === 0 && (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--px-text-dim)', padding: 30, fontSize: 8 }}>EMPTY. VISIT THE SHOP!</div>
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--px-text-dim)', padding: 30, fontSize: 11 }}>EMPTY. VISIT THE SHOP!</div>
             )}
             {Object.entries(itemCounts).map(([id, count]) => {
               const item = ALL_ITEMS.find((x) => x.id === id);
@@ -1094,8 +1094,8 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
                   <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 4 }}>
                     <img src={item?.sprite} alt={item?.n} style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   </div>
-                  <div style={{ fontSize: 6, color: 'var(--px-text)' }}>{item?.n} {count > 1 && `×${count}`}</div>
-                  {available > 0 && <div style={{ fontSize: 6, color: 'var(--px-accent)', marginTop: 2 }}>{available} FREE</div>}
+                  <div style={{ fontSize: 9, color: 'var(--px-text)' }}>{item?.n} {count > 1 && `×${count}`}</div>
+                  {available > 0 && <div style={{ fontSize: 9, color: 'var(--px-accent)', marginTop: 2 }}>{available} FREE</div>}
                 </div>
               );
             })}
@@ -1105,9 +1105,9 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
       {tab === 'placed' && (
         <div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 8 }}>APPROACH ITEM → RIGHT-CLICK → TAKE</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 8 }}>APPROACH ITEM → RIGHT-CLICK → TAKE</div>
           {placed.length === 0 && (
-            <div style={{ color: 'var(--px-text-dim)', fontSize: 8, textAlign: 'center', padding: 20 }}>NOTHING PLACED</div>
+            <div style={{ color: 'var(--px-text-dim)', fontSize: 11, textAlign: 'center', padding: 20 }}>NOTHING PLACED</div>
           )}
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {placed.map((p, i) => {
@@ -1117,16 +1117,16 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
                   key={`${p.id}_${i}`}
                   className="px-panel"
                   style={{
-                    padding: '5px 8px',
+                    padding: '7px 12px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    fontSize: 7,
+                    fontSize: 10,
                   }}
                 >
                   <img src={item?.sprite} alt="" style={{ width: 20, height: 20, objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   <span style={{ color: 'var(--px-text)' }}>{item?.n}</span>
-                  <span style={{ color: 'var(--px-text-dim)', fontSize: 6 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
+                  <span style={{ color: 'var(--px-text-dim)', fontSize: 9 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
                 </div>
               );
             })}
@@ -1139,8 +1139,8 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
           <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', overflow: 'hidden', border: '1px solid var(--px-border-dark)' }}>
             <img src={ALL_ITEMS.find(i => i.id === state.player.carrying)?.sprite} alt="" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', imageRendering: 'pixelated' }} />
           </div>
-          <div style={{ fontSize: 8, color: 'var(--px-title)', marginBottom: 8 }}>HOLDING: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>GO TO DESTINATION → RIGHT-CLICK → PLACE</div>
+          <div style={{ fontSize: 11, color: 'var(--px-title)', marginBottom: 8 }}>HOLDING: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>GO TO DESTINATION → RIGHT-CLICK → PLACE</div>
         </div>
       )}
     </div>
@@ -1153,20 +1153,20 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
 
   return (
     <div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 10 }}>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 10 }}>
         RIGHT-CLICK → TAKE OR PLACE
       </div>
 
       {state.player.carrying && (
         <div className="px-panel" style={{ padding: 10, marginBottom: 12, textAlign: 'center', borderColor: 'var(--px-title)' }}>
-          <div style={{ fontSize: 8, color: 'var(--px-title)' }}>📦 HOLDING: {getItemEmoji(state.player.carrying)} {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 4 }}>GO → RIGHT-CLICK → PLACE</div>
+          <div style={{ fontSize: 11, color: 'var(--px-title)' }}>📦 HOLDING: {getItemEmoji(state.player.carrying)} {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 4 }}>GO → RIGHT-CLICK → PLACE</div>
         </div>
       )}
 
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 6 }}>PLACED ({placed.length})</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 6 }}>PLACED ({placed.length})</div>
       {placed.length === 0 && (
-        <div style={{ color: 'var(--px-text-dim)', fontSize: 8, textAlign: 'center', padding: 20 }}>NOTHING PLACED. BUY FROM SHOP!</div>
+        <div style={{ color: 'var(--px-text-dim)', fontSize: 11, textAlign: 'center', padding: 20 }}>NOTHING PLACED. BUY FROM SHOP!</div>
       )}
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {placed.map((p, i) => {
@@ -1176,16 +1176,16 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
               key={`${p.id}_${i}`}
               className="px-panel"
               style={{
-                padding: '5px 8px',
+                padding: '7px 12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                fontSize: 7,
+                fontSize: 10,
               }}
             >
               <span>{item?.e}</span>
               <span style={{ color: 'var(--px-text-dim)' }}>{item?.n}</span>
-              <span style={{ color: 'var(--px-text-dim)', fontSize: 6 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
+              <span style={{ color: 'var(--px-text-dim)', fontSize: 9 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
             </div>
           );
         })}
@@ -1202,23 +1202,23 @@ function ProfileView({ state }: { state: GameState }) {
       <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
         <img src={`/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 4 }}>{p.name}</div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>{p.role}</div>
+      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 4 }}>{p.name}</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>{p.role}</div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.coins}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>COINS</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.furniture.length}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>ITEMS</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.achievements.length}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>ACHIEV</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.coins}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>COINS</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.furniture.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ITEMS</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.achievements.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ACHIEV</div></div>
       </div>
       <input
         className="px-input"
-        style={{ width: '100%', marginBottom: 6, fontSize: 7, textAlign: 'center' }}
+        style={{ width: '100%', marginBottom: 6, fontSize: 10, textAlign: 'center' }}
         value={p.name}
         onChange={(e) => { p.name = e.target.value; persistState(state); }}
         placeholder="NAME"
       />
       <input
         className="px-input"
-        style={{ width: '100%', fontSize: 7, textAlign: 'center' }}
+        style={{ width: '100%', fontSize: 10, textAlign: 'center' }}
         value={p.role}
         onChange={(e) => { p.role = e.target.value; persistState(state); }}
         placeholder="ROLE"
@@ -1226,7 +1226,7 @@ function ProfileView({ state }: { state: GameState }) {
       <button
         onClick={() => { logout(); window.location.reload(); }}
         className="px-btn danger"
-        style={{ marginTop: 14, fontSize: 7 }}
+        style={{ marginTop: 14, fontSize: 10 }}
       >LOGOUT</button>
     </div>
   );
@@ -1250,8 +1250,8 @@ function AchievementsView({ state }: { state: GameState }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                padding: '5px 8px',
-                fontSize: 7,
+                padding: '7px 12px',
+                fontSize: 10,
                 opacity: unlocked ? 1 : 0.4,
                 borderColor: unlocked ? 'var(--px-accent)' : undefined,
               }}
@@ -1264,7 +1264,7 @@ function AchievementsView({ state }: { state: GameState }) {
           );
         })}
       </div>
-      <div style={{ marginTop: 10, fontSize: 7, color: 'var(--px-text-dim)' }}>
+      <div style={{ marginTop: 10, fontSize: 10, color: 'var(--px-text-dim)' }}>
         UNLOCKED: {state.player.achievements.length}/{ACHIEVEMENTS.length}
       </div>
     </div>
@@ -1275,7 +1275,7 @@ function AchievementsView({ state }: { state: GameState }) {
 function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   return (
     <div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 10 }}>DAILY QUESTS</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 10 }}>DAILY QUESTS</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {DAILY_QUESTS.map((quest) => {
           const progress = getQuestProgress(state, quest.id);
@@ -1293,13 +1293,13 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                 borderColor: claimed ? 'var(--px-accent)' : done ? 'var(--px-title)' : undefined,
               }}
             >
-              <div style={{ fontSize: 16 }}>{quest.icon}</div>
+              <div style={{ fontSize: 20 }}>{quest.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 8, color: 'var(--px-text)' }}>{quest.name}</div>
-                <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{quest.desc}</div>
+                <div style={{ fontSize: 11, color: 'var(--px-text)' }}>{quest.name}</div>
+                <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>{quest.desc}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
+                <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>
                   {Math.min(progress, quest.target)}/{quest.target}
                 </div>
                 {done && !claimed && (
@@ -1309,13 +1309,13 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                       if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
                       else onToast(res.msg, 'info');
                     }}
-                    style={{ fontSize: 7, color: 'var(--px-accent)', cursor: 'pointer', marginTop: 2 }}
+                    style={{ fontSize: 10, color: 'var(--px-accent)', cursor: 'pointer', marginTop: 2 }}
                   >
                     +{quest.reward} COINS
                   </div>
                 )}
                 {claimed && (
-                  <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 2 }}>DONE ✓</div>
+                  <div style={{ fontSize: 10, color: 'var(--px-accent)', marginTop: 2 }}>DONE ✓</div>
                 )}
               </div>
             </div>
@@ -1334,19 +1334,19 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
   if (bot?.id === 'kryska') {
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
-        <div style={{ fontSize: 36, marginBottom: 10 }}>🐀</div>
-        <div className="px-panel" style={{ padding: 10, fontSize: 8, color: 'var(--px-text)' }}>Kryska squeaks: *squeak squeak*</div>
-        <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
+        <div style={{ fontSize: 44, marginBottom: 10 }}>🐀</div>
+        <div className="px-panel" style={{ padding: 10, fontSize: 11, color: 'var(--px-text)' }}>Kryska squeaks: *squeak squeak*</div>
+        <div style={{ fontSize: 10, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
       </div>
     );
   }
 
   return (
     <div style={{ padding: 10 }}>
-      <div className="px-panel" style={{ padding: 10, marginBottom: 12, fontSize: 8 }}>
+      <div className="px-panel" style={{ padding: 10, marginBottom: 12, fontSize: 11 }}>
         <span style={{ color: 'var(--px-title)' }}>{bot?.name}:</span> <span style={{ color: 'var(--px-text)' }}>"{phrases[Math.floor(Math.random() * phrases.length)]}"</span>
       </div>
-      <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
+      <div style={{ fontSize: 10, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
     </div>
   );
 }
@@ -1360,19 +1360,19 @@ function RpsView({ data, state, onToast, onConfetti }: { data: Record<string, un
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.bot as any)?.name || 'Bot'}</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.bot as any)?.name || 'Bot'}</div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 28 }}>{result.playerChoice}</div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>YOU</div>
+          <div style={{ fontSize: 36 }}>{result.playerChoice}</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>YOU</div>
         </div>
-        <div style={{ fontSize: 14, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
+        <div style={{ fontSize: 19, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 28 }}>{result.botChoice}</div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(data.bot as any)?.name}</div>
+          <div style={{ fontSize: 36 }}>{result.botChoice}</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>{(data.bot as any)?.name}</div>
         </div>
       </div>
-      <div style={{ fontSize: 10, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+      <div style={{ fontSize: 13, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
         {result.result}{result.reward > 0 ? ` +${result.reward} COINS` : ''}
       </div>
     </div>
@@ -1413,7 +1413,7 @@ function WhiteboardView() {
           <div key={c} onClick={() => { color.current = c; }} style={{ width: 18, height: 18, cursor: 'pointer', background: c, border: '2px solid var(--px-border)' }} />
         ))}
         <div style={{ width: 1, height: 16, background: 'var(--px-border-dark)', margin: '0 4px' }} />
-        <button onClick={() => { const c = canvasRef.current; if (c) { c.getContext('2d')?.clearRect(0, 0, 560, 360); c.getContext('2d')!.fillStyle = '#fff'; c.getContext('2d')!.fillRect(0, 0, 560, 360); } }} className="px-btn small" style={{ fontSize: 7 }}>CLEAR</button>
+        <button onClick={() => { const c = canvasRef.current; if (c) { c.getContext('2d')?.clearRect(0, 0, 560, 360); c.getContext('2d')!.fillStyle = '#fff'; c.getContext('2d')!.fillRect(0, 0, 560, 360); } }} className="px-btn small" style={{ fontSize: 10 }}>CLEAR</button>
       </div>
       <canvas ref={canvasRef} width="560" height="360" style={{ border: '2px solid var(--px-border)', width: '100%', cursor: 'crosshair', imageRendering: 'pixelated' }} />
     </div>
@@ -1474,9 +1474,9 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 36, marginBottom: 10 }}>🚬</div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>SMOKE IT!</div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>
+      <div style={{ fontSize: 44, marginBottom: 10 }}>🚬</div>
+      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 6 }}>SMOKE IT!</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>
         {done ? (won ? 'DONE!' : 'TIME UP!') : `TAP ${TAP_TARGET} TIMES IN ${TIME_LIMIT}S`}
       </div>
 
@@ -1486,12 +1486,12 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 20, margin: '12px 0' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 20, color: 'var(--px-danger)' }}>{timeLeft}</div>
-          <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>SECONDS</div>
+          <div style={{ fontSize: 26, color: 'var(--px-danger)' }}>{timeLeft}</div>
+          <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>SECONDS</div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 20, color: 'var(--px-accent)' }}>{taps}/{TAP_TARGET}</div>
-          <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>TAPS</div>
+          <div style={{ fontSize: 26, color: 'var(--px-accent)' }}>{taps}/{TAP_TARGET}</div>
+          <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>TAPS</div>
         </div>
       </div>
 
@@ -1499,7 +1499,7 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
         <button
           onClick={handleTap}
           className="px-btn danger"
-          style={{ fontSize: 12, padding: '10px 28px' }}
+          style={{ fontSize: 16, padding: '10px 28px' }}
           onMouseDown={(e) => (e.currentTarget.style.opacity = '0.7')}
           onMouseUp={(e) => (e.currentTarget.style.opacity = '1')}
         >🚬 TAP!</button>
@@ -1507,10 +1507,10 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
 
       {done && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 10, color: won ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+          <div style={{ fontSize: 13, color: won ? 'var(--px-accent)' : 'var(--px-danger)' }}>
             {won ? 'SMOKED! +20 COINS' : 'TOO SLOW!'}
           </div>
-          <button onClick={() => { setTaps(0); setTimeLeft(TIME_LIMIT); setDone(false); setWon(false); finishedRef.current = false; }} className="px-btn small" style={{ marginTop: 8, fontSize: 7 }}>
+          <button onClick={() => { setTaps(0); setTimeLeft(TIME_LIMIT); setDone(false); setWon(false); finishedRef.current = false; }} className="px-btn small" style={{ marginTop: 8, fontSize: 10 }}>
             RETRY
           </button>
         </div>
@@ -1560,11 +1560,11 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 36, marginBottom: 10 }}>⏱️</div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>HEAT LUNCH</div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>STOP AT 5.000 SECONDS</div>
+      <div style={{ fontSize: 44, marginBottom: 10 }}>⏱️</div>
+      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 6 }}>HEAT LUNCH</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>STOP AT 5.000 SECONDS</div>
 
-      <div style={{ fontSize: 24, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? 'var(--px-danger)' : 'var(--px-title)' }}>
+      <div style={{ fontSize: 30, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? 'var(--px-danger)' : 'var(--px-title)' }}>
         {status === 'waiting' ? '0.000' : status === 'done' ? result?.stoppedAt || '0.000' : displayTime}
       </div>
 
@@ -1572,25 +1572,25 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
         <div style={{ position: 'absolute', left: `${targetZone - 5}%`, width: '10%', height: '100%', background: 'rgba(78,204,163,0.15)', borderLeft: '2px dashed var(--px-accent)', borderRight: '2px dashed var(--px-accent)' }} />
         <div style={{ height: '100%', background: status === 'done' && result?.reward === 0 ? 'var(--px-danger)' : 'var(--px-accent)', transition: status === 'running' ? 'none' : 'width 0.3s', width: `${status === 'running' ? progress : status === 'done' ? Math.min(((parseFloat(result?.stoppedAt || '0') * 1000) / 8000) * 100, 100) : 0}%` }} />
       </div>
-      <div style={{ fontSize: 6, color: 'var(--px-text-dim)', marginBottom: 12 }}>▲ TARGET — 5.000s</div>
+      <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 12 }}>▲ TARGET — 5.000s</div>
 
       {result && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+          <div style={{ fontSize: 13, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
             {result.result}{result.reward > 0 ? ` +${result.reward} COINS` : ''}
           </div>
-          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>ACCURACY: ±{result.diff.toFixed(3)}s</div>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>ACCURACY: ±{result.diff.toFixed(3)}s</div>
         </div>
       )}
 
       {status === 'waiting' && (
-        <button onClick={startTimer} className="px-btn accent" style={{ fontSize: 9 }}>START ⏱️</button>
+        <button onClick={startTimer} className="px-btn accent" style={{ fontSize: 12 }}>START ⏱️</button>
       )}
       {status === 'running' && (
-        <button onClick={stopTimer} className="px-btn danger" style={{ fontSize: 9 }}>STOP! 🛑</button>
+        <button onClick={stopTimer} className="px-btn danger" style={{ fontSize: 12 }}>STOP! 🛑</button>
       )}
       {status === 'done' && (
-        <button onClick={() => { setResult(null); setStatus('waiting'); setElapsed(0); }} className="px-btn small" style={{ fontSize: 7 }}>RETRY</button>
+        <button onClick={() => { setResult(null); setStatus('waiting'); setElapsed(0); }} className="px-btn small" style={{ fontSize: 10 }}>RETRY</button>
       )}
     </div>
   );
@@ -1611,42 +1611,42 @@ function MpRpsView({ data, myChoice, sentChoice, result, onChoice, onClose, onTo
   if (result) {
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
-        <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
+        <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 28 }}>{choiceEmoji[result.myChoice] || '?'}</div>
-            <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>YOU</div>
+            <div style={{ fontSize: 36 }}>{choiceEmoji[result.myChoice] || '?'}</div>
+            <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>YOU</div>
           </div>
-          <div style={{ fontSize: 14, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
+          <div style={{ fontSize: 19, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 28 }}>{choiceEmoji[result.theirChoice] || '?'}</div>
-            <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(data.opponentName as string) || 'Player'}</div>
+            <div style={{ fontSize: 36 }}>{choiceEmoji[result.theirChoice] || '?'}</div>
+            <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>{(data.opponentName as string) || 'Player'}</div>
           </div>
         </div>
-        <div style={{ fontSize: 10, color: result.winner === 'you' ? 'var(--px-accent)' : result.winner === 'draw' ? 'var(--px-title)' : 'var(--px-danger)' }}>
+        <div style={{ fontSize: 13, color: result.winner === 'you' ? 'var(--px-accent)' : result.winner === 'draw' ? 'var(--px-title)' : 'var(--px-danger)' }}>
           {result.winner === 'you' ? 'YOU WIN!' : result.winner === 'draw' ? 'DRAW!' : 'YOU LOSE!'}
           {result.reward > 0 ? ` +${result.reward} COINS` : ''}
         </div>
-        <button onClick={onClose} className="px-btn small" style={{ marginTop: 12, fontSize: 7 }}>CLOSE</button>
+        <button onClick={onClose} className="px-btn small" style={{ marginTop: 12, fontSize: 10 }}>CLOSE</button>
       </div>
     );
   }
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
-      <div style={{ fontSize: 9, color: 'var(--px-text)', marginBottom: 16 }}>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
+      <div style={{ fontSize: 12, color: 'var(--px-text)', marginBottom: 16 }}>
         {sentChoice ? 'WAITING FOR OPPONENT...' : 'CHOOSE:'}
       </div>
       {!sentChoice && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <button onClick={() => onChoice('rock')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✊</button>
-          <button onClick={() => onChoice('paper')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✋</button>
-          <button onClick={() => onChoice('scissors')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✌️</button>
+          <button onClick={() => onChoice('rock')} className="px-btn" style={{ fontSize: 36, padding: '10px 18px' }}>✊</button>
+          <button onClick={() => onChoice('paper')} className="px-btn" style={{ fontSize: 36, padding: '10px 18px' }}>✋</button>
+          <button onClick={() => onChoice('scissors')} className="px-btn" style={{ fontSize: 36, padding: '10px 18px' }}>✌️</button>
         </div>
       )}
       {sentChoice && (
-        <div style={{ fontSize: 28 }}>{choiceEmoji[myChoice || ''] || '?'}</div>
+        <div style={{ fontSize: 36 }}>{choiceEmoji[myChoice || ''] || '?'}</div>
       )}
     </div>
   );
@@ -1895,7 +1895,7 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
           touchAction: 'none', imageRendering: 'pixelated',
         }}
       />
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 8 }}>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 8 }}>
         DRAG FROM BALL TO AIM, RELEASE TO THROW! +15 COINS PER BASKET
       </div>
     </div>
@@ -1908,18 +1908,18 @@ function BookPredictionView({ prediction }: { prediction: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '10px 0' }}>
       <div className="px-panel" style={{ padding: 16, width: 280, textAlign: 'center' }}>
         <div style={{
-          fontSize: 7, color: 'var(--px-title)', marginBottom: 12,
+          fontSize: 10, color: 'var(--px-title)', marginBottom: 12,
           letterSpacing: 2,
         }}>
           ✦ PREDICTION OF THE DAY ✦
         </div>
         <div style={{
-          fontSize: 9, lineHeight: 1.6, color: 'var(--px-text)',
+          fontSize: 12, lineHeight: 1.6, color: 'var(--px-text)',
         }}>
           «{prediction}»
         </div>
       </div>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', textAlign: 'center' }}>
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', textAlign: 'center' }}>
         📖 BOOKSHELF IN CHILL ZONE
       </div>
     </div>

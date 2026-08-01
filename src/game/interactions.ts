@@ -13,6 +13,8 @@ export const INTERACTION_ZONES: InteractionZone[] = [
   { id: 'ashtray', x: 36 * TILE, y: 16 * TILE, radius: TILE * 2.5, label: 'ПЕРЕКУР', icon: '🚬' },
   { id: 'bookshelf', x: 35 * TILE, y: 4 * TILE, radius: TILE * 2.5, label: 'ГРНУТЬ КНИГУ', icon: '📖' },
   { id: 'basketball', x: 5 * TILE, y: 11 * TILE, radius: TILE * 3, label: 'БАСКЕТБОЛ', icon: '🏀' },
+  { id: 'microwave', x: 36 * TILE, y: 8 * TILE, radius: TILE * 1.5, label: 'МИКРОВОЛНОВКА', icon: '⏱️' },
+  { id: 'furniture_toss', x: 38 * TILE, y: 9 * TILE, radius: TILE * 1.5, label: 'СВАЛКА МЕБЕЛИ', icon: '🪑' },
 ];
 
 export function checkInteractions(px: number, py: number): InteractionZone | null {

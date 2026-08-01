@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -15,6 +15,8 @@ import {
   sendItemPlace, sendItemRemove,
   onPlayers, onPlayerMove, onInviteReceived, onInviteSent, onGameStarted, onGameResult, onGameDeclined, onGameCancelled,
   onConnected, onDisconnected, onItems,
+  updateWhiteboard, requestWhiteboardSync, onWhiteboardUpdate,
+  sendEmoji as mpSendEmoji, onEmoji,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
@@ -32,6 +34,8 @@ export default function GameCanvas() {
   const [authPass, setAuthPass] = useState('');
   const [authError, setAuthError] = useState('');
   const [ready, setReady] = useState(false);
+  const [secretClicks, setSecretClicks] = useState(0);
+  const [secretToast, setSecretToast] = useState('');
 
   useEffect(() => {
     setAuthUser(getCurrentUser());
@@ -60,7 +64,26 @@ export default function GameCanvas() {
           {/* Content */}
           <div style={{ padding: 24 }}>
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 20, color: 'var(--px-title)', marginBottom: 8, letterSpacing: 2 }}>
+              <div
+                onClick={() => {
+                  setSecretClicks(prev => {
+                    if (prev + 1 >= 5) {
+                      // Save coins via localStorage directly
+                      try {
+                        const raw = localStorage.getItem('secretgang');
+                        const saved = raw ? JSON.parse(raw) : {};
+                        saved.coins = (saved.coins || 100) + 50;
+                        localStorage.setItem('secretgang', JSON.stringify(saved));
+                      } catch {}
+                      setSecretToast('🎁 СЕКРЕТ! +50 алт');
+                      setTimeout(() => setSecretToast(''), 2500);
+                      return 0;
+                    }
+                    return prev + 1;
+                  });
+                }}
+                style={{ fontSize: 20, color: 'var(--px-title)', marginBottom: 8, letterSpacing: 2, cursor: 'pointer', userSelect: 'none' }}
+              >
                 SECRET GANG
               </div>
               <div style={{ fontSize: 9, color: 'var(--px-text-dim)', letterSpacing: 1 }}>
@@ -102,6 +125,11 @@ export default function GameCanvas() {
             <button onClick={handleAuth} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12 }}>
               LOGIN
             </button>
+            {secretToast && (
+              <div style={{ marginTop: 10, padding: '8px 12px', background: '#1a3a2a', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
+                {secretToast}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -133,6 +161,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   const [rpsMyChoice, setRpsMyChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
   const [rpsSentChoice, setRpsSentChoice] = useState(false);
   const lastPosSentRef = useRef(0);
+  const remoteEmojisRef = useRef<Record<string, { emoji: string; time: number }>>({});
 
   // Interaction + smoking minigame
   const [nearInteraction, setNearInteraction] = useState<InteractionZone | null>(null);
@@ -167,6 +196,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     stateRef.current.player._emojiTime = Date.now();
     logActivity(stateRef.current, emoji, 'использовал эмодзи');
     trackQuestProgress(stateRef.current, 'emoji_5');
+    mpSendEmoji(emoji);
   }, []);
 
   // Input listeners
@@ -285,6 +315,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       setRpsGameState(null);
       if (data.reward > 0) {
         addCoins(stateRef.current, data.reward);
+        if (data.winner === 'you') addXP(stateRef.current, 20);
         toast(`+${data.reward} алт ${data.winner === 'you' ? 'Победа!' : data.winner === 'draw' ? 'Ничья' : ''}`, data.winner === 'you' ? 'ok' : 'info');
         if (data.winner === 'you') confetti();
       } else {
@@ -318,6 +349,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         };
       });
       persistState(s);
+    });
+
+    onEmoji((data) => {
+      remoteEmojisRef.current[data.playerId] = { emoji: data.emoji, time: Date.now() };
     });
 
     return () => disconnectMultiplayer();
@@ -390,7 +425,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       if (foundBot) {
         if (foundBot.id === 'kryska') {
-          items.push({ icon: '💬', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
+          items.push({ icon: '💬', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); addXP(stateRef.current, 10); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
           if ((foundBot as any)._stolenItemId) {
             const stolenDef = ALL_ITEMS.find(i => i.id === (foundBot as any)._stolenItemId);
             items.push({ icon: '📦', text: `Отнять: ${stolenDef?.e || ''} ${stolenDef?.n || ''}`, fn: () => {
@@ -399,7 +434,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             }});
           }
         } else {
-          items.push({ icon: '💬', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
+          items.push({ icon: '💬', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); addXP(stateRef.current, 10); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
           items.push({ icon: '✊', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
           items.push({ icon: '🚶', text: 'Кабинет', fn: () => { logActivity(stateRef.current, '🚶', `Посетил кабинет ${foundBot.name}`); toast(`Ты у ${foundBot.name}`, 'ok'); } });
         }
@@ -478,6 +513,28 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             toast(`${carryDef?.e || ''} в инвентаре`, 'ok');
           }
         });
+      }
+
+      // Pet petting — check if right-click near pet
+      if (s.player.petId && s.player.petX !== undefined && s.player.petY !== undefined) {
+        const dxPet = worldX - s.player.petX;
+        const dyPet = worldY - s.player.petY;
+        if (Math.sqrt(dxPet * dxPet + dyPet * dyPet) < TILE * 2) {
+          items.push({
+            icon: '🐾',
+            text: 'Погладить',
+            fn: () => {
+              s.player.petPetCount = (s.player.petPetCount || 0) + 1;
+              persistState(s);
+              if (s.player.petPetCount >= 10) {
+                unlockAchievement(s, 'pet_lover');
+                toast('🐾 Зоофил! Питомец счастлив!', 'ok');
+              } else {
+                toast(`🐾 Гладишь питомца... (${s.player.petPetCount}/10)`, 'info');
+              }
+            }
+          });
+        }
       }
 
       items.push({ icon: '👤', text: 'Профиль', fn: () => openModal('profile') });
@@ -571,6 +628,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       updateBossCallTimer(s, dt);
       checkBossCallReward(s);
       updateRoomIncome(s, dt);
+      checkOfficeEvents(s);
+
+      // Track room visits
+      const pgx = Math.floor(s.player.x / TILE);
+      const pgy = Math.floor(s.player.y / TILE);
+      const pRoom = getRoomAt(pgx, pgy);
+      if (pRoom && !s.player.visitedRooms.includes(pRoom.id)) {
+        s.player.visitedRooms.push(pRoom.id);
+        if (s.player.visitedRooms.length >= 3) unlockAchievement(s, 'social');
+        trackQuestProgress(s, 'visit_2');
+        persistState(s);
+      }
 
       // Check interaction zones
       const zone = checkInteractions(s.player.x, s.player.y);
@@ -588,6 +657,21 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
       render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current);
+
+      // Draw remote player emojis
+      const now = Date.now();
+      for (const rp of remotePlayersRef.current) {
+        const re = remoteEmojisRef.current[rp.id];
+        if (re && now - re.time < 3000) {
+          const screenX = (rp.x - cam.x) * cam.zoom;
+          const screenY = (rp.y - cam.y) * cam.zoom - 30;
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(re.emoji, screenX, screenY);
+        } else if (re && now - re.time >= 3000) {
+          delete remoteEmojisRef.current[rp.id];
+        }
+      }
 
       // Send position to server every 5 frames (~80ms)
       if (frameRef.current % 5 === 0) {
@@ -632,8 +716,14 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {nearInteraction && nearInteraction.id === 'bookshelf' && (
         <button
           onClick={() => {
-            const idx = Math.floor(Math.random() * BOOK_PREDICTIONS.length);
-            openModal('book_prediction', { prediction: BOOK_PREDICTIONS[idx] });
+            if (Math.random() < 0.1) {
+              addCoins(stateRef.current, 100);
+              toast('🔍 СЕКРЕТНАЯ КОМНАТА! +100 алт', 'ok');
+              unlockAchievement(stateRef.current, 'secret_finder');
+            } else {
+              const idx = Math.floor(Math.random() * BOOK_PREDICTIONS.length);
+              openModal('book_prediction', { prediction: BOOK_PREDICTIONS[idx] });
+            }
           }}
           className="px-btn"
           style={{
@@ -657,6 +747,33 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           }}
         >
           🏀 БАСКЕТБОЛ
+        </button>
+      )}
+      {nearInteraction && nearInteraction.id === 'microwave' && (
+        <button
+          onClick={() => openModal('microwave')}
+          className="px-btn accent"
+          style={{
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          ⏱️ РАЗОГРЕТЬ ОБЕД
+        </button>
+      )}
+      {nearInteraction && nearInteraction.id === 'furniture_toss' && (
+        <button
+          onClick={() => openModal('furniture_toss')}
+          className="px-btn"
+          style={{
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
+            background: '#8B4513', borderColor: '#654321', color: '#fff',
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          🪑 СВАЛКА МЕБЕЛИ
         </button>
       )}
 
@@ -692,6 +809,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
                     setSmokingGame(null);
                     setSmokingResult({ time: elapsed, board });
                     logActivity(stateRef.current, '🚬', `Покурил за ${(elapsed / 1000).toFixed(1)}с`);
+                    trackQuestProgress(stateRef.current, 'smoke_1');
                   } else {
                     setSmokingGame({ ...smokingGame, taps: newTaps });
                   }
@@ -796,6 +914,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         </div>
       )}
 
+      {/* Office Event Banner */}
+      {state.officeEvents?.activeEvent && (
+        <div className="px-panel" style={{
+          position: 'fixed', top: state.bossCall.active ? 70 : 40, left: '50%', transform: 'translateX(-50%)',
+          padding: '6px 16px', fontSize: 10, zIndex: 40, pointerEvents: 'none',
+          borderColor: 'var(--px-title)',
+          animation: 'pulse 2s infinite',
+        }}>
+          {state.officeEvents.activeEvent.icon} {state.officeEvents.activeEvent.name} — ×{state.officeEvents.activeEvent.bonusMultiplier} BONUS
+        </div>
+      )}
+
       {/* Bottom HUD — pixel style */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -819,8 +949,20 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             fontSize: 24,
           }} suppressHydrationWarning>{player.av}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--px-title)', marginBottom: 3 }}>{player.name}</div>
-            <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{player.role}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+              <div style={{ fontSize: 11, color: 'var(--px-title)' }}>{player.name}</div>
+              <div style={{ fontSize: 9, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{player.level}</div>
+            </div>
+            <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>{player.role}</div>
+            <div style={{ width: '100%', height: 4, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden' }}>
+              <div style={{
+                width: `${(player.xp / (player.level * 100)) * 100}%`,
+                height: '100%',
+                background: 'var(--px-accent)',
+                transition: 'width 0.3s',
+              }} />
+            </div>
+            <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>{player.xp}/{player.level * 100} XP</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -891,6 +1033,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
               {modalType === 'mp_rps' && <MpRpsView data={modalData} myChoice={rpsMyChoice} sentChoice={rpsSentChoice} result={rpsResult} onChoice={(c) => { setRpsMyChoice(c); setRpsSentChoice(true); sendRpsChoice(modalData.gameId as string, c); }} onClose={closeModal} onToast={toast} />}
               {modalType === 'book_prediction' && <BookPredictionView prediction={modalData.prediction as string} />}
               {modalType === 'basketball' && <BasketballView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
+              {modalType === 'furniture_toss' && <FurnitureTossView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
             </div>
           </div>
         </div>
@@ -945,6 +1088,7 @@ function getModalTitle(type: string): string {
     mp_rps: 'RPS VS PLAYER',
     book_prediction: '📖 BOOK OF FATE',
     basketball: '🏀 BASKETBALL',
+    furniture_toss: 'СВАЛКА МЕБЕЛИ',
   };
   return t[type] || '';
 }
@@ -953,7 +1097,7 @@ function getModalTitle(type: string): string {
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL' };
+  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL', pets: 'ПИТОМЦЫ' };
 
   return (
     <div>
@@ -1004,7 +1148,10 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {(SHOP as any)[cat]?.map((item: any) => {
-          const count = state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
+          const isPet = item.id.startsWith('pet');
+          const count = isPet
+            ? (state.player.petId === item.id ? 1 : 0)
+            : state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
           return (
             <div
               key={item.id}
@@ -1021,7 +1168,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{item.n}</div>
-              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({isPet ? '✓' : count})</span>}</div>
             </div>
           );
         })}
@@ -1197,13 +1344,35 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
 // ===== PROFILE =====
 function ProfileView({ state }: { state: GameState }) {
   const p = state.player;
+  const petItems = (SHOP as any).pets as any[];
+  const ownedPets = petItems.filter((pet: any) => p.furniture.includes(pet.id) || p.petId === pet.id);
+  const xpNeeded = p.level * 100;
+  const xpPercent = (p.xp / xpNeeded) * 100;
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
       <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
         <img src={`/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
-      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 4 }}>{p.name}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+        <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{p.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{p.level}</div>
+      </div>
       <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>{p.role}</div>
+      
+      {/* XP Bar */}
+      <div className="px-panel" style={{ padding: '10px 16px', marginBottom: 16 }}>
+        <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>EXPERIENCE</div>
+        <div style={{ width: '100%', height: 8, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden', marginBottom: 4 }}>
+          <div style={{
+            width: `${xpPercent}%`,
+            height: '100%',
+            background: 'var(--px-accent)',
+            transition: 'width 0.3s',
+          }} />
+        </div>
+        <div style={{ fontSize: 9, color: 'var(--px-title)' }}>{p.xp} / {xpNeeded} XP</div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.coins}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>COINS</div></div>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.furniture.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ITEMS</div></div>
@@ -1223,6 +1392,60 @@ function ProfileView({ state }: { state: GameState }) {
         onChange={(e) => { p.role = e.target.value; persistState(state); }}
         placeholder="ROLE"
       />
+      {/* Pet section */}
+      {ownedPets.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 6 }}>ПИТОМЕЦ</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+            {ownedPets.map((pet: any) => (
+              <div
+                key={pet.id}
+                onClick={() => { p.petId = pet.id; persistState(state); }}
+                style={{
+                  width: 48, height: 48,
+                  background: p.petId === pet.id ? 'var(--px-accent)' : 'var(--px-bg)',
+                  border: `2px solid ${p.petId === pet.id ? 'var(--px-accent)' : 'var(--px-border)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', fontSize: 24,
+                }}
+                title={pet.n}
+              >
+                {pet.e}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Office Customization */}
+      <div style={{ marginTop: 16, textAlign: 'left' }}>
+        <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 8 }}>ОФИС</div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>ЦВЕТ СТЕН</div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {['#2a2a4a', '#1a3a2a', '#3a1a2a', '#2a2a1a', '#1a2a3a', '#3a2a3a'].map(c => (
+              <div
+                key={c}
+                onClick={() => { p.wallColor = c; persistState(state); }}
+                style={{
+                  width: 28, height: 28, background: c, cursor: 'pointer',
+                  border: `2px solid ${p.wallColor === c ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>ИМЯ НА ДВЕРИ</div>
+          <input
+            className="px-input"
+            style={{ width: '100%', fontSize: 8 }}
+            value={p.doorName}
+            onChange={(e) => { p.doorName = e.target.value; persistState(state); }}
+            placeholder="ВАШЕ ИМЯ"
+            maxLength={20}
+          />
+        </div>
+      </div>
       <button
         onClick={() => { logout(); window.location.reload(); }}
         className="px-btn danger"
@@ -1306,7 +1529,7 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                   <div
                     onClick={() => {
                       const res = claimQuestReward(state, quest.id);
-                      if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
+                      if (res.ok) { addXP(state, 25); onToast(res.msg, 'ok'); onConfetti(); }
                       else onToast(res.msg, 'info');
                     }}
                     style={{ fontSize: 10, color: 'var(--px-accent)', cursor: 'pointer', marginTop: 2 }}
@@ -1355,7 +1578,7 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
 function RpsView({ data, state, onToast, onConfetti }: { data: Record<string, unknown>; state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const result = rpsGame(state);
   useEffect(() => {
-    if (result.reward > 0) { onToast(`+${result.reward} COINS`, 'ok'); onConfetti(); }
+    if (result.reward > 0) { unlockAchievement(state, 'rps_win'); onToast(`+${result.reward} COINS`, 'ok'); onConfetti(); }
   }, []);
 
   return (
@@ -1384,6 +1607,9 @@ function WhiteboardView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const color = useRef('#333');
+  const sendWhiteboardUpdate = useCallback((dataUrl: string) => {
+    updateWhiteboard(dataUrl);
+  }, []);
 
   useEffect(() => {
     const c = canvasRef.current;
@@ -1392,6 +1618,21 @@ function WhiteboardView() {
     if (!ctx) return;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, 560, 360);
+
+    // Request current whiteboard from server
+    requestWhiteboardSync((dataUrl: string) => {
+      if (!dataUrl || !canvasRef.current) return;
+      const img = new Image();
+      img.onload = () => {
+        const ctx2 = canvasRef.current?.getContext('2d');
+        if (ctx2) {
+          ctx2.clearRect(0, 0, 560, 360);
+          ctx2.drawImage(img, 0, 0);
+        }
+      };
+      img.src = dataUrl;
+    });
+
     const paint = (e: MouseEvent) => {
       const r = c.getBoundingClientRect();
       const x = (e.clientX - r.left) * (c.width / r.width);
@@ -1403,8 +1644,14 @@ function WhiteboardView() {
     };
     c.onmousedown = (e) => { drawing.current = true; paint(e); };
     c.onmousemove = (e) => { if (drawing.current) paint(e); };
-    c.onmouseup = c.onmouseleave = () => { drawing.current = false; };
-  }, []);
+    c.onmouseup = c.onmouseleave = () => {
+      if (drawing.current) {
+        drawing.current = false;
+        const dataUrl = canvasRef.current?.toDataURL();
+        if (dataUrl) sendWhiteboardUpdate(dataUrl);
+      }
+    };
+  }, [sendWhiteboardUpdate]);
 
   return (
     <div>
@@ -1413,7 +1660,15 @@ function WhiteboardView() {
           <div key={c} onClick={() => { color.current = c; }} style={{ width: 18, height: 18, cursor: 'pointer', background: c, border: '2px solid var(--px-border)' }} />
         ))}
         <div style={{ width: 1, height: 16, background: 'var(--px-border-dark)', margin: '0 4px' }} />
-        <button onClick={() => { const c = canvasRef.current; if (c) { c.getContext('2d')?.clearRect(0, 0, 560, 360); c.getContext('2d')!.fillStyle = '#fff'; c.getContext('2d')!.fillRect(0, 0, 560, 360); } }} className="px-btn small" style={{ fontSize: 10 }}>CLEAR</button>
+        <button onClick={() => {
+          const c = canvasRef.current;
+          if (c) {
+            c.getContext('2d')?.clearRect(0, 0, 560, 360);
+            c.getContext('2d')!.fillStyle = '#fff';
+            c.getContext('2d')!.fillRect(0, 0, 560, 360);
+            updateWhiteboard(c.toDataURL());
+          }
+        }} className="px-btn small" style={{ fontSize: 10 }}>CLEAR</button>
       </div>
       <canvas ref={canvasRef} width="560" height="360" style={{ border: '2px solid var(--px-border)', width: '100%', cursor: 'crosshair', imageRendering: 'pixelated' }} />
     </div>
@@ -1454,17 +1709,19 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
     setTaps((prev) => {
       const next = prev + 1;
       if (next >= TAP_TARGET && !finishedRef.current) {
-        finishedRef.current = true;
-        if (timerRef.current) clearInterval(timerRef.current);
-        setTimeout(() => {
-          setDone(true);
-          setWon(true);
-          addCoins(state, 20);
-          unlockAchievement(state, 'smoker');
-          logActivity(state, '🚬', 'Smoked in the smoking room');
-          onToast('+20 COINS SMOKED!', 'ok');
-          onConfetti();
-        }, 0);
+          finishedRef.current = true;
+          if (timerRef.current) clearInterval(timerRef.current);
+          setTimeout(() => {
+            setDone(true);
+            setWon(true);
+            addCoins(state, 20);
+            addXP(state, 15);
+            unlockAchievement(state, 'smoker');
+            trackQuestProgress(state, 'smoke_1');
+            logActivity(state, '🚬', 'Smoked in the smoking room');
+            onToast('+20 COINS SMOKED!', 'ok');
+            onConfetti();
+          }, 0);
       }
       return next;
     });
@@ -1544,6 +1801,9 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
     setResult(res);
     setStatus('done');
     if (res.reward > 0) {
+      if (res.reward >= 35) addXP(state, 15);
+      else if (res.reward >= 25) addXP(state, 10);
+      else addXP(state, 5);
       onToast(`+${res.reward} COINS`, 'ok');
       onConfetti();
     }
@@ -1739,6 +1999,7 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
           g.ball.scored = true;
           g.score++;
           setScore(g.score);
+          addXP(state, 10);
           onToast('🏀 Забросил! +1', 'ok');
         }
 
@@ -1921,6 +2182,201 @@ function BookPredictionView({ prediction }: { prediction: string }) {
       </div>
       <div style={{ fontSize: 10, color: 'var(--px-text-dim)', textAlign: 'center' }}>
         📖 BOOKSHELF IN CHILL ZONE
+      </div>
+    </div>
+  );
+}
+
+// ===== FURNITURE TOSS =====
+function FurnitureTossView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [score, setScore] = useState(0);
+  const [attempts, setAttempts] = useState(8);
+  type FurnitureItem = { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean };
+  const gameRef = useRef<{
+    score: number; attempts: number;
+    items: FurnitureItem[];
+    targetZone: { x: number; y: number; w: number; h: number };
+    dragging: { x: number; y: number } | null;
+    currentItem: FurnitureItem | null;
+  }>({
+    score: 0, attempts: 8,
+    items: [],
+    targetZone: { x: 280, y: 280, w: 100, h: 60 },
+    dragging: null,
+    currentItem: null,
+  });
+
+  const COLORS = ['#8B4513', '#654321', '#A0522D', '#D2691E', '#CD853F'];
+
+  function spawnItem(g: typeof gameRef.current) {
+    const w = 30 + Math.random() * 30;
+    const h = 20 + Math.random() * 20;
+    g.currentItem = { x: 60, y: 300, vx: 0, vy: 0, w, h, color: COLORS[Math.floor(Math.random() * COLORS.length)], landed: false };
+  }
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = 400;
+    canvas.height = 400;
+    let running = true;
+
+    const g = gameRef.current;
+    spawnItem(g);
+
+    function loop() {
+      if (!running || !ctx) return;
+      ctx.clearRect(0, 0, 400, 400);
+
+      ctx.fillStyle = '#2a2a4a';
+      ctx.fillRect(0, 0, 400, 400);
+
+      ctx.fillStyle = '#1a3a1a';
+      ctx.fillRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
+      ctx.strokeStyle = '#4ecca3';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
+      ctx.fillStyle = '#4ecca3';
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TARGET', g.targetZone.x + g.targetZone.w / 2, g.targetZone.y + g.targetZone.h / 2 + 4);
+
+      for (const item of g.items) {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
+      }
+
+      if (g.currentItem && !g.dragging) {
+        const c = g.currentItem;
+        ctx.fillStyle = c.color;
+        ctx.fillRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+        ctx.strokeStyle = '#e8c840';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+      }
+
+      if (g.dragging && g.currentItem) {
+        ctx.strokeStyle = '#e8c84080';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(g.dragging.x, g.dragging.y);
+        ctx.lineTo(g.currentItem.x, g.currentItem.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      for (const item of g.items) {
+        if (item.vy !== 0 || item.vx !== 0) {
+          item.vy += 0.3;
+          item.x += item.vx;
+          item.y += item.vy;
+
+          if (item.y > 380) {
+            item.y = 380;
+            item.vy = 0;
+            item.vx = 0;
+            item.landed = true;
+
+            if (item.x > g.targetZone.x && item.x < g.targetZone.x + g.targetZone.w &&
+                item.y - item.h / 2 < g.targetZone.y + g.targetZone.h) {
+              g.score++;
+              setScore(g.score);
+              onToast('+1 В МЕШЕНЬ!', 'ok');
+            }
+          }
+        }
+      }
+
+      ctx.fillStyle = '#8a8470';
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`SCORE: ${g.score}`, 10, 25);
+      ctx.fillText(`TRIES: ${g.attempts}`, 10, 45);
+
+      if (g.attempts > 0) {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#5a5648';
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillText('DRAG FROM ITEM TO AIM, RELEASE', 200, 390);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+    return () => { running = false; };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (400 / rect.width);
+    const y = (e.clientY - rect.top) * (400 / rect.height);
+    const g = gameRef.current;
+    if (g.currentItem && !g.currentItem.landed) {
+      const dx = x - g.currentItem.x;
+      const dy = y - g.currentItem.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 40) {
+        g.dragging = { x, y };
+      }
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const g = gameRef.current;
+    if (!g.dragging || !g.currentItem) return;
+
+    const dx = g.currentItem.x - g.dragging.x;
+    const dy = g.currentItem.y - g.dragging.y;
+    const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.1, 10);
+    const angle = Math.atan2(dy, dx);
+
+    g.currentItem.vx = Math.cos(angle) * power;
+    g.currentItem.vy = Math.sin(angle) * power;
+    g.items.push(g.currentItem);
+    g.currentItem = null;
+    g.dragging = null;
+    g.attempts--;
+    setAttempts(g.attempts);
+
+    if (g.attempts <= 0) {
+      setTimeout(() => {
+        const coins = g.score * 10;
+        addCoins(state, coins);
+        onToast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8 → +${coins} алт` : `${g.score}/8 → +${coins} алт`, g.score >= 5 ? 'ok' : 'info');
+        if (g.score >= 5) onConfetti();
+        g.score = 0;
+        g.attempts = 8;
+        g.items = [];
+        setScore(0);
+        setAttempts(8);
+        spawnItem(g);
+      }, 500);
+    } else {
+      setTimeout(() => spawnItem(g), 300);
+    }
+  };
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        style={{
+          width: '100%', maxWidth: 400,
+          border: '2px solid var(--px-border)', cursor: 'crosshair',
+          touchAction: 'none', imageRendering: 'pixelated',
+        }}
+      />
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 8 }}>
+        ЗАБРОСЬ МЕБЕЛЬ В ЗОНУ! +10 ЗА ПОПАДАНИЕ
       </div>
     </div>
   );

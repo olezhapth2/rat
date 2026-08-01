@@ -46,6 +46,9 @@ app.prepare().then(() => {
   const rpsGames = new Map<string, RpsGame>();
   let rpsCounter = 0;
 
+  // === Shared whiteboard data ===
+  let whiteboardData: string = '';
+
   // === Shared placed items (visible to all players) ===
   interface PlacedItem {
     id: string;
@@ -67,6 +70,11 @@ app.prepare().then(() => {
 
     // Send current shared items to new player
     socket.emit('items:sync', sharedItems);
+
+    // Send current whiteboard to new player
+    if (whiteboardData) {
+      socket.emit('whiteboard:sync', whiteboardData);
+    }
 
     // Player registers
     socket.on('player:register', (data: { name: string; charId: string; hatId: string; color: string }) => {
@@ -106,6 +114,18 @@ app.prepare().then(() => {
         sharedItems.splice(idx, 1);
         console.log(`[Items] Removed: ${data.id} at index ${data.index}`);
         io.emit('items:sync', sharedItems);
+      }
+    });
+
+    // === Whiteboard ===
+    socket.on('whiteboard:update', (data: string) => {
+      whiteboardData = data;
+      socket.broadcast.emit('whiteboard:sync', data);
+    });
+
+    socket.on('whiteboard:request_sync', () => {
+      if (whiteboardData) {
+        socket.emit('whiteboard:sync', whiteboardData);
       }
     });
 
@@ -239,6 +259,11 @@ app.prepare().then(() => {
       const otherId = game.playerA === socket.id ? game.playerB : game.playerA;
       io.to(otherId).emit('rps:cancelled', { gameId: data.gameId });
       rpsGames.delete(data.gameId);
+    });
+
+    // === Emoji sync ===
+    socket.on('emoji:send', (data: { emoji: string }) => {
+      socket.broadcast.emit('emoji:show', { playerId: socket.id, emoji: data.emoji });
     });
 
     // Disconnect

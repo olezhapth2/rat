@@ -386,6 +386,12 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'wall_decor1', n: 'Картина', e: '🖼️', p: 120, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_decor1.png' },
     { id: 'wall_rat', n: 'Крыса на стене', e: '🐀', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_rat.png' },
   ],
+  pets: [
+    { id: 'pet1', n: 'Кот', e: '🐱', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.png' },
+    { id: 'pet2', n: 'Пёс', e: '🐶', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.png' },
+    { id: 'pet3', n: 'Рыба', e: '🐟', p: 80, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.png' },
+    { id: 'pet4', n: 'Птица', e: '🐦', p: 90, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.png' },
+  ],
 };
 
 export const ALL_ITEMS: ShopItem[] = Object.values(SHOP).flat();
@@ -406,11 +412,33 @@ export const ACHIEVEMENTS = [
   { id: 'social',        name: 'Социальный',           icon: '🤝', desc: 'Посети 3 кабинета' },
   { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твой предмет' },
   { id: 'boss_meeting',  name: 'На приеме у босса',    icon: '👔', desc: 'Дойди до кабинета босса по вызову' },
+  { id: 'secret_finder', name: 'Тайна раскрыта',        icon: '🔍', desc: 'Найди секрет за книжным шкафом' },
+  { id: 'pet_lover',     name: 'Зоофил',                icon: '🐾', desc: 'Погладь питомца 10 раз' },
 ];
 
 export interface DailyQuest {
   id: string; name: string; desc: string; icon: string; target: number; reward: number;
 }
+
+export interface OfficeEvent {
+  id: string;
+  name: string;
+  icon: string;
+  hour: number;
+  minute: number;
+  duration: number;
+  bonusMultiplier: number;
+  message: string;
+  roomBonus: string | null;
+}
+
+export const OFFICE_EVENTS: OfficeEvent[] = [
+  { id: 'morning_coffee', name: 'Утренний кофе', icon: '☕', hour: 9, minute: 0, duration: 15, bonusMultiplier: 1.5, message: 'Кофе-брейк! Бонус ×1.5 в кухне', roomBonus: 'chill' },
+  { id: 'lunch', name: 'Обед', icon: '🍕', hour: 13, minute: 0, duration: 30, bonusMultiplier: 2, message: 'Обед! Бонус ×2 в зоне отдыха', roomBonus: 'chill' },
+  { id: 'happy_hour', name: 'Happy Hour', icon: '🎉', hour: 17, minute: 0, duration: 20, bonusMultiplier: 2, message: 'Happy Hour! Бонус ×2 везде!', roomBonus: null },
+  { id: 'smoke_break', name: 'Перекур', icon: '🚬', hour: 11, minute: 30, duration: 10, bonusMultiplier: 1.5, message: 'Перекур! Бонус ×1.5 в курилке', roomBonus: 'smoking' },
+  { id: 'cleanup', name: 'Уборка', icon: '🧹', hour: 18, minute: 0, duration: 15, bonusMultiplier: 1.5, message: 'Уборка! Бонус ×1.5 в коридоре', roomBonus: 'hall' },
+];
 
 export const DAILY_QUESTS: DailyQuest[] = [
   { id: 'talk_3',  name: 'Болтун',       desc: 'Поговори с 3 ботами',               icon: '💬', target: 3, reward: 30 },

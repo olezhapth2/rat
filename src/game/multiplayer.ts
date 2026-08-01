@@ -57,6 +57,8 @@ let onRpsInviteSent: ((data: { gameId: string; targetId: string; targetName: str
 let onConnect: (() => void) | null = null;
 let onDisconnect: (() => void) | null = null;
 let onItemsSync: ((items: SharedItem[]) => void) | null = null;
+let onEmojiShow: ((data: { playerId: string; emoji: string }) => void) | null = null;
+let onWhiteboardSync: ((data: string) => void) | null = null;
 
 // === Public API ===
 
@@ -117,6 +119,14 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
   socket.on('items:sync', (items: SharedItem[]) => {
     onItemsSync?.(items);
   });
+
+  socket.on('emoji:show', (data: { playerId: string; emoji: string }) => {
+    onEmojiShow?.(data);
+  });
+
+  socket.on('whiteboard:sync', (data: string) => {
+    onWhiteboardSync?.(data);
+  });
 }
 
 export function disconnectMultiplayer(): void {
@@ -164,6 +174,28 @@ export function sendItemPlace(item: SharedItem): void {
 export function sendItemRemove(index: number, id: string): void {
   if (!socket?.connected) return;
   socket.emit('item:remove', { index, id });
+}
+
+export function updateWhiteboard(data: string): void {
+  if (!socket?.connected) return;
+  socket.emit('whiteboard:update', data);
+}
+
+export function sendEmoji(emoji: string): void {
+  if (!socket?.connected) return;
+  socket.emit('emoji:send', { emoji });
+}
+
+export function requestWhiteboardSync(callback?: (data: string) => void): void {
+  if (!socket?.connected) return;
+  if (callback) {
+    onWhiteboardSync = callback;
+  }
+  socket.emit('whiteboard:request_sync');
+}
+
+export function onWhiteboardUpdate(callback: (data: string) => void): void {
+  onWhiteboardSync = callback;
 }
 
 export function getMyId(): string | null {
@@ -218,4 +250,12 @@ export function onDisconnected(cb: () => void): void {
 
 export function onItems(cb: (items: SharedItem[]) => void): void {
   onItemsSync = cb;
+}
+
+export function onWhiteboard(cb: (data: string) => void): void {
+  onWhiteboardSync = cb;
+}
+
+export function onEmoji(cb: (data: { playerId: string; emoji: string }) => void): void {
+  onEmojiShow = cb;
 }

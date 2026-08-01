@@ -1,5 +1,5 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, getRoomAt } from './constants';
-import type { Player, Bot, GameObject, Room } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt } from './constants';
+import type { Player, Bot, GameObject, Room, OfficeEvent } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
 const STORAGE_KEY = 'secretgang';
@@ -25,6 +25,8 @@ export interface GameState {
     color: string;
     role: string;
     coins: number;
+    xp: number;
+    level: number;
     daily: string | null;
     furniture: string[]; // owned item IDs (can buy multiples)
     myRoom: string[];
@@ -42,6 +44,9 @@ export interface GameState {
     petId: string | null; // active pet sprite ID (e.g. 'pet1')
     petX: number;
     petY: number;
+    wallColor: string;
+    doorName: string;
+    petPetCount: number;
   };
   bots: Bot[];
   objects: GameObject[];
@@ -57,6 +62,12 @@ export interface GameState {
     claimed: string[];
   };
   botAnims: Record<string, AnimState>; // botId → animation state
+  officeEvents: OfficeEventState;
+}
+
+export interface OfficeEventState {
+  activeEvent: OfficeEvent | null;
+  lastCheckedMinute: number;
 }
 
 function loadState(): Record<string, unknown> | null {
@@ -72,6 +83,8 @@ function savePartial(state: GameState) {
     STORAGE_KEY,
     JSON.stringify({
       coins: state.player.coins,
+      xp: state.player.xp,
+      level: state.player.level,
       name: state.player.name,
       av: state.player.av,
       role: state.player.role,
@@ -82,6 +95,9 @@ function savePartial(state: GameState) {
       charId: state.player.charId,
       hatId: state.player.hatId,
       petId: state.player.petId,
+      wallColor: state.player.wallColor,
+      doorName: state.player.doorName,
+      petPetCount: state.player.petPetCount,
     })
   );
 }
@@ -102,6 +118,8 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     color: authColor,
     role: (saved?.role as string) || authRole,
     coins: (saved?.coins as number) ?? 100,
+    xp: (saved?.xp as number) ?? 0,
+    level: (saved?.level as number) ?? 1,
     daily: (saved?.daily as string) || null,
     furniture: (saved?.furniture as string[]) || [],
     myRoom: (saved?.myRoom as string[]) || [],
@@ -119,6 +137,9 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     petId: 'pet1',
     petX: 0,
     petY: 0,
+    wallColor: (saved?.wallColor as string) || '#2a2a4a',
+    doorName: (saved?.doorName as string) || '',
+    petPetCount: (saved?.petPetCount as number) ?? 0,
   };
 
   if (player.daily !== today) {
@@ -138,6 +159,7 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     bossCall: { active: false, timer: 0, reward: 0 },
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
+    officeEvents: { activeEvent: null, lastCheckedMinute: -1 },
   };
 }
 
@@ -150,6 +172,17 @@ export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: s
     .flat()
     .find((i) => i.id === itemId);
   if (!item) return { ok: false, msg: 'Не найдено' };
+
+  // Special handling for pets
+  if (itemId.startsWith('pet')) {
+    if (state.player.petId === itemId) return { ok: false, msg: 'Уже есть' };
+    if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
+    state.player.coins -= item.p;
+    state.player.petId = itemId;
+    persistState(state);
+    return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };
+  }
+
   const inFurniture = state.player.furniture.filter(id => id === itemId).length;
   const inPlaced = state.player.placedItems.filter(pi => pi.id === itemId).length;
   const totalOwned = inFurniture + inPlaced;
@@ -157,12 +190,26 @@ export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: s
   if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
   state.player.coins -= item.p;
   state.player.furniture.push(itemId);
+  addXP(state, 5);
   persistState(state);
   return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };
 }
 
 export function addCoins(state: GameState, amount: number) {
   state.player.coins += amount;
+  if (state.player.coins >= 500) unlockAchievement(state, 'rich');
+  persistState(state);
+}
+
+export function addXP(state: GameState, amount: number): void {
+  state.player.xp += amount;
+  const needed = state.player.level * 100;
+  while (state.player.xp >= needed) {
+    state.player.xp -= needed;
+    state.player.level++;
+    unlockAchievement(state, 'level_' + state.player.level);
+    logActivity(state, '⭐', `Level ${state.player.level}!`);
+  }
   persistState(state);
 }
 
@@ -213,7 +260,9 @@ export function dropItem(state: GameState, x: number, y: number): { ok: boolean;
     placedBy: 'player',
   });
   state.player.carrying = null;
+  addXP(state, 5);
   logActivity(state, '📦', `Поставил: ${def.e}`);
+  unlockAchievement(state, 'decorator');
   persistState(state);
   return { ok: true, msg: `Поставил ${def.e}` };
 }
@@ -355,6 +404,7 @@ export function rpsGame(state: GameState): {
   if ((pc === 0 && bc === 2) || (pc === 1 && bc === 0) || (pc === 2 && bc === 1)) {
     result = 'Ты выиграл!';
     reward = 20;
+    addXP(state, 20);
   } else if (pc !== bc) {
     result = 'Ты проиграл!';
   }
@@ -858,6 +908,29 @@ export function updateDropPreview(state: GameState, cursorWorldX?: number, curso
     } else {
       state.player._dropPreview = null;
     }
+  }
+}
+
+export function checkOfficeEvents(state: GameState): void {
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
+
+  if (currentMinute === state.officeEvents.lastCheckedMinute) return;
+  state.officeEvents.lastCheckedMinute = currentMinute;
+
+  const event = OFFICE_EVENTS.find(e => {
+    const eventStart = e.hour * 60 + e.minute;
+    const eventEnd = eventStart + e.duration;
+    return currentMinute >= eventStart && currentMinute < eventEnd;
+  });
+
+  if (event && state.officeEvents.activeEvent?.id !== event.id) {
+    state.officeEvents.activeEvent = event;
+    logActivity(state, event.icon, event.message);
+    addXP(state, 5);
+  } else if (!event && state.officeEvents.activeEvent) {
+    state.officeEvents.activeEvent = null;
+    logActivity(state, '⏰', 'Бонусное время окончено');
   }
 }
 

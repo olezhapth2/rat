@@ -50,41 +50,59 @@ export default function GameCanvas() {
 
   if (!authUser) {
     return (
-      <div style={{ minHeight: '100vh', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 320, boxShadow: '0 8px 32px rgba(0,0,0,.3)' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', marginBottom: 6, color: '#333' }}>SECRET GANG</div>
-          <div style={{ fontSize: 11, color: '#999', textAlign: 'center', marginBottom: 20 }}>Офис-симулятор</div>
-          <input
-            type="text"
-            placeholder="Имя"
-            value={authName}
-            onChange={(e) => setAuthName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }}
-          />
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={authPass}
-            onChange={(e) => setAuthPass(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' }}
-          />
-          {authError && <div style={{ color: '#e94560', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>{authError}</div>}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginBottom: 12 }}>
-            {['Аня', 'Саша', 'Кирилл', 'Олег', 'Алиса'].map(n => (
-              <span key={n} onClick={() => setAuthName(n)} style={{
-                padding: '3px 8px', borderRadius: 6, background: '#f0f0f0', fontSize: 10, color: '#666',
-                cursor: 'pointer', border: authName.toLowerCase() === n.toLowerCase() ? '1px solid #4ecca3' : '1px solid transparent',
-              }}>{n}</span>
-            ))}
+      <div style={{ minHeight: '100vh', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
+        <div className="px-panel" style={{ padding: 0, width: 360 }}>
+          {/* Title bar */}
+          <div className="px-panel-header">
+            <span>SECRET GANG v1.0</span>
+            <span style={{ fontSize: 7, color: '#a09880' }}>FRI 09:45PM</span>
           </div>
-          <button
-            onClick={handleAuth}
-            style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: 'none', background: '#4ecca3', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-          >
-            Войти
-          </button>
+          {/* Content */}
+          <div style={{ padding: 24 }}>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 16, color: 'var(--px-title)', marginBottom: 6, letterSpacing: 2 }}>
+                SECRET GANG
+              </div>
+              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', letterSpacing: 1 }}>
+                OFFICE SIMULATOR
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              <input
+                type="text"
+                placeholder="USERNAME"
+                className="px-input"
+                value={authName}
+                onChange={(e) => setAuthName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+              />
+              <input
+                type="password"
+                placeholder="PASSWORD"
+                className="px-input"
+                value={authPass}
+                onChange={(e) => setAuthPass(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+              />
+            </div>
+            {authError && (
+              <div style={{ color: 'var(--px-danger)', fontSize: 7, marginBottom: 12, textAlign: 'center', padding: '6px 8px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+                {authError}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginBottom: 16 }}>
+              {['Аня', 'Саша', 'Кирилл', 'Олег', 'Алиса'].map(n => (
+                <span key={n} onClick={() => setAuthName(n)} className="px-btn small" style={{
+                  background: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-accent)' : 'var(--px-panel)',
+                  color: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-text-dark)' : 'var(--px-text-dim)',
+                  borderColor: authName.toLowerCase() === n.toLowerCase() ? '#2a8a6a' : 'var(--px-border-dark)',
+                }}>{n}</span>
+              ))}
+            </div>
+            <button onClick={handleAuth} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '10px 0', fontSize: 9 }}>
+              LOGIN
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -597,21 +615,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     <>
       <canvas ref={canvasRef} />
 
-      {/* Interaction buttons — ПЕРЕКУР or КНИГА */}
+      {/* Interaction buttons — pixel style */}
       {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'ashtray' && (
         <button
           onClick={() => setSmokingGame({ active: true, startTime: Date.now(), taps: 0, targetTaps: 30 })}
+          className="px-btn danger"
           style={{
-            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-            padding: '14px 36px', borderRadius: 16, border: 'none',
-            background: 'linear-gradient(135deg, #e94560, #c62828)',
-            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(233,69,96,.5)',
-            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '10px 24px', fontSize: 10, zIndex: 50,
             animation: 'pulse 1.5s infinite',
           }}
         >
-          <span style={{ fontSize: 24 }}>🚬</span> ПЕРЕКУР
+          🚬 ПЕРЕКУР
         </button>
       )}
       {nearInteraction && nearInteraction.id === 'bookshelf' && (
@@ -620,90 +635,73 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             const idx = Math.floor(Math.random() * BOOK_PREDICTIONS.length);
             openModal('book_prediction', { prediction: BOOK_PREDICTIONS[idx] });
           }}
+          className="px-btn"
           style={{
-            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-            padding: '14px 36px', borderRadius: 16, border: 'none',
-            background: 'linear-gradient(135deg, #8B4513, #654321)',
-            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(139,69,19,.5)',
-            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '10px 24px', fontSize: 10, zIndex: 50,
             animation: 'pulse 1.5s infinite',
           }}
         >
-          <span style={{ fontSize: 24 }}>📖</span> ГРНУТЬ КНИГУ
+          📖 ГРНУТЬ КНИГУ
         </button>
       )}
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
           onClick={() => openModal('basketball')}
+          className="px-btn"
           style={{
-            position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-            padding: '14px 36px', borderRadius: 16, border: 'none',
-            background: 'linear-gradient(135deg, #ff6600, #cc5500)',
-            color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(255,102,0,.5)',
-            zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '10px 24px', fontSize: 10, zIndex: 50,
+            background: '#ff6600', borderColor: '#cc5500', color: '#fff',
             animation: 'pulse 1.5s infinite',
           }}
         >
-          <span style={{ fontSize: 24 }}>🏀</span> БАСКЕТБОЛ
+          🏀 БАСКЕТБОЛ
         </button>
       )}
 
       {/* Smoking minigame overlay */}
       {smokingGame?.active && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
         }}>
-          <div style={{
-            background: '#fff', borderRadius: 20, padding: 30, textAlign: 'center',
-            width: 300, boxShadow: '0 8px 40px rgba(0,0,0,.4)',
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🚬</div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Быстрее! Пали!</div>
-            <div style={{ fontSize: 11, color: '#999', marginBottom: 16 }}>
-              Нажимай на кнопку как можно быстрее
+          <div className="px-panel" style={{ width: 320, textAlign: 'center' }}>
+            <div className="px-panel-header">
+              <span>SMOKING BREAK</span>
             </div>
-            <div style={{
-              width: '100%', height: 12, background: '#eee', borderRadius: 6,
-              overflow: 'hidden', marginBottom: 16,
-            }}>
-              <div style={{
-                width: `${(smokingGame.taps / smokingGame.targetTaps) * 100}%`,
-                height: '100%', background: 'linear-gradient(90deg, #4ecca3, #45b7d1)',
-                borderRadius: 6, transition: 'width 0.1s',
-              }} />
-            </div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
-              {smokingGame.taps} / {smokingGame.targetTaps}
-            </div>
-            <button
-              onClick={() => {
-                const newTaps = smokingGame.taps + 1;
-                if (newTaps >= smokingGame.targetTaps) {
-                  const elapsed = Date.now() - smokingGame.startTime;
-                  const board = saveSmokingRecord(state.player.name, elapsed);
-                  setSmokingGame(null);
-                  setSmokingResult({ time: elapsed, board });
-                  logActivity(stateRef.current, '🚬', `Покурил за ${(elapsed / 1000).toFixed(1)}с`);
-                } else {
-                  setSmokingGame({ ...smokingGame, taps: newTaps });
-                }
-              }}
-              style={{
-                width: 120, height: 120, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #e94560, #c62828)',
-                border: '4px solid #ff6b6b', color: '#fff', fontSize: 36,
-                cursor: 'pointer', boxShadow: '0 4px 20px rgba(233,69,96,.4)',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >🚬</button>
-            <div style={{ marginTop: 12 }}>
+            <div style={{ padding: 24 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🚬</div>
+              <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>TAP FAST!</div>
+              <div style={{ width: '100%', height: 10, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', marginBottom: 12 }}>
+                <div style={{
+                  width: `${(smokingGame.taps / smokingGame.targetTaps) * 100}%`,
+                  height: '100%', background: 'var(--px-accent)',
+                  transition: 'width 0.1s',
+                }} />
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 14 }}>
+                {smokingGame.taps} / {smokingGame.targetTaps}
+              </div>
               <button
-                onClick={() => setSmokingGame(null)}
-                style={{ padding: '6px 16px', borderRadius: 8, border: '1px solid #ddd', background: '#f5f5f5', fontSize: 11, cursor: 'pointer' }}
-              >Отмена</button>
+                onClick={() => {
+                  const newTaps = smokingGame.taps + 1;
+                  if (newTaps >= smokingGame.targetTaps) {
+                    const elapsed = Date.now() - smokingGame.startTime;
+                    const board = saveSmokingRecord(state.player.name, elapsed);
+                    setSmokingGame(null);
+                    setSmokingResult({ time: elapsed, board });
+                    logActivity(stateRef.current, '🚬', `Покурил за ${(elapsed / 1000).toFixed(1)}с`);
+                  } else {
+                    setSmokingGame({ ...smokingGame, taps: newTaps });
+                  }
+                }}
+                className="px-btn danger"
+                style={{ width: 100, height: 100, fontSize: 32, padding: 0, justifyContent: 'center' }}
+              >🚬</button>
+              <div style={{ marginTop: 10 }}>
+                <button onClick={() => setSmokingGame(null)} className="px-btn small">CANCEL</button>
+              </div>
             </div>
           </div>
         </div>
@@ -712,42 +710,35 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {/* Smoking result + leaderboard */}
       {smokingResult && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
         }}>
-          <div style={{
-            background: '#fff', borderRadius: 20, padding: 24, textAlign: 'center',
-            width: 320, boxShadow: '0 8px 40px rgba(0,0,0,.4)',
-          }}>
-            <div style={{ fontSize: 36, marginBottom: 6 }}>🏆</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#333', marginBottom: 4 }}>
-              {(smokingResult.time / 1000).toFixed(1)} сек
+          <div className="px-panel" style={{ width: 320, textAlign: 'center' }}>
+            <div className="px-panel-header">
+              <span>LEADERBOARD</span>
             </div>
-            <div style={{ fontSize: 11, color: '#999', marginBottom: 16 }}>Твоё время</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8, textAlign: 'left' }}>
-              🏅 Таблица лидеров
-            </div>
-            {smokingResult.board.slice(0, 3).map((r, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
-                background: i === 0 ? '#fff8e1' : i === 1 ? '#f5f5f5' : '#fafafa',
-                borderRadius: 8, marginBottom: 4, textAlign: 'left',
-              }}>
-                <span style={{ fontSize: 16, width: 24 }}>
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                </span>
-                <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#333' }}>{r.name}</span>
-                <span style={{ fontSize: 11, color: '#999' }}>{(r.time / 1000).toFixed(1)}с</span>
+            <div style={{ padding: 20 }}>
+              <div style={{ fontSize: 28, marginBottom: 4 }}>🏆</div>
+              <div style={{ fontSize: 14, color: 'var(--px-title)', marginBottom: 2 }}>
+                {(smokingResult.time / 1000).toFixed(1)}s
               </div>
-            ))}
-            <button
-              onClick={() => setSmokingResult(null)}
-              style={{
-                marginTop: 14, padding: '8px 24px', borderRadius: 10,
-                border: 'none', background: '#4ecca3', color: '#fff',
-                fontWeight: 700, fontSize: 12, cursor: 'pointer',
-              }}
-            >Ок</button>
+              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 14 }}>YOUR TIME</div>
+              <div style={{ fontSize: 8, color: 'var(--px-text)', marginBottom: 8, textAlign: 'left' }}>
+                🏅 TOP 3
+              </div>
+              {smokingResult.board.slice(0, 3).map((r, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', marginBottom: 3,
+                  background: i === 0 ? '#3a3020' : 'var(--px-bg)',
+                  border: i === 0 ? '1px solid var(--px-title)' : '1px solid var(--px-border-dark)',
+                }}>
+                  <span style={{ fontSize: 10 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                  <span style={{ flex: 1, fontSize: 7, color: 'var(--px-text)' }}>{r.name}</span>
+                  <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(r.time / 1000).toFixed(1)}s</span>
+                </div>
+              ))}
+              <button onClick={() => setSmokingResult(null)} className="px-btn accent" style={{ marginTop: 12 }}>OK</button>
+            </div>
           </div>
         </div>
       )}
@@ -771,199 +762,121 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       />
 
       {/* Activity Feed */}
-      <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 10, pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10, pointerEvents: 'none' }}>
         {player.activities.slice(0, 3).map((a: Activity, i: number) => (
-          <div
-            key={i}
-            style={{
-              background: '#ffffffdd',
-              borderRadius: 10,
-              padding: '6px 12px',
-              marginBottom: 4,
-              fontSize: 11,
-              color: '#555',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              backdropFilter: 'blur(4px)',
-            }}
-          >
+          <div key={i} className="px-panel" style={{ padding: '5px 10px', marginBottom: 3, fontSize: 7, color: 'var(--px-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>{a.icon}</span>
             <span>{a.text}</span>
-            <span style={{ color: '#bbb', fontSize: 9, marginLeft: 'auto' }}>{a.time}</span>
+            <span style={{ color: 'var(--px-text-dim)', fontSize: 6, marginLeft: 'auto' }}>{a.time}</span>
           </div>
         ))}
       </div>
 
       {/* Room indicator */}
       {currentRoom && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 12,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#ffffffcc',
-            borderRadius: 10,
-            padding: '6px 16px',
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#555',
-            backdropFilter: 'blur(4px)',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
-        >
-          📍 {currentRoom.name}
+        <div className="px-panel" style={{
+          position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)',
+          padding: '5px 14px', fontSize: 7, color: 'var(--px-title)', zIndex: 10, pointerEvents: 'none',
+        }}>
+          &gt; {currentRoom.name}
         </div>
       )}
 
       {/* Boss Call Alert */}
       {state.bossCall.active && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 50,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'linear-gradient(135deg, #1a237e 0%, #283593 100%)',
-            borderRadius: 12,
-            padding: '10px 20px',
-            fontSize: 12,
-            fontWeight: 700,
-            color: '#fff',
-            boxShadow: '0 4px 20px rgba(26,35,126,0.4)',
-            zIndex: 100,
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>👔</span>
-          <span>Босс вызывает! Иди в кабинет босса</span>
-          <span style={{ fontSize: 10, color: '#90caf9' }}>
-            {Math.ceil(state.bossCall.timer)}с · +{state.bossCall.reward} алт
+        <div className="px-panel" style={{
+          position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)',
+          padding: '8px 16px', fontSize: 8, color: 'var(--px-title)', zIndex: 100, pointerEvents: 'none',
+          display: 'flex', alignItems: 'center', gap: 8, borderColor: 'var(--px-danger)',
+        }}>
+          <span>👔 BOSS CALL!</span>
+          <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
+            {Math.ceil(state.bossCall.timer)}s +{state.bossCall.reward}
           </span>
         </div>
       )}
 
-      {/* Bottom HUD — full width */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          alignItems: 'stretch',
-          justifyContent: 'space-between',
-          padding: '0 12px 12px',
-          pointerEvents: 'none',
-          zIndex: 10,
-          gap: 8,
-        }}
-      >
-        {/* HUG Avatar Card — DISABLED */}
-        {false && (
+      {/* Bottom HUD — pixel style */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+        padding: '0 8px 8px', pointerEvents: 'none', zIndex: 10, gap: 6,
+      }}>
+        {/* Avatar Card — HUG with pixel style */}
         <div
           className="hud-card"
           onClick={() => openModal('profile')}
           style={{
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            flex: 1,
-            borderRadius: 16,
-            overflow: 'hidden',
-            position: 'relative',
-            boxShadow: '0 4px 20px rgba(0,0,0,.25)',
+            pointerEvents: 'auto', cursor: 'pointer',
+            background: 'var(--px-panel)', border: '2px solid var(--px-border)',
+            boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark), 2px 2px 0 var(--px-shadow)',
+            padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 200,
           }}
         >
-            <img
-              src="./hud.png"
-              alt="HUD"
-              style={{ width: '100%', display: 'block', objectFit: 'fill' }}
-            />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 20px',
-              gap: 14,
-            }}
-          >
-            <div style={{ fontSize: 30 }} suppressHydrationWarning>{player.av}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{player.name}</div>
-              <div style={{ fontSize: 10, color: '#ddd', textShadow: '0 1px 2px rgba(0,0,0,.5)' }}>{player.role}</div>
+          <div style={{
+            width: 36, height: 36, border: '2px solid var(--px-border)',
+            background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20,
+          }} suppressHydrationWarning>{player.av}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 8, color: 'var(--px-title)', marginBottom: 2 }}>{player.name}</div>
+            <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>{player.role}</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 10 }}>🪙</span>
+              <span style={{ fontSize: 8, color: 'var(--px-title)' }}>{player.coins}</span>
             </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#4ecca3', textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{player.coins}</div>
-                <div style={{ fontSize: 8, color: '#ccc', textShadow: '0 1px 2px rgba(0,0,0,.4)' }}>алт</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{player.placedItems.length}</div>
-                <div style={{ fontSize: 8, color: '#ccc', textShadow: '0 1px 2px rgba(0,0,0,.4)' }}>в кабинете</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{player.achievements.length}</div>
-                <div style={{ fontSize: 8, color: '#ccc', textShadow: '0 1px 2px rgba(0,0,0,.4)' }}>ачивок</div>
-              </div>
+            <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>
+              {player.placedItems.length} items
             </div>
           </div>
         </div>
-        )}
 
         {/* Emoji bar */}
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: '10px 14px',
-            boxShadow: '0 2px 16px rgba(0,0,0,.1)',
-            pointerEvents: 'auto',
-            display: 'flex',
-            gap: 4,
-            alignSelf: 'flex-end',
-          }}
-        >
+        <div style={{
+          background: 'var(--px-panel)', border: '2px solid var(--px-border)',
+          boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
+          padding: '6px 8px', pointerEvents: 'auto', display: 'flex', gap: 3, alignSelf: 'flex-end',
+        }}>
           {EMOJI_CHAT.map((em) => (
-            <div
-              key={em}
-              onClick={() => sendEmoji(em)}
-              className="emoji-btn"
-            >
-              {em}
-            </div>
+            <div key={em} onClick={() => sendEmoji(em)} className="emoji-btn">{em}</div>
           ))}
         </div>
-        {/* MP connection indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#999', alignSelf: 'flex-end' }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpConnected ? '#4ecca3' : '#e94560' }} />
-          {mpConnected ? `${remotePlayers.length + 1} онлайн` : 'Офлайн'}
+
+        {/* MP + coins */}
+        <div style={{
+          background: 'var(--px-panel)', border: '2px solid var(--px-border)',
+          boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
+          padding: '8px 12px', pointerEvents: 'auto', alignSelf: 'flex-end',
+          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 6, height: 6, background: mpConnected ? 'var(--px-accent)' : 'var(--px-danger)' }} />
+            <span style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
+              {mpConnected ? `${remotePlayers.length + 1} ONLINE` : 'OFFLINE'}
+            </span>
+          </div>
+          <div style={{ fontSize: 7, color: 'var(--px-title)' }}>
+            🏆 {player.achievements.length}
+          </div>
         </div>
       </div>
 
       {/* Modal */}
       {modalType && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,26,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div style={{ background: '#fff', borderRadius: 16, width: 500, maxHeight: '80vh', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,.15)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700 }}>{getModalTitle(modalType)}</h3>
-              <button onClick={closeModal} className="modal-btn" style={{ width: 28, height: 28, padding: 0, fontSize: 16, color: '#999' }}>
-                &times;
+          <div className="px-panel" style={{ width: 500, maxHeight: '80vh', overflow: 'hidden' }}>
+            <div className="px-panel-header">
+              <span>{getModalTitle(modalType)}</span>
+              <button onClick={closeModal} className="px-btn small" style={{ padding: '2px 6px', fontSize: 8, lineHeight: 1 }}>
+                X
               </button>
             </div>
-            <div style={{ padding: 20, maxHeight: '60vh', overflowY: 'auto' }}>
+            <div style={{ padding: 16, maxHeight: '60vh', overflowY: 'auto' }}>
               {modalType === 'shop' && <ShopView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'inventory' && <InventoryView state={stateRef.current} onToast={toast} />}
               {modalType === 'decorate' && <DecorateView state={stateRef.current} onToast={toast} />}
@@ -985,39 +898,28 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       {/* RPS Invite Notification */}
       {rpsInvite && (
-        <div style={{
-          position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
-          background: '#fff', border: '2px solid #4ecca3', borderRadius: 12, padding: '12px 20px',
-          zIndex: 200, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+        <div className="px-panel" style={{
+          position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
+          padding: '10px 16px', zIndex: 200, display: 'flex', alignItems: 'center', gap: 12,
+          borderColor: 'var(--px-accent)',
         }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>🎮 КНБ от {rpsInvite.fromName}</div>
-            <div style={{ fontSize: 11, color: '#999' }}>Принять игру?</div>
+            <div style={{ fontSize: 8, color: 'var(--px-title)' }}>🎮 RPS FROM {rpsInvite.fromName}</div>
+            <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>ACCEPT?</div>
           </div>
-          <button onClick={() => { acceptRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#4ecca3', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>Да</button>
-          <button onClick={() => { declineRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #ddd', background: '#f5f5f5', fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>Нет</button>
+          <button onClick={() => { acceptRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn accent small">YES</button>
+          <button onClick={() => { declineRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn small">NO</button>
         </div>
       )}
 
       {/* Toast */}
       {toastMsg && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 24,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '10px 20px',
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-            background: toastType === 'ok' ? '#4ecca3' : '#333',
-            color: '#fff',
-            zIndex: 200,
-            pointerEvents: 'none',
-          }}
-        >
-          {toastMsg}
+        <div className="px-panel" style={{
+          position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+          padding: '8px 16px', fontSize: 8, color: toastType === 'ok' ? 'var(--px-accent)' : 'var(--px-text)',
+          zIndex: 200, pointerEvents: 'none', borderColor: toastType === 'ok' ? 'var(--px-accent)' : 'var(--px-border)',
+        }}>
+          {toastType === 'ok' ? '> ' : '! '}{toastMsg}
         </div>
       )}
 

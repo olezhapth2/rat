@@ -59,6 +59,8 @@ let onDisconnect: (() => void) | null = null;
 let onItemsSync: ((items: SharedItem[]) => void) | null = null;
 let onEmojiShow: ((data: { playerId: string; emoji: string }) => void) | null = null;
 let onWhiteboardSync: ((data: string) => void) | null = null;
+let onCardGameStateUpdate: ((game: any) => void) | null = null;
+let onCardGameErrorUpdate: ((error: string) => void) | null = null;
 
 // === Public API ===
 
@@ -124,10 +126,18 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
     onEmojiShow?.(data);
   });
 
-  socket.on('whiteboard:sync', (data: string) => {
-    onWhiteboardSync?.(data);
-  });
-}
+    socket.on('whiteboard:sync', (data: string) => {
+      onWhiteboardSync?.(data);
+    });
+
+    socket.on('cardgame:state', (game: any) => {
+      onCardGameStateUpdate?.(game);
+    });
+
+    socket.on('cardgame:error', (error: string) => {
+      onCardGameErrorUpdate?.(error);
+    });
+  }
 
 export function disconnectMultiplayer(): void {
   socket?.disconnect();
@@ -184,6 +194,34 @@ export function updateWhiteboard(data: string): void {
 export function sendEmoji(emoji: string): void {
   if (!socket?.connected) return;
   socket.emit('emoji:send', { emoji });
+}
+
+export function createCardGame(): void {
+  socket?.emit('cardgame:create');
+}
+
+export function joinCardGame(gameId: string): void {
+  socket?.emit('cardgame:join', gameId);
+}
+
+export function playCardGame(cardId: string, chosenColor?: string): void {
+  socket?.emit('cardgame:play', { cardId, chosenColor });
+}
+
+export function drawCardGame(): void {
+  socket?.emit('cardgame:draw');
+}
+
+export function leaveCardGame(): void {
+  socket?.emit('cardgame:leave');
+}
+
+export function onCardGameState(cb: (game: any) => void): void {
+  onCardGameStateUpdate = cb;
+}
+
+export function onCardGameError(cb: (error: string) => void): void {
+  onCardGameErrorUpdate = cb;
 }
 
 export function requestWhiteboardSync(callback?: (data: string) => void): void {

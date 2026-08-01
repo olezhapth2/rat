@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
+import { type CardGameState, createGame, joinGame, playCard, drawCard } from './src/game/cardgame';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = dev ? 'localhost' : '0.0.0.0';
@@ -45,6 +46,10 @@ app.prepare().then(() => {
   const players = new Map<string, ServerPlayer>();
   const rpsGames = new Map<string, RpsGame>();
   let rpsCounter = 0;
+
+  // === Card game state ===
+  const cardGames = new Map<string, CardGameState>();
+  const playerCardGames = new Map<string, string>();
 
   // === Shared whiteboard data ===
   let whiteboardData: string = '';
@@ -266,16 +271,119 @@ app.prepare().then(() => {
       socket.broadcast.emit('emoji:show', { playerId: socket.id, emoji: data.emoji });
     });
 
+    // === Card Game (OKIЯ) ===
+    socket.on('cardgame:create', () => {
+      const player = players.get(socket.id);
+      if (!player) return;
+      if (playerCardGames.has(socket.id)) return;
+
+      const game = createGame(socket.id, player.name);
+      cardGames.set(game.id, game);
+      playerCardGames.set(socket.id, game.id);
+
+      socket.emit('cardgame:state', game);
+    });
+
+    socket.on('cardgame:join', (gameId: string) => {
+      const player = players.get(socket.id);
+      if (!player) return;
+      if (playerCardGames.has(socket.id)) return;
+
+      const game = cardGames.get(gameId);
+      if (!game) return;
+
+      const ok = joinGame(game, socket.id, player.name);
+      if (!ok) return;
+
+      playerCardGames.set(socket.id, game.id);
+
+      for (const p of game.players) {
+        io.to(p.id).emit('cardgame:state', game);
+      }
+    });
+
+    socket.on('cardgame:play', (data: { cardId: string; chosenColor?: string }) => {
+      const gameId = playerCardGames.get(socket.id);
+      if (!gameId) return;
+
+      const game = cardGames.get(gameId);
+      if (!game || game.status !== 'playing') return;
+
+      const result = playCard(game, socket.id, data.cardId, data.chosenColor as any);
+      if (!result.ok) {
+        socket.emit('cardgame:error', result.error);
+        return;
+      }
+
+      for (const p of game.players) {
+        io.to(p.id).emit('cardgame:state', game);
+      }
+    });
+
+    socket.on('cardgame:draw', () => {
+      const gameId = playerCardGames.get(socket.id);
+      if (!gameId) return;
+
+      const game = cardGames.get(gameId);
+      if (!game || game.status !== 'playing') return;
+
+      drawCard(game, socket.id);
+
+      for (const p of game.players) {
+        io.to(p.id).emit('cardgame:state', game);
+      }
+    });
+
+    socket.on('cardgame:leave', () => {
+      const gameId = playerCardGames.get(socket.id);
+      if (!gameId) return;
+
+      const game = cardGames.get(gameId);
+      if (!game) return;
+
+      game.players = game.players.filter(p => p.id !== socket.id);
+      playerCardGames.delete(socket.id);
+
+      if (game.players.length === 0) {
+        cardGames.delete(gameId);
+      } else {
+        if (game.currentTurn >= game.players.length) {
+          game.currentTurn = 0;
+        }
+        if (game.status === 'playing' && game.players.length < 2) {
+          game.status = 'finished';
+          game.winner = game.players[0].id;
+          game.lastAction = `${game.players[0].name} wins (opponent left)!`;
+        }
+        for (const p of game.players) {
+          io.to(p.id).emit('cardgame:state', game);
+        }
+      }
+    });
+
     // Disconnect
     socket.on('disconnect', () => {
       console.log(`[-] Player disconnected: ${socket.id}`);
-      // Clean up any active games
+      // Clean up any active RPS games
       for (const [id, game] of rpsGames) {
         if (game.playerA === socket.id || game.playerB === socket.id) {
           const otherId = game.playerA === socket.id ? game.playerB : game.playerA;
           io.to(otherId).emit('rps:cancelled', { gameId: id });
           rpsGames.delete(id);
         }
+      }
+      // Clean up card games
+      const cardGameId = playerCardGames.get(socket.id);
+      if (cardGameId) {
+        const cg = cardGames.get(cardGameId);
+        if (cg) {
+          const player = cg.players.find(p => p.id === socket.id);
+          if (player) player.connected = false;
+          for (const p of cg.players) {
+            io.to(p.id).emit('cardgame:state', cg);
+          }
+        }
+        playerCardGames.delete(socket.id);
       }
       players.delete(socket.id);
       broadcastPlayers();

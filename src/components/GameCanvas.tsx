@@ -17,6 +17,9 @@ import {
   onConnected, onDisconnected, onItems,
   updateWhiteboard, requestWhiteboardSync, onWhiteboardUpdate,
   sendEmoji as mpSendEmoji, onEmoji,
+  createCardGame as mpCreateCardGame, joinCardGame as mpJoinCardGame,
+  playCardGame as mpPlayCardGame, drawCardGame as mpDrawCardGame,
+  leaveCardGame as mpLeaveCardGame, onCardGameState, onCardGameError,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
@@ -162,11 +165,34 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   const [rpsSentChoice, setRpsSentChoice] = useState(false);
   const lastPosSentRef = useRef(0);
   const remoteEmojisRef = useRef<Record<string, { emoji: string; time: number }>>({});
+  const cardGameRef = useRef<any>(null);
+  const cardGameMyHandRef = useRef<any[]>([]);
+  const cardGameSelectedCardRef = useRef<string | null>(null);
+  const cardGameShowColorPickerRef = useRef(false);
+  const cardGamePendingWildRef = useRef<string | null>(null);
 
   // Interaction + smoking minigame
   const [nearInteraction, setNearInteraction] = useState<InteractionZone | null>(null);
   const [smokingGame, setSmokingGame] = useState<{ active: boolean; startTime: number; taps: number; targetTaps: number } | null>(null);
   const [smokingResult, setSmokingResult] = useState<{ time: number; board: ReturnType<typeof getSmokingLeaderboard> } | null>(null);
+
+  // Card game state
+  const [cardGame, setCardGame] = useState<any>(null);
+  const [cardGameMyHand, setCardGameMyHand] = useState<any[]>([]);
+  const [cardGameSelectedCard, setCardGameSelectedCard] = useState<string | null>(null);
+  const [cardGameShowColorPicker, setCardGameShowColorPicker] = useState(false);
+  const [cardGamePendingWild, setCardGamePendingWild] = useState<string | null>(null);
+
+  // Active minigame overlay state
+  const [activeGame, setActiveGame] = useState<string | null>(null);
+  const activeGameRef = useRef<string | null>(null);
+
+  // Minigame canvas state refs
+  const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
+  const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
+  const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
+  const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
+  const minigameMouseRef = useRef({ x: 0, y: 0, down: false, clicked: false, released: false });
 
   const state = stateRef.current;
   const player = state.player;
@@ -205,6 +231,53 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     return cleanup;
   }, []);
 
+  // Sync activeGameRef
+  useEffect(() => { activeGameRef.current = activeGame; }, [activeGame]);
+
+  // ESC key handler for closing minigames
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeGameRef.current) {
+        const game = activeGameRef.current;
+        if (game === 'basketball') {
+          basketballRef.current = { score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+        } else if (game === 'furniture_toss') {
+          furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
+        } else if (game === 'microwave') {
+          microwaveRef.current = { status: 'waiting', startTime: 0, elapsed: 0, result: null };
+        } else if (game === 'smoke') {
+          smokeCanvasRef.current = { taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 };
+        }
+        setActiveGame(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Sync card game state refs
+  useEffect(() => { cardGameRef.current = cardGame; }, [cardGame]);
+  useEffect(() => { cardGameMyHandRef.current = cardGameMyHand; }, [cardGameMyHand]);
+  useEffect(() => { cardGameSelectedCardRef.current = cardGameSelectedCard; }, [cardGameSelectedCard]);
+  useEffect(() => { cardGameShowColorPickerRef.current = cardGameShowColorPicker; }, [cardGameShowColorPicker]);
+  useEffect(() => { cardGamePendingWildRef.current = cardGamePendingWild; }, [cardGamePendingWild]);
+
+  // ESC key to close card game
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && cardGameRef.current) {
+        mpLeaveCardGame();
+        setCardGame(null);
+        setCardGameMyHand([]);
+        setCardGameSelectedCard(null);
+        setCardGameShowColorPicker(false);
+        setCardGamePendingWild(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Left-click: place carried item OR click-to-move
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -213,6 +286,17 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       if (e.button !== 0) return;
       // Ignore clicks on UI elements
       if ((e.target as HTMLElement).tagName !== 'CANVAS') return;
+      // If a minigame is active, handle minigame click instead
+      if (activeGameRef.current) {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const gx = (canvas.width - 400) / 2;
+        const gy = (canvas.height - 400) / 2;
+        const localX = e.clientX - gx;
+        const localY = e.clientY - gy;
+        handleMinigameClick(localX, localY);
+        return;
+      }
       const s = stateRef.current;
       const cam = cameraRef.current;
       const worldX = e.clientX / cam.zoom + cam.x;
@@ -244,6 +328,305 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     canvas.addEventListener('click', onLeftClick);
     return () => canvas.removeEventListener('click', onLeftClick);
   }, [toast]);
+
+  // Minigame mouse/touch handlers
+  const handleMinigameClick = useCallback((localX: number, localY: number) => {
+    const game = activeGameRef.current;
+    if (!game) return;
+    if (game === 'basketball') {
+      const g = basketballRef.current;
+      const dx = localX - g.ball.x;
+      const dy = localY - g.ball.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.attempts > 0) {
+        g.dragStart = { x: localX, y: localY };
+      }
+    } else if (game === 'furniture_toss') {
+      const g = furnitureTossRef.current;
+      if (g.currentItem && !g.currentItem.landed) {
+        const dx = localX - g.currentItem.x;
+        const dy = localY - g.currentItem.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 40) {
+          g.dragging = { x: localX, y: localY };
+        }
+      }
+    } else if (game === 'microwave') {
+      const g = microwaveRef.current;
+      const btnX = 200; const btnY = 320; const btnW = 120; const btnH = 40;
+      if (localX > btnX - btnW / 2 && localX < btnX + btnW / 2 && localY > btnY - btnH / 2 && localY < btnY + btnH / 2) {
+        if (g.status === 'waiting') {
+          g.status = 'running';
+          g.startTime = performance.now();
+          g.elapsed = 0;
+          g.result = null;
+        } else if (g.status === 'running') {
+          const stoppedAt = performance.now() - g.startTime;
+          const res = microwaveGame(stateRef.current, stoppedAt);
+          g.result = res;
+          g.status = 'done';
+          g.elapsed = stoppedAt;
+          if (res.reward > 0) {
+            if (res.reward >= 35) addXP(stateRef.current, 15);
+            else if (res.reward >= 25) addXP(stateRef.current, 10);
+            else addXP(stateRef.current, 5);
+            toast(`+${res.reward} COINS`, 'ok');
+          }
+          logActivity(stateRef.current, '⏱️', `Heated lunch: ${res.stoppedAt}`);
+        } else if (g.status === 'done') {
+          g.status = 'waiting';
+          g.elapsed = 0;
+          g.result = null;
+        }
+      }
+    } else if (game === 'smoke') {
+      const g = smokeCanvasRef.current;
+      if (g.done) {
+        setActiveGame(null);
+      } else if (g.active && !g.done) {
+        const btnX = 200; const btnY = 260; const btnR = 55;
+        const dx = localX - btnX;
+        const dy = localY - btnY;
+        if (Math.sqrt(dx * dx + dy * dy) < btnR) {
+          g.taps++;
+          if (g.taps >= g.targetTaps && !g.done) {
+            g.done = true;
+            g.won = true;
+            const elapsed = Date.now() - g.startTime;
+            const board = saveSmokingRecord(stateRef.current.player.name, elapsed);
+            addCoins(stateRef.current, 20);
+            addXP(stateRef.current, 15);
+            unlockAchievement(stateRef.current, 'smoker');
+            trackQuestProgress(stateRef.current, 'smoke_1');
+            logActivity(stateRef.current, '🚬', 'Smoked in the smoking room');
+            toast('+20 COINS SMOKED!', 'ok');
+            setSmokingResult({ time: elapsed, board });
+          }
+        }
+      }
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!activeGameRef.current) return;
+      const gx = (canvas.width - 400) / 2;
+      const gy = (canvas.height - 400) / 2;
+      const localX = e.clientX - gx;
+      const localY = e.clientY - gy;
+      minigameMouseRef.current.x = localX;
+      minigameMouseRef.current.y = localY;
+      const game = activeGameRef.current;
+      if (game === 'basketball' && basketballRef.current.dragStart) {
+        basketballRef.current.dragStart = { x: localX, y: localY };
+      } else if (game === 'furniture_toss' && furnitureTossRef.current.dragging) {
+        furnitureTossRef.current.dragging = { x: localX, y: localY };
+      }
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      if (!activeGameRef.current) return;
+      const gx = (canvas.width - 400) / 2;
+      const gy = (canvas.height - 400) / 2;
+      const localX = e.clientX - gx;
+      const localY = e.clientY - gy;
+      const game = activeGameRef.current;
+      if (game === 'basketball') {
+        const g = basketballRef.current;
+        if (!g.dragStart) return;
+        const dx = g.ball.x - g.dragStart.x;
+        const dy = g.ball.y - g.dragStart.y;
+        const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.12, 12);
+        const angle = Math.atan2(dy, dx);
+        g.ball.vx = Math.cos(angle) * power;
+        g.ball.vy = Math.sin(angle) * power;
+        g.ball.flying = true;
+        g.ball.scored = false;
+        g.dragStart = null;
+      } else if (game === 'furniture_toss') {
+        const g = furnitureTossRef.current;
+        if (!g.dragging || !g.currentItem) return;
+        const dx = g.currentItem.x - g.dragging.x;
+        const dy = g.currentItem.y - g.dragging.y;
+        const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.1, 10);
+        const angle = Math.atan2(dy, dx);
+        g.currentItem.vx = Math.cos(angle) * power;
+        g.currentItem.vy = Math.sin(angle) * power;
+        g.items.push(g.currentItem);
+        g.currentItem = null;
+        g.dragging = null;
+        g.attempts--;
+        if (g.attempts <= 0) {
+          setTimeout(() => {
+            const coins = g.score * 10;
+            addCoins(stateRef.current, coins);
+            toast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8 → +${coins} алт` : `${g.score}/8 → +${coins} алт`, g.score >= 5 ? 'ok' : 'info');
+            if (g.score >= 5) { /* confetti handled via toast */ }
+            g.score = 0;
+            g.attempts = 8;
+            g.items = [];
+            spawnFurnitureItem(g);
+          }, 500);
+        } else {
+          setTimeout(() => spawnFurnitureItem(g), 300);
+        }
+      }
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      if (!activeGameRef.current) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const gx = (canvas.width - 400) / 2;
+      const gy = (canvas.height - 400) / 2;
+      const localX = t.clientX - gx;
+      const localY = t.clientY - gy;
+      handleMinigameClick(localX, localY);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!activeGameRef.current) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const gx = (canvas.width - 400) / 2;
+      const gy = (canvas.height - 400) / 2;
+      const localX = t.clientX - gx;
+      const localY = t.clientY - gy;
+      const game = activeGameRef.current;
+      if (game === 'basketball' && basketballRef.current.dragStart) {
+        basketballRef.current.dragStart = { x: localX, y: localY };
+      } else if (game === 'furniture_toss' && furnitureTossRef.current.dragging) {
+        furnitureTossRef.current.dragging = { x: localX, y: localY };
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!activeGameRef.current) return;
+      e.preventDefault();
+      onMouseUp(new MouseEvent('mouseup'));
+    };
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseup', onMouseUp);
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    return () => {
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseup', onMouseUp);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [toast, handleMinigameClick]);
+
+  // Card game canvas click handler
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      if ((e.target as HTMLElement).tagName !== 'CANVAS') return;
+      const cg = cardGameRef.current;
+      if (!cg || cg.status !== 'playing') return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const W = canvas.width;
+      const H = canvas.height;
+      const myId = (window as any).__mpMyId;
+      const isMyTurn = cg.players[cg.currentTurn]?.id === myId;
+
+      // Color picker
+      if (cardGameShowColorPickerRef.current && cardGamePendingWildRef.current) {
+        const colorMap: Record<string, string> = { red: '#c0392b', blue: '#2980b9', green: '#27ae60', yellow: '#f39c12' };
+        const colors = ['red', 'blue', 'green', 'yellow'];
+        const btnSize = 50;
+        const btnGap = 16;
+        const totalBtnW = colors.length * btnSize + (colors.length - 1) * btnGap;
+        const btnStartX = (W - totalBtnW) / 2;
+        const by = H / 2 - 30;
+
+        for (let i = 0; i < colors.length; i++) {
+          const bx = btnStartX + i * (btnSize + btnGap);
+          if (mx >= bx && mx <= bx + btnSize && my >= by && my <= by + btnSize) {
+            mpPlayCardGame(cardGamePendingWildRef.current, colors[i]);
+            setCardGameShowColorPicker(false);
+            setCardGamePendingWild(null);
+            setCardGameSelectedCard(null);
+            return;
+          }
+        }
+        return;
+      }
+
+      // Close button
+      if (mx >= W - 30 && mx <= W - 10 && my >= 10 && my <= 30) {
+        mpLeaveCardGame();
+        setCardGame(null);
+        setCardGameMyHand([]);
+        setCardGameSelectedCard(null);
+        setCardGameShowColorPicker(false);
+        setCardGamePendingWild(null);
+        return;
+      }
+
+      if (!isMyTurn) return;
+
+      // Draw button
+      if (mx >= 20 && mx <= 100 && my >= H - 95 && my <= H - 63) {
+        mpDrawCardGame();
+        setCardGameSelectedCard(null);
+        return;
+      }
+
+      // Play button
+      if (cardGameSelectedCardRef.current && mx >= W - 100 && mx <= W - 20 && my >= H - 95 && my <= H - 63) {
+        const selectedId = cardGameSelectedCardRef.current;
+        const card = cardGameMyHandRef.current.find((c: any) => c.id === selectedId);
+        if (card && card.color === null) {
+          // Wild card - show color picker
+          setCardGameShowColorPicker(true);
+          setCardGamePendingWild(selectedId);
+        } else {
+          mpPlayCardGame(selectedId);
+          setCardGameSelectedCard(null);
+        }
+        return;
+      }
+
+      // Card selection
+      const cardW = 52;
+      const cardH = 74;
+      const gap = 8;
+      const hand = cardGameMyHandRef.current;
+      const totalW = hand.length * (cardW + gap) - gap;
+      const startX = (W - totalW) / 2;
+
+      for (let i = 0; i < hand.length; i++) {
+        const x = startX + i * (cardW + gap);
+        const y = H - 95;
+        const isSelected = cardGameSelectedCardRef.current === hand[i].id;
+        const cardY = isSelected ? y - 12 : y;
+        if (mx >= x && mx <= x + cardW && my >= cardY && my <= cardY + cardH) {
+          if (cardGameSelectedCardRef.current === hand[i].id) {
+            // Double click = play
+            if (hand[i].color === null) {
+              setCardGameShowColorPicker(true);
+              setCardGamePendingWild(hand[i].id);
+            } else {
+              mpPlayCardGame(hand[i].id);
+              setCardGameSelectedCard(null);
+            }
+          } else {
+            setCardGameSelectedCard(hand[i].id);
+          }
+          return;
+        }
+      }
+
+      // Click on empty area = deselect
+      setCardGameSelectedCard(null);
+    };
+    canvas.addEventListener('click', onClick);
+    return () => canvas.removeEventListener('click', onClick);
+  }, []);
 
   // Resize
   useEffect(() => {
@@ -355,6 +738,17 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       remoteEmojisRef.current[data.playerId] = { emoji: data.emoji, time: Date.now() };
     });
 
+    onCardGameState((game) => {
+      setCardGame(game);
+      const myId = (window as any).__mpMyId;
+      const me = game.players.find((p: any) => p.id === myId);
+      if (me) setCardGameMyHand(me.hand);
+    });
+
+    onCardGameError((error) => {
+      toast(error, 'info');
+    });
+
     return () => disconnectMultiplayer();
   }, []);
 
@@ -364,6 +758,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     if (!canvas) return;
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
+      if (activeGameRef.current) return;
       const cam = cameraRef.current;
       const worldX = e.clientX / cam.zoom + cam.x;
       const worldY = e.clientY / cam.zoom + cam.y;
@@ -551,7 +946,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const pRoom = getRoomAt(playerGx, playerGy);
       if (pRoom) {
         if (pRoom.id === 'smoking') {
-          items.push({ icon: '🚬', text: 'Прокурить 🚬', fn: () => openModal('smoke') });
+          items.push({ icon: '🚬', text: 'Прокурить 🚬', fn: () => setActiveGame('smoke') });
         }
       }
 
@@ -610,8 +1005,16 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const placedObjs = getPlacedObjectsAsGameObjects(s);
       const allObjects = [...s.objects, ...placedObjs];
 
-      const { vx: playerVx, vy: playerVy } = updatePlayer(s.player, input, s.map, allObjects, dt);
-      updateAnimState(s.player.anim, playerVx, playerVy);
+      // Disable player movement when card game overlay is active
+      const cgState = cardGameRef.current;
+      if (cgState && cgState.status === 'playing') {
+        // Don't update player position
+      } else if (activeGameRef.current) {
+        // Don't update player position during minigame
+      } else {
+        const { vx: playerVx, vy: playerVy } = updatePlayer(s.player, input, s.map, allObjects, dt);
+        updateAnimState(s.player.anim, playerVx, playerVy);
+      }
 
       updateBots(s, dt);
       updatePet(s, dt);
@@ -658,6 +1061,216 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current);
 
+      // === Card game overlay ===
+      const cg = cardGameRef.current;
+      const cgHand = cardGameMyHandRef.current;
+      const cgSelected = cardGameSelectedCardRef.current;
+      const cgColorPicker = cardGameShowColorPickerRef.current;
+      const cgPendingWild = cardGamePendingWildRef.current;
+      if (cg && cg.status === 'playing') {
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // Dark overlay
+        ctx.fillStyle = 'rgba(10,10,26,0.92)';
+        ctx.fillRect(0, 0, W, H);
+
+        // Title
+        ctx.fillStyle = '#8a7e30';
+        ctx.font = 'bold 14px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('O K I \u042F', W / 2, 36);
+
+        // Draw the table (discard pile)
+        const topCard = cg.discardPile[cg.discardPile.length - 1];
+        if (topCard) {
+          drawCardOnCanvas(ctx, topCard, W / 2 - 30, H / 2 - 50, 60, 84);
+        }
+
+        // Current color indicator
+        const colorMap: Record<string, string> = { red: '#c0392b', blue: '#2980b9', green: '#27ae60', yellow: '#f39c12' };
+        ctx.fillStyle = colorMap[cg.currentColor] || '#333';
+        ctx.beginPath();
+        ctx.arc(W / 2 + 50, H / 2 - 8, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw deck
+        ctx.fillStyle = '#2a2a4a';
+        ctx.fillRect(W / 2 - 90, H / 2 - 50, 60, 84);
+        ctx.strokeStyle = '#6e6428';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(W / 2 - 90, H / 2 - 50, 60, 84);
+        ctx.fillStyle = '#6e6428';
+        ctx.font = '7px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('DECK', W / 2 - 60, H / 2 - 14);
+        ctx.fillText(`${cg.deck.length}`, W / 2 - 60, H / 2 + 2);
+
+        // My turn indicator
+        const myId = (window as any).__mpMyId;
+        const isMyTurn = cg.players[cg.currentTurn]?.id === myId;
+
+        ctx.fillStyle = isMyTurn ? '#8a7e30' : '#5a5648';
+        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(isMyTurn ? 'YOUR TURN!' : `WAITING: ${cg.players[cg.currentTurn]?.name || '...'}`, W / 2, H - 110);
+
+        // Draw hand cards
+        const cardW = 52;
+        const cardH = 74;
+        const gap = 8;
+        const totalW = cgHand.length * (cardW + gap) - gap;
+        const startX = (W - totalW) / 2;
+
+        for (let i = 0; i < cgHand.length; i++) {
+          const c = cgHand[i];
+          const x = startX + i * (cardW + gap);
+          const y = H - 95;
+          const selected = cgSelected === c.id;
+          drawCardOnCanvas(ctx, c, x, selected ? y - 12 : y, cardW, cardH, selected);
+        }
+
+        // Draw buttons
+        if (isMyTurn) {
+          // Draw button
+          const drawBtnX = 20;
+          const drawBtnY = H - 95;
+          ctx.fillStyle = '#1c1c2c';
+          ctx.fillRect(drawBtnX, drawBtnY, 80, 32);
+          ctx.strokeStyle = '#6e6428';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(drawBtnX, drawBtnY, 80, 32);
+          ctx.fillStyle = '#8a8470';
+          ctx.font = '8px "Press Start 2P", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('DRAW', drawBtnX + 40, drawBtnY + 20);
+
+          // Play button (if card selected)
+          if (cgSelected) {
+            const playBtnX = W - 100;
+            const playBtnY = H - 95;
+            ctx.fillStyle = '#1c1c2c';
+            ctx.fillRect(playBtnX, playBtnY, 80, 32);
+            ctx.strokeStyle = '#6e6428';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(playBtnX, playBtnY, 80, 32);
+            ctx.fillStyle = '#8a7e30';
+            ctx.font = '8px "Press Start 2P", monospace';
+            ctx.fillText('PLAY', playBtnX + 40, playBtnY + 20);
+          }
+        }
+
+        // Players list on right side
+        ctx.textAlign = 'right';
+        ctx.font = '7px "Press Start 2P", monospace';
+        for (let i = 0; i < cg.players.length; i++) {
+          const p = cg.players[i];
+          const isCurrent = i === cg.currentTurn;
+          const isMe = p.id === myId;
+          ctx.fillStyle = isCurrent ? '#8a7e30' : '#5a5648';
+          ctx.fillText(`${isMe ? '> ' : ''}${p.name} [${p.hand.length}]`, W - 20, 60 + i * 20);
+        }
+
+        // Close button
+        ctx.fillStyle = '#1c1c2c';
+        ctx.fillRect(W - 30, 10, 20, 20);
+        ctx.strokeStyle = '#5a3028';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(W - 30, 10, 20, 20);
+        ctx.fillStyle = '#5a3028';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', W - 20, 20);
+        ctx.textBaseline = 'alphabetic';
+
+        // Color picker overlay
+        if (cgColorPicker && cgPendingWild) {
+          ctx.fillStyle = 'rgba(10,10,26,0.85)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#8a7e30';
+          ctx.font = '10px "Press Start 2P", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('CHOOSE COLOR', W / 2, H / 2 - 60);
+
+          const colors: { c: string; label: string }[] = [
+            { c: 'red', label: 'RED' },
+            { c: 'blue', label: 'BLUE' },
+            { c: 'green', label: 'GREEN' },
+            { c: 'yellow', label: 'YELLOW' },
+          ];
+          const btnSize = 50;
+          const btnGap = 16;
+          const totalBtnW = colors.length * btnSize + (colors.length - 1) * btnGap;
+          const btnStartX = (W - totalBtnW) / 2;
+
+          for (let i = 0; i < colors.length; i++) {
+            const bx = btnStartX + i * (btnSize + btnGap);
+            const by = H / 2 - 30;
+            ctx.fillStyle = colorMap[colors[i].c];
+            ctx.fillRect(bx, by, btnSize, btnSize);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(bx, by, btnSize, btnSize);
+            ctx.fillStyle = '#fff';
+            ctx.font = '7px "Press Start 2P", monospace';
+            ctx.fillText(colors[i].label, bx + btnSize / 2, by + btnSize / 2 + 3);
+          }
+        }
+
+        // Winner overlay
+        if (cg.status === 'finished') {
+          ctx.fillStyle = 'rgba(10,10,26,0.85)';
+          ctx.fillRect(0, 0, W, H);
+          const winnerName = cg.players.find((p: any) => p.id === cg.winner)?.name || '???';
+          const isMeWinner = cg.winner === myId;
+          ctx.fillStyle = isMeWinner ? '#4ecca3' : '#e94560';
+          ctx.font = 'bold 16px "Press Start 2P", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(isMeWinner ? 'YOU WIN!' : `${winnerName} WINS!`, W / 2, H / 2 - 10);
+          ctx.fillStyle = '#8a8470';
+          ctx.font = '9px "Press Start 2P", monospace';
+          ctx.fillText('Press ESC to close', W / 2, H / 2 + 20);
+        }
+      }
+
+      // === Minigame overlay ===
+      if (activeGameRef.current) {
+        const W = canvas.width;
+        const H = canvas.height;
+        const gx = (W - 400) / 2;
+        const gy = (H - 400) / 2;
+
+        // Dark overlay
+        ctx.fillStyle = 'rgba(10,10,26,0.85)';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.save();
+        ctx.translate(gx, gy);
+
+        if (activeGameRef.current === 'basketball') {
+          drawBasketballOnCanvas(ctx, basketballRef.current, s, toast, confetti);
+        } else if (activeGameRef.current === 'furniture_toss') {
+          drawFurnitureTossOnCanvas(ctx, furnitureTossRef.current, s, toast);
+        } else if (activeGameRef.current === 'microwave') {
+          drawMicrowaveOnCanvas(ctx, microwaveRef.current, s, toast);
+        } else if (activeGameRef.current === 'smoke') {
+          drawSmokeOnCanvas(ctx, smokeCanvasRef.current, s, toast);
+        }
+
+        ctx.restore();
+
+        // Exit hint
+        ctx.fillStyle = '#ffffff60';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('[ESC] CLOSE', W - 20, 30);
+      }
+
       // Draw remote player emojis
       const now = Date.now();
       for (const rp of remotePlayersRef.current) {
@@ -702,7 +1315,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       {/* Interaction buttons — pixel style */}
       {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'ashtray' && (
         <button
-          onClick={() => setSmokingGame({ active: true, startTime: Date.now(), taps: 0, targetTaps: 30 })}
+          onClick={() => {
+            smokeCanvasRef.current = { taps: 0, targetTaps: 30, startTime: Date.now(), active: true, done: false, won: false, timeLeft: 20, lastTick: Date.now() };
+            setActiveGame('smoke');
+          }}
           className="px-btn danger"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
@@ -737,7 +1353,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       )}
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
-          onClick={() => openModal('basketball')}
+          onClick={() => {
+            basketballRef.current = { score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+            setActiveGame('basketball');
+          }}
           className="px-btn"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
@@ -751,7 +1370,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       )}
       {nearInteraction && nearInteraction.id === 'microwave' && (
         <button
-          onClick={() => openModal('microwave')}
+          onClick={() => {
+            microwaveRef.current = { status: 'waiting', startTime: 0, elapsed: 0, result: null };
+            setActiveGame('microwave');
+          }}
           className="px-btn accent"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
@@ -764,7 +1386,11 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       )}
       {nearInteraction && nearInteraction.id === 'furniture_toss' && (
         <button
-          onClick={() => openModal('furniture_toss')}
+          onClick={() => {
+            furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
+            spawnFurnitureItem(furnitureTossRef.current);
+            setActiveGame('furniture_toss');
+          }}
           className="px-btn"
           style={{
             position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
@@ -776,53 +1402,30 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           🪑 СВАЛКА МЕБЕЛИ
         </button>
       )}
-
-      {/* Smoking minigame overlay */}
-      {smokingGame?.active && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
-        }}>
-          <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
-            <div className="px-panel-header">
-              <span>SMOKING BREAK</span>
-            </div>
-            <div style={{ padding: 24 }}>
-              <div style={{ fontSize: 44, marginBottom: 10 }}>🚬</div>
-              <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 8 }}>TAP FAST!</div>
-              <div style={{ width: '100%', height: 12, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', marginBottom: 14 }}>
-                <div style={{
-                  width: `${(smokingGame.taps / smokingGame.targetTaps) * 100}%`,
-                  height: '100%', background: 'var(--px-accent)',
-                  transition: 'width 0.1s',
-                }} />
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--px-text-dim)', marginBottom: 16 }}>
-                {smokingGame.taps} / {smokingGame.targetTaps}
-              </div>
-              <button
-                onClick={() => {
-                  const newTaps = smokingGame.taps + 1;
-                  if (newTaps >= smokingGame.targetTaps) {
-                    const elapsed = Date.now() - smokingGame.startTime;
-                    const board = saveSmokingRecord(state.player.name, elapsed);
-                    setSmokingGame(null);
-                    setSmokingResult({ time: elapsed, board });
-                    logActivity(stateRef.current, '🚬', `Покурил за ${(elapsed / 1000).toFixed(1)}с`);
-                    trackQuestProgress(stateRef.current, 'smoke_1');
-                  } else {
-                    setSmokingGame({ ...smokingGame, taps: newTaps });
-                  }
-                }}
-                className="px-btn danger"
-                style={{ width: 110, height: 110, fontSize: 38, padding: 0, justifyContent: 'center' }}
-              >🚬</button>
-              <div style={{ marginTop: 10 }}>
-                <button onClick={() => setSmokingGame(null)} className="px-btn small">CANCEL</button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {nearInteraction && nearInteraction.id === 'cardgame' && !cardGame && (
+        <button
+          onClick={() => mpCreateCardGame()}
+          className="px-btn accent"
+          style={{
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          🃏 СЫГРАТЬ В OKIЯ
+        </button>
+      )}
+      {nearInteraction && nearInteraction.id === 'cardgame' && cardGame && cardGame.status === 'waiting' && (
+        <button
+          onClick={() => {}}
+          className="px-btn accent"
+          style={{
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
+          }}
+        >
+          🃏 ЖДЁМ ИГРОКОВ... ({cardGame.players.length}/4)
+        </button>
       )}
 
       {/* Smoking result + leaderboard */}
@@ -1028,12 +1631,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
               {modalType === 'talk' && <TalkView data={modalData} state={stateRef.current} onToast={toast} />}
               {modalType === 'rps' && <RpsView data={modalData} state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'whiteboard' && <WhiteboardView />}
-              {modalType === 'smoke' && <SmokeView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
-              {modalType === 'microwave' && <MicrowaveView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'mp_rps' && <MpRpsView data={modalData} myChoice={rpsMyChoice} sentChoice={rpsSentChoice} result={rpsResult} onChoice={(c) => { setRpsMyChoice(c); setRpsSentChoice(true); sendRpsChoice(modalData.gameId as string, c); }} onClose={closeModal} onToast={toast} />}
               {modalType === 'book_prediction' && <BookPredictionView prediction={modalData.prediction as string} />}
-              {modalType === 'basketball' && <BasketballView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
-              {modalType === 'furniture_toss' && <FurnitureTossView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
             </div>
           </div>
         </div>
@@ -1083,14 +1682,362 @@ function getModalTitle(type: string): string {
     talk: 'TALK',
     rps: 'ROCK-PAPER-SCISSORS',
     whiteboard: 'WHITEBOARD',
-    smoke: 'SMOKING ROOM',
-    microwave: 'KITCHEN — MICROWAVE',
     mp_rps: 'RPS VS PLAYER',
     book_prediction: '📖 BOOK OF FATE',
-    basketball: '🏀 BASKETBALL',
-    furniture_toss: 'СВАЛКА МЕБЕЛИ',
   };
   return t[type] || '';
+}
+
+// ===== Canvas minigame helpers =====
+function spawnFurnitureItem(g: { currentItem: any; targetZone: any }) {
+  const COLORS = ['#8B4513', '#654321', '#A0522D', '#D2691E', '#CD853F'];
+  const w = 30 + Math.random() * 30;
+  const h = 20 + Math.random() * 20;
+  g.currentItem = { x: 60, y: 300, vx: 0, vy: 0, w, h, color: COLORS[Math.floor(Math.random() * COLORS.length)], landed: false, prevY: 300 };
+}
+
+function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void) {
+  const HOOP_X = 320, HOOP_Y = 120, HOOP_W = 40, GRAVITY = 0.12, BALL_R = 10;
+  const BALL_START_X = 80, BALL_START_Y = 320;
+  g.frame = (g.frame || 0) + 1;
+
+  ctx.fillStyle = '#f5e6c8';
+  ctx.fillRect(0, 0, 400, 400);
+
+  ctx.strokeStyle = '#8B451340';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 400; i += 40) {
+    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
+  }
+
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(HOOP_X + HOOP_W / 2 + 2, HOOP_Y - 30, 8, 60);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
+  ctx.strokeStyle = '#e94560';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
+
+  ctx.strokeStyle = '#ff6600';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(HOOP_X - HOOP_W / 2, HOOP_Y);
+  ctx.lineTo(HOOP_X + HOOP_W / 2, HOOP_Y);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ffffff80';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const nx = HOOP_X - HOOP_W / 2 + (HOOP_W / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(nx, HOOP_Y);
+    ctx.lineTo(nx + (i - 2) * 3, HOOP_Y + 25);
+    ctx.stroke();
+  }
+
+  if (g.ball.flying) {
+    g.ball.vy += GRAVITY;
+    g.ball.x += g.ball.vx;
+    g.ball.y += g.ball.vy;
+
+    const backboardX = HOOP_X + HOOP_W / 2 + 2;
+    const backboardTop = HOOP_Y - 30;
+    const backboardBottom = HOOP_Y + 30;
+    if (g.ball.x + BALL_R > backboardX && g.ball.x - BALL_R < backboardX + 8 &&
+        g.ball.y > backboardTop && g.ball.y < backboardBottom) {
+      g.ball.vx = -g.ball.vx * 0.6;
+      g.ball.x = backboardX - BALL_R;
+    }
+
+    if (!g.ball.scored &&
+      g.ball.x > HOOP_X - HOOP_W / 2 && g.ball.x < HOOP_X + HOOP_W / 2 &&
+      g.ball.y > 100 && g.ball.y < 145 &&
+      g.ball.vy > 0) {
+      g.ball.scored = true;
+      g.score++;
+      addXP(state, 10);
+      toast('🏀 Забросил! +1', 'ok');
+    }
+
+    if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
+      g.ball.flying = false;
+      g.ball.x = BALL_START_X;
+      g.ball.y = BALL_START_Y;
+      g.ball.vx = 0;
+      g.ball.vy = 0;
+      g.attempts--;
+      if (g.attempts <= 0) {
+        const coins = g.score * 15;
+        addCoins(state, coins);
+        toast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10 → +${coins} алт` : `${g.score}/10 → +${coins} алт`, g.score >= 7 ? 'ok' : 'info');
+        if (g.score >= 7) confetti();
+        g.score = 0;
+        g.attempts = 10;
+      }
+    }
+  }
+
+  if (g.dragStart && !g.ball.flying) {
+    ctx.strokeStyle = '#e9456080';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(g.dragStart.x, g.dragStart.y);
+    ctx.lineTo(g.ball.x, g.ball.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.fillStyle = '#ff6600';
+  ctx.beginPath();
+  ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#cc5500';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.strokeStyle = '#cc550040';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(g.ball.x - BALL_R, g.ball.y); ctx.lineTo(g.ball.x + BALL_R, g.ball.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(g.ball.x, g.ball.y - BALL_R); ctx.lineTo(g.ball.x, g.ball.y + BALL_R); ctx.stroke();
+
+  ctx.fillStyle = '#333';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`🏀 ${g.score} / ${10 - (10 - g.attempts)}`, 10, 25);
+  ctx.fillText(`Попытки: ${g.attempts}`, 10, 45);
+
+  if (!g.ball.flying && g.attempts > 0) {
+    ctx.fillStyle = '#999';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Зажми и потяни от мяча, отпусти для броска', 200, 380);
+  }
+}
+
+function drawFurnitureTossOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void) {
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(0, 0, 400, 400);
+
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
+  ctx.strokeStyle = '#4ecca3';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
+  ctx.fillStyle = '#4ecca3';
+  ctx.font = '10px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('TARGET', g.targetZone.x + g.targetZone.w / 2, g.targetZone.y + g.targetZone.h / 2 + 4);
+
+  for (const item of g.items) {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
+  }
+
+  if (g.currentItem && !g.dragging) {
+    const c = g.currentItem;
+    ctx.fillStyle = c.color;
+    ctx.fillRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+    ctx.strokeStyle = '#e8c840';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+  }
+
+  if (g.dragging && g.currentItem) {
+    ctx.strokeStyle = '#e8c84080';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(g.dragging.x, g.dragging.y);
+    ctx.lineTo(g.currentItem.x, g.currentItem.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (const item of g.items) {
+    if (item.vy !== 0 || item.vx !== 0) {
+      item.prevY = item.y;
+      item.vy += 0.2;
+      item.x += item.vx;
+      item.y += item.vy;
+
+      if (item.prevY < g.targetZone.y + g.targetZone.h &&
+          item.y >= g.targetZone.y &&
+          item.x > g.targetZone.x && item.x < g.targetZone.x + g.targetZone.w &&
+          item.vy > 0) {
+        g.score++;
+        toast('+1 В МЕШЕНЬ!', 'ok');
+      }
+
+      if (item.y > 380) {
+        item.y = 380;
+        item.vy = 0;
+        item.vx = 0;
+        item.landed = true;
+      }
+    }
+  }
+
+  ctx.fillStyle = '#8a8470';
+  ctx.font = '10px "Press Start 2P", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`SCORE: ${g.score}`, 10, 25);
+  ctx.fillText(`TRIES: ${g.attempts}`, 10, 45);
+
+  if (g.attempts > 0) {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5a5648';
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillText('DRAG FROM ITEM TO AIM, RELEASE', 200, 390);
+  }
+}
+
+function drawMicrowaveOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void) {
+  if (g.status === 'running') {
+    g.elapsed = performance.now() - g.startTime;
+  }
+
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(0, 0, 400, 400);
+
+  ctx.fillStyle = '#e8c840';
+  ctx.font = 'bold 14px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('⏱️ HEAT LUNCH', 200, 30);
+
+  ctx.fillStyle = '#8a8470';
+  ctx.font = '10px "Press Start 2P", monospace';
+  ctx.fillText('STOP AT 5.000 SECONDS', 200, 55);
+
+  const displayTime = g.status === 'waiting' ? '0.000' : g.status === 'done' ? g.result?.stoppedAt || '0.000' : (g.elapsed / 1000).toFixed(3);
+  ctx.fillStyle = g.status === 'running' ? '#e94560' : '#e8c840';
+  ctx.font = 'bold 30px monospace';
+  ctx.fillText(displayTime, 200, 120);
+
+  const barY = 160;
+  const barW = 360;
+  const barH = 12;
+  const barX = 20;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.strokeStyle = '#4a4a6a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  const targetX = barX + (5000 / 8000) * barW;
+  const targetW = (1000 / 8000) * barW;
+  ctx.fillStyle = 'rgba(78,204,163,0.15)';
+  ctx.fillRect(targetX - targetW / 2, barY, targetW, barH);
+  ctx.strokeStyle = '#4ecca3';
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(targetX - targetW / 2, barY); ctx.lineTo(targetX - targetW / 2, barY + barH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(targetX + targetW / 2, barY); ctx.lineTo(targetX + targetW / 2, barY + barH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const progress = Math.min((g.elapsed / 8000) * barW, barW);
+  ctx.fillStyle = g.status === 'done' && g.result?.reward === 0 ? '#e94560' : '#4ecca3';
+  ctx.fillRect(barX, barY, g.status === 'running' ? progress : g.status === 'done' ? Math.min(((parseFloat(g.result?.stoppedAt || '0') * 1000) / 8000) * barW, barW) : 0, barH);
+
+  ctx.fillStyle = '#5a5648';
+  ctx.font = '9px "Press Start 2P", monospace';
+  ctx.fillText('▲ TARGET — 5.000s', 200, 195);
+
+  if (g.result) {
+    ctx.fillStyle = g.result.reward > 0 ? '#4ecca3' : '#e94560';
+    ctx.font = 'bold 13px "Press Start 2P", monospace';
+    ctx.fillText(`${g.result.result}${g.result.reward > 0 ? ` +${g.result.reward}` : ''}`, 200, 230);
+    ctx.fillStyle = '#8a8470';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillText(`ACCURACY: ±${g.result.diff.toFixed(3)}s`, 200, 255);
+  }
+
+  const btnX = 200, btnY = 320, btnW = 140, btnH = 44;
+  ctx.fillStyle = g.status === 'running' ? '#e94560' : '#4ecca3';
+  ctx.fillRect(btnX - btnW / 2, btnY - btnH / 2, btnW, btnH);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(btnX - btnW / 2, btnY - btnH / 2, btnW, btnH);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(g.status === 'waiting' ? 'START ⏱️' : g.status === 'running' ? 'STOP! 🛑' : 'RETRY', btnX, btnY + 5);
+}
+
+function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void) {
+  if (g.active && !g.done) {
+    const now = Date.now();
+    if (now - g.lastTick >= 1000) {
+      g.timeLeft--;
+      g.lastTick = now;
+      if (g.timeLeft <= 0) {
+        g.done = true;
+        g.won = false;
+      }
+    }
+  }
+
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(0, 0, 400, 400);
+
+  ctx.fillStyle = '#e8c840';
+  ctx.font = 'bold 14px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SMOKING BREAK', 200, 30);
+
+  ctx.font = '44px sans-serif';
+  ctx.fillText('🚬', 200, 90);
+
+  ctx.fillStyle = '#8a8470';
+  ctx.font = '10px "Press Start 2P", monospace';
+  ctx.fillText(g.done ? (g.won ? 'DONE!' : 'TIME UP!') : `TAP ${g.targetTaps} TIMES IN 20S`, 200, 125);
+
+  const barY = 150;
+  const barW = 360;
+  const barH = 12;
+  const barX = 20;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = g.done && !g.won ? '#e94560' : '#4ecca3';
+  ctx.fillRect(barX, barY, (g.taps / g.targetTaps) * barW, barH);
+  ctx.strokeStyle = '#4a4a6a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  ctx.fillStyle = '#8a8470';
+  ctx.font = '10px "Press Start 2P", monospace';
+  ctx.fillText(`${g.taps} / ${g.targetTaps}`, 200, 185);
+
+  if (!g.done) {
+    const btnX = 200, btnY = 260, btnR = 55;
+    ctx.fillStyle = '#e94560';
+    ctx.beginPath();
+    ctx.arc(btnX, btnY, btnR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🚬', btnX, btnY);
+    ctx.textBaseline = 'alphabetic';
+
+    ctx.fillStyle = '#8a8470';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillText(`TIME: ${g.timeLeft}s`, 200, 340);
+  } else {
+    ctx.fillStyle = g.won ? '#4ecca3' : '#e94560';
+    ctx.font = 'bold 16px "Press Start 2P", monospace';
+    ctx.fillText(g.won ? 'SMOKED! +20 COINS' : 'TOO SLOW!', 200, 260);
+
+    ctx.fillStyle = '#8a8470';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillText('Click to close', 200, 300);
+  }
 }
 
 // ===== SHOP =====
@@ -1912,257 +2859,6 @@ function MpRpsView({ data, myChoice, sentChoice, result, onChoice, onClose, onTo
   );
 }
 
-// ===== BASKETBALL =====
-function BasketballView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [score, setScore] = useState(0);
-  const [attempts, setAttempts] = useState(10);
-  const [ballState, setBallState] = useState<{ x: number; y: number; vx: number; vy: number; flying: boolean; scored: boolean } | null>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
-  const gameRef = useRef({ score: 0, attempts: 10, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null, frame: 0 });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    canvas.width = 400;
-    canvas.height = 400;
-    let running = true;
-
-    const HOOP_X = 320;
-    const HOOP_Y = 120;
-    const HOOP_W = 40;
-    const GRAVITY = 0.15;
-    const BALL_R = 10;
-    const BALL_START_X = 80;
-    const BALL_START_Y = 320;
-
-    function loop() {
-      if (!running || !ctx) return;
-      const g = gameRef.current;
-      g.frame++;
-      ctx.clearRect(0, 0, 400, 400);
-
-      // Background
-      ctx.fillStyle = '#f5e6c8';
-      ctx.fillRect(0, 0, 400, 400);
-
-      // Court lines
-      ctx.strokeStyle = '#8B451340';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 400; i += 40) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
-      }
-
-      // Backboard
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(HOOP_X + HOOP_W / 2 + 2, HOOP_Y - 30, 8, 60);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
-      ctx.strokeStyle = '#e94560';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
-
-      // Hoop ring
-      ctx.strokeStyle = '#ff6600';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(HOOP_X - HOOP_W / 2, HOOP_Y);
-      ctx.lineTo(HOOP_X + HOOP_W / 2, HOOP_Y);
-      ctx.stroke();
-
-      // Net (simple lines)
-      ctx.strokeStyle = '#ffffff80';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 5; i++) {
-        const nx = HOOP_X - HOOP_W / 2 + (HOOP_W / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(nx, HOOP_Y);
-        ctx.lineTo(nx + (i - 2) * 3, HOOP_Y + 25);
-        ctx.stroke();
-      }
-
-      // Ball physics
-      if (g.ball.flying) {
-        g.ball.vy += GRAVITY;
-        g.ball.x += g.ball.vx;
-        g.ball.y += g.ball.vy;
-
-        // Score detection
-        if (!g.ball.scored &&
-          g.ball.x > HOOP_X - HOOP_W / 2 && g.ball.x < HOOP_X + HOOP_W / 2 &&
-          g.ball.y > HOOP_Y - 5 && g.ball.y < HOOP_Y + 10 &&
-          g.ball.vy > 0) {
-          g.ball.scored = true;
-          g.score++;
-          setScore(g.score);
-          addXP(state, 10);
-          onToast('🏀 Забросил! +1', 'ok');
-        }
-
-        // Out of bounds or stopped
-        if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
-          g.ball.flying = false;
-          g.ball.x = BALL_START_X;
-          g.ball.y = BALL_START_Y;
-          g.ball.vx = 0;
-          g.ball.vy = 0;
-          g.attempts--;
-          setAttempts(g.attempts);
-          if (g.attempts <= 0) {
-            const coins = g.score * 15;
-            addCoins(state, coins);
-            onToast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10 → +${coins} алт` : `${g.score}/10 → +${coins} алт`, g.score >= 7 ? 'ok' : 'info');
-            if (g.score >= 7) onConfetti();
-            g.score = 0;
-            g.attempts = 10;
-            setScore(0);
-            setAttempts(10);
-          }
-        }
-      }
-
-      // Draw drag line
-      if (g.dragStart && !g.ball.flying) {
-        ctx.strokeStyle = '#e9456080';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(g.dragStart.x, g.dragStart.y);
-        ctx.lineTo(g.ball.x, g.ball.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // Draw ball
-      ctx.fillStyle = '#ff6600';
-      ctx.beginPath();
-      ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#cc5500';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // Ball lines
-      ctx.strokeStyle = '#cc550040';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(g.ball.x - BALL_R, g.ball.y);
-      ctx.lineTo(g.ball.x + BALL_R, g.ball.y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(g.ball.x, g.ball.y - BALL_R);
-      ctx.lineTo(g.ball.x, g.ball.y + BALL_R);
-      ctx.stroke();
-
-      // UI
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`🏀 ${g.score} / ${10 - (10 - g.attempts)}`, 10, 25);
-      ctx.fillText(`Попытки: ${g.attempts}`, 10, 45);
-
-      if (!g.ball.flying && g.attempts > 0) {
-        ctx.fillStyle = '#999';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Зажми и потяни от мяча, отпусти для броска', 200, 380);
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    loop();
-    return () => { running = false; };
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (400 / rect.width);
-    const y = (e.clientY - rect.top) * (400 / rect.height);
-    const g = gameRef.current;
-    const dx = x - g.ball.x;
-    const dy = y - g.ball.y;
-    if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.attempts > 0) {
-      g.dragStart = { x, y };
-      setDragStart({ x, y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!gameRef.current.dragStart) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragEnd({
-      x: (e.clientX - rect.left) * (400 / rect.width),
-      y: (e.clientY - rect.top) * (400 / rect.height),
-    });
-  };
-
-  const handleMouseUp = () => {
-    const g = gameRef.current;
-    if (!g.dragStart) return;
-    const dx = g.ball.x - g.dragStart.x;
-    const dy = g.ball.y - g.dragStart.y;
-    const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.12, 12);
-    const angle = Math.atan2(dy, dx);
-    g.ball.vx = Math.cos(angle) * power;
-    g.ball.vy = Math.sin(angle) * power;
-    g.ball.flying = true;
-    g.ball.scored = false;
-    g.dragStart = null;
-    setDragStart(null);
-    setDragEnd(null);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    const t = e.touches[0];
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (t.clientX - rect.left) * (400 / rect.width);
-    const y = (t.clientY - rect.top) * (400 / rect.height);
-    const g = gameRef.current;
-    const dx = x - g.ball.x;
-    const dy = y - g.ball.y;
-    if (Math.sqrt(dx * dx + dy * dy) < 50 && !g.ball.flying && g.attempts > 0) {
-      g.dragStart = { x, y };
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!gameRef.current.dragStart) return;
-    e.preventDefault();
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    handleMouseUp();
-  };
-
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          width: '100%', maxWidth: 400,
-          border: '2px solid var(--px-border)', cursor: 'crosshair',
-          touchAction: 'none', imageRendering: 'pixelated',
-        }}
-      />
-      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 8 }}>
-        DRAG FROM BALL TO AIM, RELEASE TO THROW! +15 COINS PER BASKET
-      </div>
-    </div>
-  );
-}
-
 // ===== BOOK PREDICTION =====
 function BookPredictionView({ prediction }: { prediction: string }) {
   return (
@@ -2187,199 +2883,40 @@ function BookPredictionView({ prediction }: { prediction: string }) {
   );
 }
 
-// ===== FURNITURE TOSS =====
-function FurnitureTossView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [score, setScore] = useState(0);
-  const [attempts, setAttempts] = useState(8);
-  type FurnitureItem = { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean };
-  const gameRef = useRef<{
-    score: number; attempts: number;
-    items: FurnitureItem[];
-    targetZone: { x: number; y: number; w: number; h: number };
-    dragging: { x: number; y: number } | null;
-    currentItem: FurnitureItem | null;
-  }>({
-    score: 0, attempts: 8,
-    items: [],
-    targetZone: { x: 280, y: 280, w: 100, h: 60 },
-    dragging: null,
-    currentItem: null,
-  });
 
-  const COLORS = ['#8B4513', '#654321', '#A0522D', '#D2691E', '#CD853F'];
-
-  function spawnItem(g: typeof gameRef.current) {
-    const w = 30 + Math.random() * 30;
-    const h = 20 + Math.random() * 20;
-    g.currentItem = { x: 60, y: 300, vx: 0, vy: 0, w, h, color: COLORS[Math.floor(Math.random() * COLORS.length)], landed: false };
-  }
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    canvas.width = 400;
-    canvas.height = 400;
-    let running = true;
-
-    const g = gameRef.current;
-    spawnItem(g);
-
-    function loop() {
-      if (!running || !ctx) return;
-      ctx.clearRect(0, 0, 400, 400);
-
-      ctx.fillStyle = '#2a2a4a';
-      ctx.fillRect(0, 0, 400, 400);
-
-      ctx.fillStyle = '#1a3a1a';
-      ctx.fillRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
-      ctx.strokeStyle = '#4ecca3';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(g.targetZone.x, g.targetZone.y, g.targetZone.w, g.targetZone.h);
-      ctx.fillStyle = '#4ecca3';
-      ctx.font = '10px "Press Start 2P", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('TARGET', g.targetZone.x + g.targetZone.w / 2, g.targetZone.y + g.targetZone.h / 2 + 4);
-
-      for (const item of g.items) {
-        ctx.fillStyle = item.color;
-        ctx.fillRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(item.x - item.w / 2, item.y - item.h / 2, item.w, item.h);
-      }
-
-      if (g.currentItem && !g.dragging) {
-        const c = g.currentItem;
-        ctx.fillStyle = c.color;
-        ctx.fillRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
-        ctx.strokeStyle = '#e8c840';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
-      }
-
-      if (g.dragging && g.currentItem) {
-        ctx.strokeStyle = '#e8c84080';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(g.dragging.x, g.dragging.y);
-        ctx.lineTo(g.currentItem.x, g.currentItem.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      for (const item of g.items) {
-        if (item.vy !== 0 || item.vx !== 0) {
-          item.vy += 0.3;
-          item.x += item.vx;
-          item.y += item.vy;
-
-          if (item.y > 380) {
-            item.y = 380;
-            item.vy = 0;
-            item.vx = 0;
-            item.landed = true;
-
-            if (item.x > g.targetZone.x && item.x < g.targetZone.x + g.targetZone.w &&
-                item.y - item.h / 2 < g.targetZone.y + g.targetZone.h) {
-              g.score++;
-              setScore(g.score);
-              onToast('+1 В МЕШЕНЬ!', 'ok');
-            }
-          }
-        }
-      }
-
-      ctx.fillStyle = '#8a8470';
-      ctx.font = '10px "Press Start 2P", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`SCORE: ${g.score}`, 10, 25);
-      ctx.fillText(`TRIES: ${g.attempts}`, 10, 45);
-
-      if (g.attempts > 0) {
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#5a5648';
-        ctx.font = '8px "Press Start 2P", monospace';
-        ctx.fillText('DRAG FROM ITEM TO AIM, RELEASE', 200, 390);
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    loop();
-    return () => { running = false; };
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (400 / rect.width);
-    const y = (e.clientY - rect.top) * (400 / rect.height);
-    const g = gameRef.current;
-    if (g.currentItem && !g.currentItem.landed) {
-      const dx = x - g.currentItem.x;
-      const dy = y - g.currentItem.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 40) {
-        g.dragging = { x, y };
-      }
-    }
+// ===== CARD DRAWING HELPER =====
+function drawCardOnCanvas(ctx: CanvasRenderingContext2D, card: any, x: number, y: number, w: number, h: number, selected?: boolean) {
+  const colorMap: Record<string, string> = {
+    red: '#c0392b', blue: '#2980b9', green: '#27ae60', yellow: '#f39c12',
+  };
+  const valueMap: Record<string, string> = {
+    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+    '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+    'skip': '\u2298', 'reverse': '\u27F2', 'plus2': '+2',
+    'wild': '\u2605', 'wild_plus4': '+4',
   };
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const g = gameRef.current;
-    if (!g.dragging || !g.currentItem) return;
+  // Card background
+  ctx.fillStyle = card.color ? colorMap[card.color] : '#333';
+  ctx.fillRect(x, y, w, h);
 
-    const dx = g.currentItem.x - g.dragging.x;
-    const dy = g.currentItem.y - g.dragging.y;
-    const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.1, 10);
-    const angle = Math.atan2(dy, dx);
+  // Border
+  ctx.strokeStyle = selected ? '#e8c840' : '#000';
+  ctx.lineWidth = selected ? 3 : 1;
+  ctx.strokeRect(x, y, w, h);
 
-    g.currentItem.vx = Math.cos(angle) * power;
-    g.currentItem.vy = Math.sin(angle) * power;
-    g.items.push(g.currentItem);
-    g.currentItem = null;
-    g.dragging = null;
-    g.attempts--;
-    setAttempts(g.attempts);
+  // Inner white area
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
 
-    if (g.attempts <= 0) {
-      setTimeout(() => {
-        const coins = g.score * 10;
-        addCoins(state, coins);
-        onToast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8 → +${coins} алт` : `${g.score}/8 → +${coins} алт`, g.score >= 5 ? 'ok' : 'info');
-        if (g.score >= 5) onConfetti();
-        g.score = 0;
-        g.attempts = 8;
-        g.items = [];
-        setScore(0);
-        setAttempts(8);
-        spawnItem(g);
-      }, 500);
-    } else {
-      setTimeout(() => spawnItem(g), 300);
-    }
-  };
-
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        style={{
-          width: '100%', maxWidth: 400,
-          border: '2px solid var(--px-border)', cursor: 'crosshair',
-          touchAction: 'none', imageRendering: 'pixelated',
-        }}
-      />
-      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 8 }}>
-        ЗАБРОСЬ МЕБЕЛЬ В ЗОНУ! +10 ЗА ПОПАДАНИЕ
-      </div>
-    </div>
-  );
+  // Value text
+  ctx.fillStyle = card.color ? colorMap[card.color] : '#333';
+  const fontSize = Math.floor(w * 0.38);
+  ctx.font = `bold ${fontSize}px "Press Start 2P", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(valueMap[card.value] || '?', x + w / 2, y + h / 2);
+  ctx.textBaseline = 'alphabetic';
 }
 
 // ===== CONFETTI =====

@@ -931,20 +931,20 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
 function getModalTitle(type: string): string {
   const t: Record<string, string> = {
-    shop: 'Магазин',
-    inventory: 'Инвентарь',
-    decorate: 'Оформить кабинет',
-    profile: 'Профиль',
-    achievements: 'Ачивки',
-    quests: 'Дейли квесты',
-    talk: 'Разговор',
-    rps: 'Камень-Ножницы-Бумага',
-    whiteboard: 'Whiteboard',
-    smoke: 'Курилка',
-    microwave: 'Кухня — Микроволновка',
-    mp_rps: 'КНБ с игроком',
-    book_prediction: '📖 Книга Судеб',
-    basketball: '🏀 Баскетбол',
+    shop: 'SHOP',
+    inventory: 'INVENTORY',
+    decorate: 'DECORATE',
+    profile: 'PROFILE',
+    achievements: 'ACHIEVEMENTS',
+    quests: 'QUESTS',
+    talk: 'TALK',
+    rps: 'ROCK-PAPER-SCISSORS',
+    whiteboard: 'WHITEBOARD',
+    smoke: 'SMOKING ROOM',
+    microwave: 'KITCHEN — MICROWAVE',
+    mp_rps: 'RPS VS PLAYER',
+    book_prediction: '📖 BOOK OF FATE',
+    basketball: '🏀 BASKETBALL',
   };
   return t[type] || '';
 }
@@ -953,27 +953,23 @@ function getModalTitle(type: string): string {
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { desks: 'Столы', chairs: 'Стулья', sofas: 'Диваны', lights: 'Свет', small: 'Мелочь', wall: 'Стены' };
+  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL' };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, color: '#999' }}>Выбери предмет для своего кабинета</div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#4ecca3', background: '#f0f0f0', padding: '3px 10px', borderRadius: 8 }}>
-          🪙 {state.player.coins} алт
+        <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>CHOOSE FURNITURE</div>
+        <div className="px-panel" style={{ padding: '4px 10px', fontSize: 7 }}>
+          <span style={{ color: 'var(--px-accent)' }}>🪙 {state.player.coins}</span>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
         {Object.keys(SHOP).map((c) => (
           <button
             key={c}
             onClick={() => { setCat(c); setPreview(null); }}
-            className="modal-btn"
-            style={{
-              background: cat === c ? '#333' : undefined,
-              color: cat === c ? '#fff' : undefined,
-              borderColor: cat === c ? '#333' : undefined,
-            }}
+            className={`px-btn small${cat === c ? ' accent' : ''}`}
+            style={{ fontSize: 7 }}
           >
             {labels[c] || c}
           </button>
@@ -984,52 +980,48 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
         const pItem = ALL_ITEMS.find(i => i.id === preview);
         if (!pItem) return null;
         return (
-          <div style={{ background: '#f0f0f0', borderRadius: 12, padding: 16, marginBottom: 14, display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div style={{ width: 120, height: 120, background: '#fff', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+          <div className="px-panel" style={{ padding: 12, marginBottom: 14, display: 'flex', gap: 14, alignItems: 'center' }}>
+            <div style={{ width: 100, height: 100, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)' }}>
               <img src={pItem.sprite} alt={pItem.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#333' }}>{pItem.n}</div>
-              <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>{pItem.surface === 'wall' ? 'На стену' : 'На пол'} · {pItem.w}×{pItem.h}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#4ecca3', marginTop: 6 }}>{pItem.p} алт</div>
+              <div style={{ fontSize: 9, color: 'var(--px-title)', marginBottom: 4 }}>{pItem.n}</div>
+              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 4 }}>{pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · {pItem.w}×{pItem.h}</div>
+              <div style={{ fontSize: 8, color: 'var(--px-accent)', marginBottom: 8 }}>{pItem.p} COINS</div>
               <button
                 onClick={() => {
                   const res = buyItem(state, pItem.id);
                   if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
                   else onToast(res.msg, 'info');
                 }}
-                style={{
-                  marginTop: 8, padding: '6px 18px', background: '#4ecca3', color: '#fff',
-                  border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer',
-                }}
-              >Купить</button>
+                className="px-btn accent"
+                style={{ fontSize: 7 }}
+              >BUY</button>
             </div>
           </div>
         );
       })()}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {(SHOP as any)[cat]?.map((item: any) => {
           const count = state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
           return (
             <div
               key={item.id}
               onClick={() => setPreview(preview === item.id ? null : item.id)}
+              className="px-panel"
               style={{
-                background: preview === item.id ? '#e8f5e9' : '#f8f8f8',
-                borderRadius: 10,
                 padding: 8,
                 textAlign: 'center',
                 cursor: 'pointer',
-                border: `2px solid ${preview === item.id ? '#4ecca3' : 'transparent'}`,
-                transition: '0.15s',
+                borderColor: preview === item.id ? 'var(--px-accent)' : undefined,
               }}
             >
-              <div style={{ width: '100%', aspectRatio: '1', background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 120 }}>
+              <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 120 }}>
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#333' }}>{item.n}</div>
-              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{item.p} алт {count > 0 && <span style={{ color: '#4ecca3' }}>({count})</span>}</div>
+              <div style={{ fontSize: 7, color: 'var(--px-text)' }}>{item.n}</div>
+              <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
             </div>
           );
         })}
@@ -1054,26 +1046,26 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-        <button onClick={() => setTab('all')} className="modal-btn" style={{ background: tab === 'all' ? '#333' : undefined, color: tab === 'all' ? '#fff' : undefined, borderColor: tab === 'all' ? '#333' : undefined }}>
-          Куплено ({state.player.furniture.length})
+      <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+        <button onClick={() => setTab('all')} className={`px-btn small${tab === 'all' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+          OWNED ({state.player.furniture.length})
         </button>
-        <button onClick={() => setTab('placed')} className="modal-btn" style={{ background: tab === 'placed' ? '#333' : undefined, color: tab === 'placed' ? '#fff' : undefined, borderColor: tab === 'placed' ? '#333' : undefined }}>
-          Размещено ({placed.length})
+        <button onClick={() => setTab('placed')} className={`px-btn small${tab === 'placed' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+          PLACED ({placed.length})
         </button>
         {state.player.carrying && (
-          <button onClick={() => setTab('carrying')} className="modal-btn" style={{ background: tab === 'carrying' ? '#333' : undefined, color: tab === 'carrying' ? '#fff' : undefined, borderColor: tab === 'carrying' ? '#333' : undefined }}>
-            В руках
+          <button onClick={() => setTab('carrying')} className={`px-btn small${tab === 'carrying' ? ' accent' : ''}`} style={{ fontSize: 7 }}>
+            CARRYING
           </button>
         )}
       </div>
 
       {tab === 'all' && (
         <div>
-          <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>Нажми на предмет чтобы взять в руки, потом правой кнопкой → Поставить</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 8 }}>CLICK TO HOLD, THEN RIGHT-CLICK → PLACE</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {state.player.furniture.length === 0 && (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#bbb', padding: 30, fontSize: 12 }}>Пусто. Сходи в магазин!</div>
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--px-text-dim)', padding: 30, fontSize: 8 }}>EMPTY. VISIT THE SHOP!</div>
             )}
             {Object.entries(itemCounts).map(([id, count]) => {
               const item = ALL_ITEMS.find((x) => x.id === id);
@@ -1083,28 +1075,27 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
                 <div
                   key={id}
                   onClick={() => {
-                    if (available <= 0) { onToast('Все размещены', 'info'); return; }
-                    if (state.player.carrying) { onToast('Уже держишь предмет', 'info'); return; }
+                    if (available <= 0) { onToast('ALL PLACED', 'info'); return; }
+                    if (state.player.carrying) { onToast('ALREADY HOLDING', 'info'); return; }
                     state.player.carrying = id;
-                    onToast(`Взял ${item?.e || ''}`, 'ok');
+                    onToast(`HELD ${item?.e || ''}`, 'ok');
                   }}
+                  className="px-panel"
                   style={{
-                    background: available > 0 ? '#f8f8f8' : '#e8f5e9',
-                    borderRadius: 10,
-                    padding: 8,
+                    padding: 6,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    border: `2px solid ${available > 0 ? '#ddd' : '#4ecca360'}`,
                     cursor: available > 0 ? 'pointer' : 'default',
-                    opacity: available > 0 ? 1 : 0.5,
+                    opacity: available > 0 ? 1 : 0.4,
+                    borderColor: available > 0 ? undefined : 'var(--px-border-dark)',
                   }}
                 >
-                  <div style={{ width: '100%', aspectRatio: '1', background: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 4 }}>
+                  <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 4 }}>
                     <img src={item?.sprite} alt={item?.n} style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   </div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#333' }}>{item?.n} {count > 1 && `×${count}`}</div>
-                  {available > 0 && <div style={{ fontSize: 8, color: '#4ecca3', marginTop: 2 }}>{available} свободно</div>}
+                  <div style={{ fontSize: 6, color: 'var(--px-text)' }}>{item?.n} {count > 1 && `×${count}`}</div>
+                  {available > 0 && <div style={{ fontSize: 6, color: 'var(--px-accent)', marginTop: 2 }}>{available} FREE</div>}
                 </div>
               );
             })}
@@ -1114,29 +1105,28 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
       {tab === 'placed' && (
         <div>
-          <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>Подойди к предмету и правой кнопкой → «Взять»</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 8 }}>APPROACH ITEM → RIGHT-CLICK → TAKE</div>
           {placed.length === 0 && (
-            <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center', padding: 20 }}>Ничего не размещено</div>
+            <div style={{ color: 'var(--px-text-dim)', fontSize: 8, textAlign: 'center', padding: 20 }}>NOTHING PLACED</div>
           )}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {placed.map((p, i) => {
               const item = ALL_ITEMS.find((x) => x.id === p.id);
               return (
                 <div
                   key={`${p.id}_${i}`}
+                  className="px-panel"
                   style={{
-                    padding: '6px 10px',
-                    background: p.surface === 'wall' ? '#e3f2fd' : '#e8f5e9',
-                    borderRadius: 8,
+                    padding: '5px 8px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    fontSize: 11,
+                    fontSize: 7,
                   }}
                 >
-                  <img src={item?.sprite} alt="" style={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  <span style={{ fontWeight: 600 }}>{item?.n}</span>
-                  <span style={{ color: '#bbb', fontSize: 9 }}>{p.surface === 'wall' ? 'стена' : 'пол'}</span>
+                  <img src={item?.sprite} alt="" style={{ width: 20, height: 20, objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <span style={{ color: 'var(--px-text)' }}>{item?.n}</span>
+                  <span style={{ color: 'var(--px-text-dim)', fontSize: 6 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
                 </div>
               );
             })}
@@ -1146,11 +1136,11 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
       {tab === 'carrying' && state.player.carrying && (
         <div style={{ textAlign: 'center', padding: 20 }}>
-          <div style={{ width: 100, height: 100, background: '#f0f0f0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', overflow: 'hidden' }}>
+          <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', overflow: 'hidden', border: '1px solid var(--px-border-dark)' }}>
             <img src={ALL_ITEMS.find(i => i.id === state.player.carrying)?.sprite} alt="" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', imageRendering: 'pixelated' }} />
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Держишь: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
-          <div style={{ fontSize: 11, color: '#999' }}>Подойди куда нужно и правой кнопкой → «Поставить»</div>
+          <div style={{ fontSize: 8, color: 'var(--px-title)', marginBottom: 8 }}>HOLDING: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>GO TO DESTINATION → RIGHT-CLICK → PLACE</div>
         </div>
       )}
     </div>
@@ -1163,42 +1153,39 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 10 }}>
-        Предметы размещаются свободно. Подойди к предмету и правой кнопкой → «Взять» или «Поставить»
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 10 }}>
+        RIGHT-CLICK → TAKE OR PLACE
       </div>
 
-      {/* Currently carrying */}
       {state.player.carrying && (
-        <div style={{ background: '#fff9c4', borderRadius: 10, padding: 12, marginBottom: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>📦 Держишь: {getItemEmoji(state.player.carrying)} {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
-          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>Подойди куда нужно → правая кнопка → «Поставить»</div>
+        <div className="px-panel" style={{ padding: 10, marginBottom: 12, textAlign: 'center', borderColor: 'var(--px-title)' }}>
+          <div style={{ fontSize: 8, color: 'var(--px-title)' }}>📦 HOLDING: {getItemEmoji(state.player.carrying)} {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 4 }}>GO → RIGHT-CLICK → PLACE</div>
         </div>
       )}
 
-      {/* Placed items list */}
-      <div style={{ fontSize: 10, color: '#999', marginBottom: 6 }}>Размещено ({placed.length})</div>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 6 }}>PLACED ({placed.length})</div>
       {placed.length === 0 && (
-        <div style={{ color: '#bbb', fontSize: 12, textAlign: 'center', padding: 20 }}>Ничего не размещено. Купи в магазине!</div>
+        <div style={{ color: 'var(--px-text-dim)', fontSize: 8, textAlign: 'center', padding: 20 }}>NOTHING PLACED. BUY FROM SHOP!</div>
       )}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {placed.map((p, i) => {
           const item = ALL_ITEMS.find((x) => x.id === p.id);
           return (
             <div
               key={`${p.id}_${i}`}
+              className="px-panel"
               style={{
-                padding: '6px 10px',
-                background: p.surface === 'wall' ? '#e3f2fd' : '#e8f5e9',
-                borderRadius: 8,
+                padding: '5px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                fontSize: 11,
+                fontSize: 7,
               }}
             >
               <span>{item?.e}</span>
-              <span style={{ color: '#999' }}>{item?.n}</span>
-              <span style={{ color: '#bbb', fontSize: 9 }}>{p.surface === 'wall' ? '🏠 стена' : '⬛ пол'}</span>
+              <span style={{ color: 'var(--px-text-dim)' }}>{item?.n}</span>
+              <span style={{ color: 'var(--px-text-dim)', fontSize: 6 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
             </div>
           );
         })}
@@ -1212,32 +1199,35 @@ function ProfileView({ state }: { state: GameState }) {
   const p = state.player;
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
-      <div style={{ width: 64, height: 64, borderRadius: 12, overflow: 'hidden', margin: '0 auto 8px', background: '#f5f5f5' }}>
+      <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
         <img src={`/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>{p.role}</div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 4 }}>{p.name}</div>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>{p.role}</div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.coins}</div><div style={{ fontSize: 9, color: '#999' }}>алт</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.furniture.length}</div><div style={{ fontSize: 9, color: '#999' }}>предметов</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700 }}>{p.achievements.length}</div><div style={{ fontSize: 9, color: '#999' }}>ачивок</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.coins}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>COINS</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.furniture.length}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>ITEMS</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 12, color: 'var(--px-accent)' }}>{p.achievements.length}</div><div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>ACHIEV</div></div>
       </div>
       <input
-        style={{ width: '100%', padding: 8, border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 12, textAlign: 'center', marginBottom: 6 }}
+        className="px-input"
+        style={{ width: '100%', marginBottom: 6, fontSize: 7, textAlign: 'center' }}
         value={p.name}
         onChange={(e) => { p.name = e.target.value; persistState(state); }}
-        placeholder="Имя"
+        placeholder="NAME"
       />
       <input
-        style={{ width: '100%', padding: 8, border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 12, textAlign: 'center' }}
+        className="px-input"
+        style={{ width: '100%', fontSize: 7, textAlign: 'center' }}
         value={p.role}
         onChange={(e) => { p.role = e.target.value; persistState(state); }}
-        placeholder="Роль"
+        placeholder="ROLE"
       />
       <button
         onClick={() => { logout(); window.location.reload(); }}
-        style={{ marginTop: 14, padding: '8px 20px', borderRadius: 8, border: '1px solid #e94560', background: 'transparent', color: '#e94560', fontWeight: 600, fontSize: 11, cursor: 'pointer' }}
-      >Выйти из аккаунта</button>
+        className="px-btn danger"
+        style={{ marginTop: 14, fontSize: 7 }}
+      >LOGOUT</button>
     </div>
   );
 }
@@ -1249,32 +1239,33 @@ import { SHOP } from '../game/constants';
 function AchievementsView({ state }: { state: GameState }) {
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
         {ACHIEVEMENTS.map((a) => {
           const unlocked = state.player.achievements.includes(a.id);
           return (
             <div
               key={a.id}
+              className="px-panel"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                padding: '6px 10px',
-                borderRadius: 8,
-                fontSize: 11,
-                background: unlocked ? '#e8f5e9' : '#f8f8f8',
-                color: unlocked ? '#4ecca3' : '#999',
-                fontWeight: unlocked ? 600 : 400,
+                padding: '5px 8px',
+                fontSize: 7,
+                opacity: unlocked ? 1 : 0.4,
+                borderColor: unlocked ? 'var(--px-accent)' : undefined,
               }}
               title={a.desc}
             >
-              {a.icon} {a.name} {unlocked ? '✓' : ''}
+              <span>{a.icon}</span>
+              <span style={{ color: unlocked ? 'var(--px-accent)' : 'var(--px-text-dim)' }}>{a.name}</span>
+              {unlocked && <span style={{ color: 'var(--px-accent)' }}>✓</span>}
             </div>
           );
         })}
       </div>
-      <div style={{ marginTop: 10, fontSize: 11, color: '#999' }}>
-        Открыто: {state.player.achievements.length}/{ACHIEVEMENTS.length}
+      <div style={{ marginTop: 10, fontSize: 7, color: 'var(--px-text-dim)' }}>
+        UNLOCKED: {state.player.achievements.length}/{ACHIEVEMENTS.length}
       </div>
     </div>
   );
@@ -1284,8 +1275,8 @@ function AchievementsView({ state }: { state: GameState }) {
 function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 10 }}>Выполняй квесты каждый день!</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 10 }}>DAILY QUESTS</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {DAILY_QUESTS.map((quest) => {
           const progress = getQuestProgress(state, quest.id);
           const done = progress >= quest.target;
@@ -1293,23 +1284,22 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
           return (
             <div
               key={quest.id}
+              className="px-panel"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
-                background: claimed ? '#e8f5e9' : done ? '#fff9c4' : '#f8f8f8',
-                border: `1px solid ${claimed ? '#4ecca3' : done ? '#ffa726' : '#e8e8e8'}`,
+                padding: '8px 10px',
+                borderColor: claimed ? 'var(--px-accent)' : done ? 'var(--px-title)' : undefined,
               }}
             >
-              <div style={{ fontSize: 20 }}>{quest.icon}</div>
+              <div style={{ fontSize: 16 }}>{quest.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#333' }}>{quest.name}</div>
-                <div style={{ fontSize: 10, color: '#999' }}>{quest.desc}</div>
+                <div style={{ fontSize: 8, color: 'var(--px-text)' }}>{quest.name}</div>
+                <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{quest.desc}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#999' }}>
+                <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>
                   {Math.min(progress, quest.target)}/{quest.target}
                 </div>
                 {done && !claimed && (
@@ -1319,21 +1309,13 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                       if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
                       else onToast(res.msg, 'info');
                     }}
-                    style={{
-                      fontSize: 10,
-                      color: '#4ecca3',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      marginTop: 2,
-                    }}
+                    style={{ fontSize: 7, color: 'var(--px-accent)', cursor: 'pointer', marginTop: 2 }}
                   >
-                    +{quest.reward} алт
+                    +{quest.reward} COINS
                   </div>
                 )}
                 {claimed && (
-                  <div style={{ fontSize: 10, color: '#4ecca3', fontWeight: 600, marginTop: 2 }}>
-                    Получено ✓
-                  </div>
+                  <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 2 }}>DONE ✓</div>
                 )}
               </div>
             </div>
@@ -1347,24 +1329,24 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
 // ===== TALK =====
 function TalkView({ data, state, onToast }: { data: Record<string, unknown>; state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void }) {
   const bot = data.bot as any;
-  const phrases = ['Привет! Как дела?', 'Видел задачу в трекере?', 'Нужно обсудить спринт', 'Кофе? ☕', 'Петя опять деплой сломал', 'Давай на whiteboard сходим'];
+  const phrases = ['Hey! How\'s it going?', 'Did you see the task in the tracker?', 'We need to discuss the sprint', 'Coffee? ☕', 'Petya broke the deploy again', 'Let\'s go to the whiteboard'];
 
   if (bot?.id === 'kryska') {
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
-        <div style={{ fontSize: 48, marginBottom: 10 }}>🐀</div>
-        <div style={{ background: '#f8f8f8', padding: 12, borderRadius: 10, fontSize: 13 }}>Крыска пищит: *пии-пии*</div>
-        <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>+5 алт</div>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>🐀</div>
+        <div className="px-panel" style={{ padding: 10, fontSize: 8, color: 'var(--px-text)' }}>Kryska squeaks: *squeak squeak*</div>
+        <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
       </div>
     );
   }
 
   return (
     <div style={{ padding: 10 }}>
-      <div style={{ background: '#f8f8f8', padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 13 }}>
-        {bot?.name}: &quot;{phrases[Math.floor(Math.random() * phrases.length)]}&quot;
+      <div className="px-panel" style={{ padding: 10, marginBottom: 12, fontSize: 8 }}>
+        <span style={{ color: 'var(--px-title)' }}>{bot?.name}:</span> <span style={{ color: 'var(--px-text)' }}>"{phrases[Math.floor(Math.random() * phrases.length)]}"</span>
       </div>
-      <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>+5 алт за разговор</div>
+      <div style={{ fontSize: 7, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
     </div>
   );
 }
@@ -1373,25 +1355,25 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
 function RpsView({ data, state, onToast, onConfetti }: { data: Record<string, unknown>; state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const result = rpsGame(state);
   useEffect(() => {
-    if (result.reward > 0) { onToast(`+${result.reward} алт`, 'ok'); onConfetti(); }
+    if (result.reward > 0) { onToast(`+${result.reward} COINS`, 'ok'); onConfetti(); }
   }, []);
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>Против {(data.bot as any)?.name || 'Бот'}</div>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.bot as any)?.name || 'Bot'}</div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 36 }}>{result.playerChoice}</div>
-          <div style={{ fontSize: 10, color: '#999' }}>Ты</div>
+          <div style={{ fontSize: 28 }}>{result.playerChoice}</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>YOU</div>
         </div>
-        <div style={{ fontSize: 20, color: '#ccc', display: 'flex', alignItems: 'center' }}>vs</div>
+        <div style={{ fontSize: 14, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 36 }}>{result.botChoice}</div>
-          <div style={{ fontSize: 10, color: '#999' }}>{(data.bot as any)?.name}</div>
+          <div style={{ fontSize: 28 }}>{result.botChoice}</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(data.bot as any)?.name}</div>
         </div>
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: result.reward > 0 ? '#4ecca3' : '#e94560' }}>
-        {result.result}{result.reward > 0 ? ` +${result.reward} алт` : ''}
+      <div style={{ fontSize: 10, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+        {result.result}{result.reward > 0 ? ` +${result.reward} COINS` : ''}
       </div>
     </div>
   );
@@ -1428,20 +1410,20 @@ function WhiteboardView() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
         {['#333', '#e94560', '#4ecca3', '#ffa726', '#2196f3', '#9c27b0'].map((c) => (
-          <div key={c} onClick={() => { color.current = c; }} style={{ width: 22, height: 22, borderRadius: 6, cursor: 'pointer', background: c }} />
+          <div key={c} onClick={() => { color.current = c; }} style={{ width: 18, height: 18, cursor: 'pointer', background: c, border: '2px solid var(--px-border)' }} />
         ))}
-        <div style={{ width: 1, height: 20, background: '#e0e0e0', margin: '0 4px' }} />
-        <button onClick={() => { const c = canvasRef.current; if (c) { c.getContext('2d')?.clearRect(0, 0, 560, 360); c.getContext('2d')!.fillStyle = '#fff'; c.getContext('2d')!.fillRect(0, 0, 560, 360); } }} className="modal-btn">Очистить</button>
+        <div style={{ width: 1, height: 16, background: 'var(--px-border-dark)', margin: '0 4px' }} />
+        <button onClick={() => { const c = canvasRef.current; if (c) { c.getContext('2d')?.clearRect(0, 0, 560, 360); c.getContext('2d')!.fillStyle = '#fff'; c.getContext('2d')!.fillRect(0, 0, 560, 360); } }} className="px-btn small" style={{ fontSize: 7 }}>CLEAR</button>
       </div>
-      <canvas ref={canvasRef} width="560" height="360" style={{ borderRadius: 8, border: '1px solid #e0e0e0', width: '100%', cursor: 'crosshair' }} />
+      <canvas ref={canvasRef} width="560" height="360" style={{ border: '2px solid var(--px-border)', width: '100%', cursor: 'crosshair', imageRendering: 'pixelated' }} />
     </div>
   );
 }
 
 // ===== SMOKE TAP GAME =====
 function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
-  const TAP_TARGET = 30; // taps needed to finish
-  const TIME_LIMIT = 20; // seconds
+  const TAP_TARGET = 30;
+  const TIME_LIMIT = 20;
   const [taps, setTaps] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
   const [done, setDone] = useState(false);
@@ -1479,8 +1461,8 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
           setWon(true);
           addCoins(state, 20);
           unlockAchievement(state, 'smoker');
-          logActivity(state, '🚬', 'Прокурил в курилке');
-          onToast('+20 алт Выкурил!', 'ok');
+          logActivity(state, '🚬', 'Smoked in the smoking room');
+          onToast('+20 COINS SMOKED!', 'ok');
           onConfetti();
         }, 0);
       }
@@ -1492,57 +1474,44 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 48, marginBottom: 10 }}>🚬</div>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Прокури сигарету!</div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>
-        {done ? (won ? 'Готово!' : 'Время вышло!') : `Жми ${TAP_TARGET} раз за ${TIME_LIMIT}с`}
+      <div style={{ fontSize: 36, marginBottom: 10 }}>🚬</div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>SMOKE IT!</div>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>
+        {done ? (won ? 'DONE!' : 'TIME UP!') : `TAP ${TAP_TARGET} TIMES IN ${TIME_LIMIT}S`}
       </div>
 
-      {/* Progress bar */}
-      <div style={{ width: '100%', height: 12, background: '#eee', borderRadius: 6, overflow: 'hidden', margin: '8px 0' }}>
-        <div style={{ height: '100%', background: done && !won ? '#e94560' : 'linear-gradient(90deg, #888, #4ecca3)', borderRadius: 6, transition: 'width 0.05s', width: `${progress}%` }} />
+      <div style={{ width: '100%', height: 10, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden', margin: '8px 0' }}>
+        <div style={{ height: '100%', background: done && !won ? 'var(--px-danger)' : 'var(--px-accent)', transition: 'width 0.05s', width: `${progress}%` }} />
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 20, margin: '12px 0' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#e94560' }}>{timeLeft}</div>
-          <div style={{ fontSize: 10, color: '#999' }}>Секунд</div>
+          <div style={{ fontSize: 20, color: 'var(--px-danger)' }}>{timeLeft}</div>
+          <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>SECONDS</div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#4ecca3' }}>{taps}/{TAP_TARGET}</div>
-          <div style={{ fontSize: 10, color: '#999' }}>Тапов</div>
+          <div style={{ fontSize: 20, color: 'var(--px-accent)' }}>{taps}/{TAP_TARGET}</div>
+          <div style={{ fontSize: 6, color: 'var(--px-text-dim)' }}>TAPS</div>
         </div>
       </div>
 
-      {/* Tap button */}
       {!done && (
         <button
           onClick={handleTap}
-          style={{
-            fontSize: 18,
-            padding: '12px 32px',
-            borderRadius: 12,
-            border: '2px solid #888',
-            background: '#f5f5f5',
-            cursor: 'pointer',
-            userSelect: 'none',
-            touchAction: 'manipulation',
-          }}
-          onMouseDown={(e) => (e.currentTarget.style.background = '#ddd')}
-          onMouseUp={(e) => (e.currentTarget.style.background = '#f5f5f5')}
-        >
-          🚬 Тап!
-        </button>
+          className="px-btn danger"
+          style={{ fontSize: 12, padding: '10px 28px' }}
+          onMouseDown={(e) => (e.currentTarget.style.opacity = '0.7')}
+          onMouseUp={(e) => (e.currentTarget.style.opacity = '1')}
+        >🚬 TAP!</button>
       )}
 
       {done && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: won ? '#4ecca3' : '#e94560' }}>
-            {won ? 'Выкурил! +20 алт' : 'Не успел! 😅'}
+          <div style={{ fontSize: 10, color: won ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+            {won ? 'SMOKED! +20 COINS' : 'TOO SLOW!'}
           </div>
-          <button onClick={() => { setTaps(0); setTimeLeft(TIME_LIMIT); setDone(false); setWon(false); finishedRef.current = false; }} className="modal-btn" style={{ marginTop: 8 }}>
-            Ещё раз 🔄
+          <button onClick={() => { setTaps(0); setTimeLeft(TIME_LIMIT); setDone(false); setWon(false); finishedRef.current = false; }} className="px-btn small" style={{ marginTop: 8, fontSize: 7 }}>
+            RETRY
           </button>
         </div>
       )}
@@ -1575,10 +1544,10 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
     setResult(res);
     setStatus('done');
     if (res.reward > 0) {
-      onToast(`+${res.reward} алт`, 'ok');
+      onToast(`+${res.reward} COINS`, 'ok');
       onConfetti();
     }
-    logActivity(state, '⏱️', `Разогрел обед: ${res.stoppedAt}`);
+    logActivity(state, '⏱️', `Heated lunch: ${res.stoppedAt}`);
   };
 
   useEffect(() => {
@@ -1586,52 +1555,42 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
   }, []);
 
   const displayTime = (elapsed / 1000).toFixed(3);
-  const progress = Math.min((elapsed / 8000) * 100, 100); // 8s full bar
-  const targetZone = (5000 / 8000) * 100; // 5s mark = 62.5% of bar
+  const progress = Math.min((elapsed / 8000) * 100, 100);
+  const targetZone = (5000 / 8000) * 100;
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 48, marginBottom: 10 }}>⏱️</div>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Разогреть обед</div>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>Останови таймер на 5.000 секунд</div>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>⏱️</div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 6 }}>HEAT LUNCH</div>
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>STOP AT 5.000 SECONDS</div>
 
-      {/* Timer display */}
-      <div style={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? '#e94560' : '#333' }}>
+      <div style={{ fontSize: 24, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? 'var(--px-danger)' : 'var(--px-title)' }}>
         {status === 'waiting' ? '0.000' : status === 'done' ? result?.stoppedAt || '0.000' : displayTime}
       </div>
 
-      {/* Progress bar with target zone */}
-      <div style={{ position: 'relative', width: '100%', height: 12, background: '#eee', borderRadius: 6, overflow: 'hidden', margin: '8px 0' }}>
-        <div style={{ position: 'absolute', left: `${targetZone - 5}%`, width: '10%', height: '100%', background: '#4ecca330', borderLeft: '2px dashed #4ecca3', borderRight: '2px dashed #4ecca3' }} />
-        <div style={{ height: '100%', background: status === 'done' && result?.reward === 0 ? '#e94560' : 'linear-gradient(90deg, #ffa726, #e94560)', borderRadius: 6, transition: status === 'running' ? 'none' : 'width 0.3s', width: `${status === 'running' ? progress : status === 'done' ? Math.min(((parseFloat(result?.stoppedAt || '0') * 1000) / 8000) * 100, 100) : 0}%` }} />
+      <div style={{ position: 'relative', width: '100%', height: 10, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden', margin: '8px 0' }}>
+        <div style={{ position: 'absolute', left: `${targetZone - 5}%`, width: '10%', height: '100%', background: 'rgba(78,204,163,0.15)', borderLeft: '2px dashed var(--px-accent)', borderRight: '2px dashed var(--px-accent)' }} />
+        <div style={{ height: '100%', background: status === 'done' && result?.reward === 0 ? 'var(--px-danger)' : 'var(--px-accent)', transition: status === 'running' ? 'none' : 'width 0.3s', width: `${status === 'running' ? progress : status === 'done' ? Math.min(((parseFloat(result?.stoppedAt || '0') * 1000) / 8000) * 100, 100) : 0}%` }} />
       </div>
-      <div style={{ fontSize: 10, color: '#999', marginBottom: 12 }}>▲ цель — 5.000с</div>
+      <div style={{ fontSize: 6, color: 'var(--px-text-dim)', marginBottom: 12 }}>▲ TARGET — 5.000s</div>
 
-      {/* Result */}
       {result && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: result.reward > 0 ? '#4ecca3' : '#e94560' }}>
-            {result.result}{result.reward > 0 ? ` +${result.reward} алт` : ''}
+          <div style={{ fontSize: 10, color: result.reward > 0 ? 'var(--px-accent)' : 'var(--px-danger)' }}>
+            {result.result}{result.reward > 0 ? ` +${result.reward} COINS` : ''}
           </div>
-          <div style={{ fontSize: 11, color: '#999' }}>Точность: ±{result.diff.toFixed(3)}с</div>
+          <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>ACCURACY: ±{result.diff.toFixed(3)}s</div>
         </div>
       )}
 
-      {/* Button */}
       {status === 'waiting' && (
-        <button onClick={startTimer} className="modal-btn" style={{ fontSize: 14, padding: '8px 24px' }}>
-          Запустить ⏱️
-        </button>
+        <button onClick={startTimer} className="px-btn accent" style={{ fontSize: 9 }}>START ⏱️</button>
       )}
       {status === 'running' && (
-        <button onClick={stopTimer} className="modal-btn" style={{ fontSize: 14, padding: '8px 24px', background: '#e94560', color: '#fff', borderColor: '#e94560' }}>
-          СТОП! 🛑
-        </button>
+        <button onClick={stopTimer} className="px-btn danger" style={{ fontSize: 9 }}>STOP! 🛑</button>
       )}
       {status === 'done' && (
-        <button onClick={() => { setResult(null); setStatus('waiting'); setElapsed(0); }} className="modal-btn" style={{ fontSize: 14, padding: '8px 24px' }}>
-          Ещё раз 🔄
-        </button>
+        <button onClick={() => { setResult(null); setStatus('waiting'); setElapsed(0); }} className="px-btn small" style={{ fontSize: 7 }}>RETRY</button>
       )}
     </div>
   );
@@ -1652,42 +1611,42 @@ function MpRpsView({ data, myChoice, sentChoice, result, onChoice, onClose, onTo
   if (result) {
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
-        <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>Против {(data.opponentName as string) || 'Игрок'}</div>
+        <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 36 }}>{choiceEmoji[result.myChoice] || '?'}</div>
-            <div style={{ fontSize: 10, color: '#999' }}>Ты</div>
+            <div style={{ fontSize: 28 }}>{choiceEmoji[result.myChoice] || '?'}</div>
+            <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>YOU</div>
           </div>
-          <div style={{ fontSize: 20, color: '#ccc', display: 'flex', alignItems: 'center' }}>vs</div>
+          <div style={{ fontSize: 14, color: 'var(--px-border)', display: 'flex', alignItems: 'center' }}>VS</div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 36 }}>{choiceEmoji[result.theirChoice] || '?'}</div>
-            <div style={{ fontSize: 10, color: '#999' }}>{(data.opponentName as string) || 'Игрок'}</div>
+            <div style={{ fontSize: 28 }}>{choiceEmoji[result.theirChoice] || '?'}</div>
+            <div style={{ fontSize: 7, color: 'var(--px-text-dim)' }}>{(data.opponentName as string) || 'Player'}</div>
           </div>
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: result.winner === 'you' ? '#4ecca3' : result.winner === 'draw' ? '#ffa726' : '#e94560' }}>
-          {result.winner === 'you' ? 'Ты выиграл!' : result.winner === 'draw' ? 'Ничья!' : 'Ты проиграл!'}
-          {result.reward > 0 ? ` +${result.reward} алт` : ''}
+        <div style={{ fontSize: 10, color: result.winner === 'you' ? 'var(--px-accent)' : result.winner === 'draw' ? 'var(--px-title)' : 'var(--px-danger)' }}>
+          {result.winner === 'you' ? 'YOU WIN!' : result.winner === 'draw' ? 'DRAW!' : 'YOU LOSE!'}
+          {result.reward > 0 ? ` +${result.reward} COINS` : ''}
         </div>
-        <button onClick={onClose} className="modal-btn" style={{ marginTop: 12 }}>Закрыть</button>
+        <button onClick={onClose} className="px-btn small" style={{ marginTop: 12, fontSize: 7 }}>CLOSE</button>
       </div>
     );
   }
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 11, color: '#999', marginBottom: 12 }}>Против {(data.opponentName as string) || 'Игрок'}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
-        {sentChoice ? 'Ждём выбора opponent...' : 'Выбери:'}
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginBottom: 12 }}>VS {(data.opponentName as string) || 'Player'}</div>
+      <div style={{ fontSize: 9, color: 'var(--px-text)', marginBottom: 16 }}>
+        {sentChoice ? 'WAITING FOR OPPONENT...' : 'CHOOSE:'}
       </div>
       {!sentChoice && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <button onClick={() => onChoice('rock')} style={{ fontSize: 36, padding: '12px 20px', borderRadius: 12, border: '2px solid #ddd', background: '#f5f5f5', cursor: 'pointer' }}>✊</button>
-          <button onClick={() => onChoice('paper')} style={{ fontSize: 36, padding: '12px 20px', borderRadius: 12, border: '2px solid #ddd', background: '#f5f5f5', cursor: 'pointer' }}>✋</button>
-          <button onClick={() => onChoice('scissors')} style={{ fontSize: 36, padding: '12px 20px', borderRadius: 12, border: '2px solid #ddd', background: '#f5f5f5', cursor: 'pointer' }}>✌️</button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <button onClick={() => onChoice('rock')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✊</button>
+          <button onClick={() => onChoice('paper')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✋</button>
+          <button onClick={() => onChoice('scissors')} className="px-btn" style={{ fontSize: 28, padding: '10px 18px' }}>✌️</button>
         </div>
       )}
       {sentChoice && (
-        <div style={{ fontSize: 36 }}>{choiceEmoji[myChoice || ''] || '?'}</div>
+        <div style={{ fontSize: 28 }}>{choiceEmoji[myChoice || ''] || '?'}</div>
       )}
     </div>
   );
@@ -1931,13 +1890,13 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{
-          width: '100%', maxWidth: 400, borderRadius: 12,
-          border: '2px solid #8B4513', cursor: 'crosshair',
-          touchAction: 'none',
+          width: '100%', maxWidth: 400,
+          border: '2px solid var(--px-border)', cursor: 'crosshair',
+          touchAction: 'none', imageRendering: 'pixelated',
         }}
       />
-      <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>
-        Забей максимум из 10 попыток! +15 алт за мяч
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 8 }}>
+        DRAG FROM BALL TO AIM, RELEASE TO THROW! +15 COINS PER BASKET
       </div>
     </div>
   );
@@ -1946,38 +1905,22 @@ function BasketballView({ state, onToast, onConfetti }: { state: GameState; onTo
 // ===== BOOK PREDICTION =====
 function BookPredictionView({ prediction }: { prediction: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '10px 0' }}>
-      <div style={{
-        background: '#f5e6c8', border: '4px solid #8B4513', borderRadius: 4,
-        padding: 4, boxShadow: '4px 4px 0 #654321, inset 0 0 20px rgba(139,69,19,.15)',
-        position: 'relative', width: 280,
-      }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+      <div className="px-panel" style={{ padding: 16, width: 280, textAlign: 'center' }}>
         <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 20,
-          background: 'linear-gradient(90deg, #654321, #8B4513)', borderRight: '2px solid #5a3a1a',
-          borderRadius: '4px 0 0 4px',
-        }} />
-        <div style={{
-          marginLeft: 24, padding: '20px 16px', minHeight: 140,
-          background: '#fffbf0', borderLeft: '1px solid #d4c4a0',
-          fontFamily: 'serif',
+          fontSize: 7, color: 'var(--px-title)', marginBottom: 12,
+          letterSpacing: 2,
         }}>
-          <div style={{
-            textAlign: 'center', fontSize: 10, color: '#8B4513', fontWeight: 700,
-            marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase',
-          }}>
-            ✦ Предсказание дня ✦
-          </div>
-          <div style={{
-            fontSize: 15, lineHeight: 1.5, color: '#4a3728', textAlign: 'center',
-            fontStyle: 'italic',
-          }}>
-            «{prediction}»
-          </div>
+          ✦ PREDICTION OF THE DAY ✦
+        </div>
+        <div style={{
+          fontSize: 9, lineHeight: 1.6, color: 'var(--px-text)',
+        }}>
+          «{prediction}»
         </div>
       </div>
-      <div style={{ fontSize: 10, color: '#999', textAlign: 'center' }}>
-        📖 Шкаф в зоне отдыха
+      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', textAlign: 'center' }}>
+        📖 BOOKSHELF IN CHILL ZONE
       </div>
     </div>
   );

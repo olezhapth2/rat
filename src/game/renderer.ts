@@ -40,7 +40,8 @@ export function render(
   playerAnim?: AnimState,
   botAnims?: Record<string, AnimState>,
   remotePlayers: RemotePlayer[] = [],
-  tileOverrides?: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>
+  tileOverrides?: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>,
+  tilePaintMode?: { active: boolean; type: 'floor' | 'wall'; textureIndex: number; previewX: number; previewY: number } | null
 
 ): void {
   const cw = canvas.width;
@@ -310,6 +311,33 @@ export function render(
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
     }
+  }
+
+  // ===== 8. TILE PAINT MODE PREVIEW =====
+  if (tilePaintMode?.active && tilePaintMode.previewX >= 0 && tilePaintMode.previewY >= 0) {
+    const px = tilePaintMode.previewX;
+    const py = tilePaintMode.previewY;
+    // Draw 3x3 highlight
+    ctx.globalAlpha = 0.3 + Math.sin(frame * 0.08) * 0.1;
+    ctx.fillStyle = tilePaintMode.type === 'floor' ? '#4ecca340' : '#ff6b6b40';
+    ctx.strokeStyle = tilePaintMode.type === 'floor' ? '#4ecca3' : '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.fillRect(px * TILE, py * TILE, TILE * 3, TILE * 3);
+    ctx.strokeRect(px * TILE, py * TILE, TILE * 3, TILE * 3);
+    ctx.setLineDash([]);
+    // Draw texture preview in center tile
+    const texIdx = tilePaintMode.textureIndex;
+    const texImg = tilePaintMode.type === 'floor'
+      ? getFloorImageByIndex(texIdx)
+      : getWallImageByIndex(texIdx);
+    if (texImg && texImg.complete && texImg.naturalWidth > 0) {
+      ctx.globalAlpha = 0.6;
+      const tx = ((px % 3) + 3) % 3;
+      const ty = ((py % 3) + 3) % 3;
+      ctx.drawImage(texImg, tx * TILE, ty * TILE, TILE, TILE, px * TILE + TILE, py * TILE + TILE, TILE, TILE);
+    }
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore();

@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -231,26 +231,49 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   }, []);
 
   const openTilePicker = useCallback((type: 'floor' | 'wall', x: number, y: number) => {
-    setTilePicker({ type, x, y });
+    // Enter paint mode instead of popup
+    const state = stateRef.current;
+    enterTilePaintMode(state, type, 0);
+    setTilePicker(null);
     const el = document.getElementById('ctx-menu');
     if (el) el.style.display = 'none';
   }, []);
 
   // Input listeners
   useEffect(() => {
-    const cleanup = setupInputListeners(inputRef.current, canvasRef);
+    const cleanup = setupInputListeners(inputRef.current, canvasRef, (delta) => {
+      const state = stateRef.current;
+      if (state.tilePaintMode?.active) {
+        const newIdx = state.tilePaintMode.textureIndex + delta;
+        if (newIdx >= 0 && newIdx < 5) {
+          setTilePaintTexture(state, newIdx);
+        }
+      }
+    });
     return cleanup;
   }, []);
 
   // Sync activeGameRef
   useEffect(() => { activeGameRef.current = activeGame; }, [activeGame]);
 
-  // ESC key handler for closing tile picker
+  // ESC key handler for closing tile picker / exiting paint mode
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && tilePicker) {
-        setTilePicker(null);
-        return;
+      if (e.key === 'Escape') {
+        if (tilePicker) {
+          setTilePicker(null);
+          return;
+        }
+        const state = stateRef.current;
+        if (state.tilePaintMode?.active) {
+          exitTilePaintMode(state);
+          return;
+        }
+      }
+      // Number keys 1-5 to switch texture in paint mode
+      const state = stateRef.current;
+      if (state.tilePaintMode?.active && e.key >= '1' && e.key <= '5') {
+        setTilePaintTexture(state, parseInt(e.key) - 1);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -324,6 +347,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const cam = cameraRef.current;
       const worldX = e.clientX / cam.zoom + cam.x;
       const worldY = e.clientY / cam.zoom + cam.y;
+
+      // Paint mode: apply paint on click
+      if (s.tilePaintMode?.active) {
+        const tileX = Math.floor(worldX / TILE);
+        const tileY = Math.floor(worldY / TILE);
+        // Snap to 3x3 grid
+        const snapX = Math.floor(tileX / 3) * 3;
+        const snapY = Math.floor(tileY / 3) * 3;
+        paintTile(s, snapX, snapY, s.tilePaintMode.type, s.tilePaintMode.textureIndex);
+        sendTilePaint(snapX, snapY, s.tilePaintMode.type, s.tilePaintMode.textureIndex);
+        return;
+      }
 
       if (s.player.carrying) {
         // Place carried item
@@ -432,6 +467,19 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onMouseMove = (e: MouseEvent) => {
+      // Paint mode: update preview position
+      const s = stateRef.current;
+      if (s.tilePaintMode?.active) {
+        const cam = cameraRef.current;
+        const worldX = e.clientX / cam.zoom + cam.x;
+        const worldY = e.clientY / cam.zoom + cam.y;
+        const tileX = Math.floor(worldX / TILE);
+        const tileY = Math.floor(worldY / TILE);
+        const snapX = Math.floor(tileX / 3) * 3;
+        const snapY = Math.floor(tileY / 3) * 3;
+        updateTilePaintPreview(s, snapX, snapY);
+        return;
+      }
       if (!activeGameRef.current) return;
       const gx = (canvas.width - 400) / 2;
       const gy = (canvas.height - 400) / 2;
@@ -1133,7 +1181,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides, s.tilePaintMode);
 
       // === Card game overlay ===
       const cg = cardGameRef.current;
@@ -1538,71 +1586,44 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         </div>
       )}
 
-      {/* Tile picker overlay */}
-      {tilePicker && (
+      {/* Paint mode HUD */}
+      {state.tilePaintMode?.active && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+          position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(10,10,26,.9)', border: '2px solid var(--px-border)',
+          borderRadius: 8, padding: '8px 16px', zIndex: 200,
+          display: 'flex', alignItems: 'center', gap: 12,
         }}>
-          <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
-            <div className="px-panel-header">
-              <span>{tilePicker.type === 'floor' ? 'ВЫБРАТЬ ПОЛ' : 'ВЫБРАТЬ СТЕНУ'}</span>
-              <button onClick={() => setTilePicker(null)} style={{
-                background: 'none', border: 'none', color: 'var(--px-text)',
-                cursor: 'pointer', fontSize: 14, padding: '0 4px'
-              }}>✕</button>
-            </div>
-            <div style={{ padding: 16 }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(5, 1fr)',
-                gap: 8,
-                marginBottom: 12
-              }}>
-                {[0, 1, 2, 3, 4].map((idx) => {
-                  const imgPath = tilePicker.type === 'floor'
-                    ? `/sprites/tiles/floor${idx + 1}.png`
-                    : `/sprites/walls/wall${idx + 1}.png`;
-                  const currentOverride = state.tileOverrides[`${tilePicker.x},${tilePicker.y}`];
-                  const isSelected = currentOverride?.textureIndex === idx;
-
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        paintTile(state, tilePicker.x, tilePicker.y, tilePicker.type, idx);
-                        sendTilePaint(tilePicker.x, tilePicker.y, tilePicker.type, idx);
-                        setTilePicker(null);
-                      }}
-                      style={{
-                        width: 56, height: 56,
-                        border: `3px solid ${isSelected ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                        padding: 0,
-                      }}
-                    >
-                      <img
-                        src={imgPath}
-                        alt={`Texture ${idx + 1}`}
-                        style={{
-                          width: '100%', height: '100%',
-                          objectFit: 'cover',
-                          imageRendering: 'pixelated',
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>
-                ТЕКСТУРА {tilePicker.x},{tilePicker.y} • БЕСПЛАТНО
-              </div>
-              <button onClick={() => setTilePicker(null)} className="px-btn small" style={{ marginTop: 8, fontSize: 8 }}>
-                ОТМЕНА
-              </button>
-            </div>
+          <span style={{ fontSize: 10, color: 'var(--px-title)' }}>
+            {state.tilePaintMode.type === 'floor' ? '🎨 ПОЛ' : '🎨 СТЕНА'}
+          </span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[0, 1, 2, 3, 4].map((idx) => {
+              const imgPath = state.tilePaintMode!.type === 'floor'
+                ? `/sprites/tiles/floor${idx + 1}.png`
+                : `/sprites/walls/wall${idx + 1}.png`;
+              const isSelected = state.tilePaintMode!.textureIndex === idx;
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setTilePaintTexture(state, idx)}
+                  style={{
+                    width: 32, height: 32,
+                    border: `2px solid ${isSelected ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={imgPath}
+                    alt={`Texture ${idx + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' }}
+                  />
+                </div>
+              );
+            })}
           </div>
+          <span style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>ESC для выхода</span>
         </div>
       )}
 

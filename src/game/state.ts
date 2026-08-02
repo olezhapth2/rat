@@ -64,6 +64,13 @@ export interface GameState {
   };
   botAnims: Record<string, AnimState>; // botId → animation state
   officeEvents: OfficeEventState;
+  tilePaintMode: {
+    active: boolean;
+    type: 'floor' | 'wall';
+    textureIndex: number;
+    previewX: number; // tile X for preview
+    previewY: number; // tile Y for preview
+  } | null;
 }
 
 export interface OfficeEventState {
@@ -163,6 +170,7 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
     officeEvents: { activeEvent: null, lastCheckedMinute: -1 },
+    tilePaintMode: null,
   };
 }
 
@@ -987,4 +995,26 @@ export function removeTilePaint(state: GameState, tileX: number, tileY: number):
     }
   }
   persistState(state);
+}
+
+// === Tile Paint Mode ===
+export function enterTilePaintMode(state: GameState, type: 'floor' | 'wall', textureIndex: number): void {
+  state.tilePaintMode = { active: true, type, textureIndex, previewX: -1, previewY: -1 };
+}
+
+export function exitTilePaintMode(state: GameState): void {
+  state.tilePaintMode = null;
+}
+
+export function updateTilePaintPreview(state: GameState, tileX: number, tileY: number): void {
+  if (state.tilePaintMode) {
+    state.tilePaintMode.previewX = tileX;
+    state.tilePaintMode.previewY = tileY;
+  }
+}
+
+export function setTilePaintTexture(state: GameState, textureIndex: number): void {
+  if (state.tilePaintMode) {
+    state.tilePaintMode.textureIndex = textureIndex;
+  }
 }

@@ -87,43 +87,65 @@ export function buildMap(): number[][] {
   for (let x = 0; x < MAP_W; x++) { map[0][x] = W; map[MAP_H - 1][x] = W; }
   for (let y = 0; y < MAP_H; y++) { map[y][0] = W; map[y][MAP_W - 1] = W; }
 
-  // 4. Vertical walls between rooms
+  // 4. Vertical walls between rooms — 3 tiles thick (x-1, x, x+1)
   // x=12: Boss|kab1 (y=1..6)
-  for (let y = 1; y <= 6; y++) map[y][12] = W;
+  for (let y = 1; y <= 6; y++) { map[y][11] = W; map[y][12] = W; map[y][13] = W; }
   // x=18: kab1|kab2 (y=1..6), kab4|kab5 (y=20..28)
-  for (let y = 1; y <= 6; y++) map[y][18] = W;
-  for (let y = 20; y < MAP_H; y++) map[y][18] = W;
+  for (let y = 1; y <= 6; y++) { map[y][17] = W; map[y][18] = W; map[y][19] = W; }
+  for (let y = 20; y < MAP_H; y++) { map[y][17] = W; map[y][18] = W; map[y][19] = W; }
   // x=25: kab2|kab3 (y=1..6), kab5|kab6 (y=20..28)
-  for (let y = 1; y <= 6; y++) map[y][25] = W;
-  for (let y = 20; y < MAP_H; y++) map[y][25] = W;
+  for (let y = 1; y <= 6; y++) { map[y][24] = W; map[y][25] = W; map[y][26] = W; }
+  for (let y = 20; y < MAP_H; y++) { map[y][24] = W; map[y][25] = W; map[y][26] = W; }
   // x=32: kab3|chil (y=1..6), zal|smoking (y=8..18)
-  for (let y = 1; y <= 6; y++) map[y][32] = W;
-  for (let y = 8; y <= 18; y++) map[y][32] = W;
+  for (let y = 1; y <= 6; y++) { map[y][31] = W; map[y][32] = W; map[y][33] = W; }
+  for (let y = 8; y <= 18; y++) { map[y][31] = W; map[y][32] = W; map[y][33] = W; }
 
-  // 5. Horizontal walls
+  // 5. Horizontal walls — 3 tiles thick (y-1, y, y+1)
   // y=7: row0 | zal (x=0..32)
-  for (let x = 0; x <= 32; x++) map[7][x] = W;
+  for (let x = 0; x <= 32; x++) { map[6][x] = W; map[7][x] = W; map[8][x] = W; }
   // y=12: chil | smoking (x=33..39)
-  for (let x = 33; x <= 39; x++) map[12][x] = W;
+  for (let x = 33; x <= 39; x++) { map[11][x] = W; map[12][x] = W; map[13][x] = W; }
   // y=19: row2 | row3 (x=0..39)
-  for (let x = 0; x <= 39; x++) map[19][x] = W;
+  for (let x = 0; x <= 39; x++) { map[18][x] = W; map[19][x] = W; map[20][x] = W; }
 
-  // 6. Doorways — 3-tile breaks in walls
-  // Top wall y=7: Boss→Zal, kab1→Zal, kab2→Zal, kab3→Zal
+  // 6. Doorways — 3-tile breaks through all 3 wall layers
+  // Top wall y=6..8: Boss→Zal, kab1→Zal, kab2→Zal, kab3→Zal
   for (const cx of [5, 15, 22, 29]) {
-    for (let dx = -1; dx <= 1; dx++) map[7][cx + dx] = F;
+    for (let dx = -1; dx <= 1; dx++) {
+      map[6][cx + dx] = F; map[7][cx + dx] = F; map[8][cx + dx] = F;
+    }
   }
-  // Bottom wall y=19: Zal→kab4, Zal→kab5, Zal→kab6
+  // Bottom wall y=18..20: Zal→kab4, Zal→kab5, Zal→kab6
   for (const cx of [15, 22, 29]) {
-    for (let dx = -1; dx <= 1; dx++) map[19][cx + dx] = F;
+    for (let dx = -1; dx <= 1; dx++) {
+      map[18][cx + dx] = F; map[19][cx + dx] = F; map[20][cx + dx] = F;
+    }
   }
-  // Vertical wall x=32: Zal↔Chil, Zal↔Smoking
+  // Vertical wall x=31..33: Zal↔Chil, Zal↔Smoking
   for (const cy of [10, 16]) {
-    for (let dy = -1; dy <= 1; dy++) map[cy + dy][32] = F;
+    for (let dy = -1; dy <= 1; dy++) {
+      map[cy + dy][31] = F; map[cy + dy][32] = F; map[cy + dy][33] = F;
+    }
+  }
+  // Vertical walls kab↔kab: doorways at y=3
+  for (const cx of [12, 18, 25]) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        map[3 + dy][cx + dx] = F;
+      }
+    }
+  }
+  // Vertical walls kab4↔kab5↔kab6: doorways at y=24
+  for (const cx of [18, 25]) {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        map[24 + dy][cx + dx] = F;
+      }
+    }
   }
 
-  // 7. Wall-window cutouts — replace S with F where doorways enter through wall-window
-  // Zal wall-window (y=8..10) cutouts at doorway x positions
+  // 7. Wall-window cutouts — replace S with F where doorways pass through wall-windows
+  // Zal wall-window (y=8..10) cutouts at top doorway x positions
   for (const cx of [5, 15, 22, 29]) {
     for (let dx = -1; dx <= 1; dx++) {
       for (let y = 8; y <= 10; y++) {
@@ -139,10 +161,11 @@ export function buildMap(): number[][] {
       }
     }
   }
-  // Smoking side cutout for Zal↔Smoking passage (x=33..34, y=13..15)
+  // Smoking side cutout for Zal↔Smoking passage (x=31..33, y=13..15)
   for (let y = 13; y <= 15; y++) {
+    map[y][31] = F;
+    map[y][32] = F;
     map[y][33] = F;
-    map[y][34] = F;
   }
 
   return map;

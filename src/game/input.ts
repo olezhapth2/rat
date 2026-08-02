@@ -19,6 +19,7 @@ export function createInputState(): InputState {
 export function setupInputListeners(
   input: InputState,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  onWheelCallback?: (delta: number) => void,
 ): () => void {
   const onKeyDown = (e: KeyboardEvent) => {
     input.keys[e.key.toLowerCase()] = true;
@@ -33,15 +34,20 @@ export function setupInputListeners(
     input.mouseX = e.clientX;
     input.mouseY = e.clientY;
   };
+  const onWheel = (e: WheelEvent) => {
+    if (onWheelCallback) onWheelCallback(e.deltaY > 0 ? 1 : -1);
+  };
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('wheel', onWheel, { passive: true });
 
   return () => {
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
     window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('wheel', onWheel);
   };
 }
 

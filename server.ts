@@ -112,16 +112,26 @@ app.prepare().then(() => {
       }
     });
 
-    // === Tile painting ===
+    // === Tile painting (3x3 block) ===
     socket.on('tile:paint', (data: { x: number; y: number; type: 'floor' | 'wall'; textureIndex: number }) => {
-      const key = `${data.x},${data.y}`;
-      tileOverrides[key] = { type: data.type, textureIndex: data.textureIndex };
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          const x = data.x + dx;
+          const y = data.y + dy;
+          if (y >= 0 && y < 29 && x >= 0 && x < 40) {
+            tileOverrides[`${x},${y}`] = { type: data.type, textureIndex: data.textureIndex };
+          }
+        }
+      }
       io.emit('tile:sync', tileOverrides);
     });
 
     socket.on('tile:remove', (data: { x: number; y: number }) => {
-      const key = `${data.x},${data.y}`;
-      delete tileOverrides[key];
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          delete tileOverrides[`${data.x + dx},${data.y + dy}`];
+        }
+      }
       io.emit('tile:sync', tileOverrides);
     });
 

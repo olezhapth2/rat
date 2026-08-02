@@ -959,14 +959,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         }
       }
 
-      // Tile painting — floor/wall
+      // Tile painting — floor/wall (3x3 block)
       if (!foundBot && !foundObj && nearestPlacedIdx < 0 && !s.player.carrying) {
         const playerTileX = Math.floor(s.player.x / TILE);
         const playerTileY = Math.floor(s.player.y / TILE);
         const tileType = s.map[playerTileY]?.[playerTileX];
 
+        // Snap to 3x3 grid (texture is 3x3 spritesheet)
+        const snapX = Math.floor(playerTileX / 3) * 3;
+        const snapY = Math.floor(playerTileY / 3) * 3;
+
         if (tileType === 1) {
-          items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', playerTileX, playerTileY) });
+          items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', snapX, snapY) });
         }
 
         const adjacentTiles = [
@@ -978,7 +982,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         for (const t of adjacentTiles) {
           const tt = s.map[t.y]?.[t.x];
           if (tt === 3 || tt === 2) {
-            items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', t.x, t.y) });
+            // Snap wall tile to 3x3 grid
+            const wallSnapX = Math.floor(t.x / 3) * 3;
+            const wallSnapY = Math.floor(t.y / 3) * 3;
+            items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', wallSnapX, wallSnapY) });
             break;
           }
         }
@@ -988,8 +995,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           items.push({
             icon: '🗑️', text: 'Убрать покраску',
             fn: () => {
-              removeTilePaint(s, playerTileX, playerTileY);
-              sendTileRemove(playerTileX, playerTileY);
+              removeTilePaint(s, snapX, snapY);
+              sendTileRemove(snapX, snapY);
             }
           });
         }

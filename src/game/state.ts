@@ -1,4 +1,4 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H } from './constants';
 import type { Player, Bot, GameObject, Room, OfficeEvent } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
@@ -961,13 +961,30 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
 
 // === Tile Painting ===
 export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
-  const key = `${tileX},${tileY}`;
-  state.tileOverrides[key] = { type, textureIndex };
+  // Paint 3x3 block (texture is a 3x3 spritesheet)
+  for (let dy = 0; dy < 3; dy++) {
+    for (let dx = 0; dx < 3; dx++) {
+      const x = tileX + dx;
+      const y = tileY + dy;
+      if (y >= 0 && y < MAP_H && x >= 0 && x < MAP_W) {
+        const tileType = state.map[y]?.[x];
+        if (type === 'floor' && tileType === 1) {
+          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+        } else if (type === 'wall' && (tileType === 3 || tileType === 2)) {
+          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+        }
+      }
+    }
+  }
   persistState(state);
 }
 
 export function removeTilePaint(state: GameState, tileX: number, tileY: number): void {
-  const key = `${tileX},${tileY}`;
-  delete state.tileOverrides[key];
+  // Remove 3x3 block
+  for (let dy = 0; dy < 3; dy++) {
+    for (let dx = 0; dx < 3; dx++) {
+      delete state.tileOverrides[`${tileX + dx},${tileY + dy}`];
+    }
+  }
   persistState(state);
 }

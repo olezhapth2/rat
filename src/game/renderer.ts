@@ -121,6 +121,32 @@ export function render(
     );
   }
 
+  // ===== 4. BLOB SHADOWS (under all objects + characters) =====
+  ctx.save();
+  for (const obj of objects) {
+    if (obj.type !== 'furniture') continue;
+    drawBlobShadow(ctx, obj.x + (obj.w * TILE) / 2, obj.y + obj.h * TILE, obj.w * TILE * 0.5, 5);
+  }
+  for (const obj of placedObjects) {
+    drawBlobShadow(ctx, obj.x + (obj.w * TILE) / 2, obj.y + obj.h * TILE, obj.w * TILE * 0.5, 5);
+  }
+  // Character shadows
+  drawBlobShadow(ctx, player.x, player.y + 6, 14, 4);
+  for (const b of bots) {
+    drawBlobShadow(ctx, b.x, b.y + 6, 14, 4);
+  }
+  for (const rp of remotePlayers) {
+    drawBlobShadow(ctx, rp.x, rp.y + 6, 14, 4);
+  }
+  // Pet shadow (read early for shadows)
+  const petIdEarly = (player as any).petId as string | undefined;
+  const petXEarly = (player as any).petX as number | undefined;
+  const petYEarly = (player as any).petY as number | undefined;
+  if (petIdEarly && petXEarly !== undefined && petYEarly !== undefined) {
+    drawBlobShadow(ctx, petXEarly, petYEarly + 4, 8, 3);
+  }
+  ctx.restore();
+
   // ===== 5. DEPTH-SORTED RENDERING (objects + characters by Y) =====
   // Collect all entities with sortY
   interface SortEntity {
@@ -341,6 +367,9 @@ export function render(
   }
 
   ctx.restore();
+
+  // ===== 9. LIGHT OVERLAY =====
+  renderLightOverlay(ctx, canvas, cam, frame, player);
 }
 
 // Object sprite cache
@@ -424,4 +453,112 @@ function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
+}
+
+function drawBlobShadow(ctx: CanvasRenderingContext2D, x: number, y: number, radiusX: number, radiusY: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Light overlay system
+let lightCanvas: HTMLCanvasElement | null = null;
+let lightCtx: CanvasRenderingContext2D | null = null;
+
+export function renderLightOverlay(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  cam: Camera,
+  frame: number,
+  player: Player
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // Create/recreate light canvas if needed
+  if (!lightCanvas || lightCanvas.width !== cw || lightCanvas.height !== ch) {
+    lightCanvas = document.createElement('canvas');
+    lightCanvas.width = cw;
+    lightCanvas.height = ch;
+    lightCtx = lightCanvas.getContext('2d');
+  }
+  if (!lightCtx) return;
+
+  const lc = lightCtx;
+  lc.clearRect(0, 0, cw, ch);
+
+  // Dark overlay
+  lc.fillStyle = 'rgba(8, 8, 20, 0.35)';
+  lc.fillRect(0, 0, cw, ch);
+
+  // Cut out light sources
+  lc.globalCompositeOperation = 'destination-out';
+
+  const zoom = cam.zoom;
+  const offX = cam.x;
+  const offY = cam.y;
+
+  // Helper: convert world coords to screen coords
+  const sx = (wx: number) => (wx - offX) * zoom;
+  const sy = (wy: number) => (wy - offY) * zoom;
+
+  // === ROOM LIGHT SOURCES ===
+
+  // Boss office — warm overhead light
+  drawRadialLight(lc, sx((1 + 11 / 2) * TILE), sy((1 + 6 / 2) * TILE), 180 * zoom, '#ffeedd', 0.5);
+
+  // Office 1-3 — cool monitor glow
+  drawRadialLight(lc, sx(15 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(22 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(29 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+
+  // Chill zone — warm ambient
+  drawRadialLight(lc, sx(36 * TILE), sy(6 * TILE), 160 * zoom, '#ffe8c0', 0.45);
+
+  // Smoking room — dim warm
+  drawRadialLight(lc, sx(36 * TILE), sy(15 * TILE), 100 * zoom, '#ffccaa', 0.3);
+
+  // Hall — overhead strip lights
+  for (let hx = 5; hx <= 29; hx += 8) {
+    drawRadialLight(lc, sx(hx * TILE), sy(13 * TILE), 120 * zoom, '#ffffff', 0.35);
+  }
+
+  // Office 4-6 — cool overhead
+  drawRadialLight(lc, sx(15 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(22 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(33 * TILE), sy(25 * TILE), 120 * zoom, '#ddeeff', 0.35);
+
+  // Player proximity glow (small warm light around player)
+  const playerScreenX = (player.x - offX) * zoom;
+  const playerScreenY = (player.y - offY) * zoom;
+  drawRadialLight(lc, playerScreenX, playerScreenY, 60 * zoom, '#ffffff', 0.15);
+
+  lc.globalCompositeOperation = 'source-over';
+
+  // Apply light overlay
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(lightCanvas, 0, 0);
+  ctx.restore();
+}
+
+function drawRadialLight(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number,
+  radius: number,
+  _color: string,
+  intensity: number
+): void {
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+  gradient.addColorStop(0.4, `rgba(255, 255, 255, ${intensity * 0.5})`);
+  gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
 }

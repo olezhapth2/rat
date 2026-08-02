@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -20,6 +20,8 @@ import {
   createCardGame as mpCreateCardGame, joinCardGame as mpJoinCardGame,
   playCardGame as mpPlayCardGame, drawCardGame as mpDrawCardGame,
   leaveCardGame as mpLeaveCardGame, onCardGameState, onCardGameError,
+  onTileSync,
+  sendTilePaint, sendTileRemove,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
@@ -187,6 +189,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const activeGameRef = useRef<string | null>(null);
 
+  // Tile painting picker state
+  const [tilePicker, setTilePicker] = useState<{ type: 'floor' | 'wall'; x: number; y: number } | null>(null);
+
   // Minigame canvas state refs
   const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
@@ -225,6 +230,12 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     mpSendEmoji(emoji);
   }, []);
 
+  const openTilePicker = useCallback((type: 'floor' | 'wall', x: number, y: number) => {
+    setTilePicker({ type, x, y });
+    const el = document.getElementById('ctx-menu');
+    if (el) el.style.display = 'none';
+  }, []);
+
   // Input listeners
   useEffect(() => {
     const cleanup = setupInputListeners(inputRef.current, canvasRef);
@@ -233,6 +244,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
   // Sync activeGameRef
   useEffect(() => { activeGameRef.current = activeGame; }, [activeGame]);
+
+  // ESC key handler for closing tile picker
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && tilePicker) {
+        setTilePicker(null);
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tilePicker]);
 
   // ESC key handler for closing minigames
   useEffect(() => {
@@ -749,6 +772,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       toast(error, 'info');
     });
 
+    onTileSync((overrides) => {
+      stateRef.current.tileOverrides = overrides;
+    });
+
     return () => disconnectMultiplayer();
   }, []);
 
@@ -932,6 +959,42 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         }
       }
 
+      // Tile painting — floor/wall
+      if (!foundBot && !foundObj && nearestPlacedIdx < 0 && !s.player.carrying) {
+        const playerTileX = Math.floor(s.player.x / TILE);
+        const playerTileY = Math.floor(s.player.y / TILE);
+        const tileType = s.map[playerTileY]?.[playerTileX];
+
+        if (tileType === 1) {
+          items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', playerTileX, playerTileY) });
+        }
+
+        const adjacentTiles = [
+          { x: playerTileX, y: playerTileY - 1 },
+          { x: playerTileX, y: playerTileY + 1 },
+          { x: playerTileX - 1, y: playerTileY },
+          { x: playerTileX + 1, y: playerTileY },
+        ];
+        for (const t of adjacentTiles) {
+          const tt = s.map[t.y]?.[t.x];
+          if (tt === 3 || tt === 2) {
+            items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', t.x, t.y) });
+            break;
+          }
+        }
+
+        const existingKey = `${playerTileX},${playerTileY}`;
+        if (s.tileOverrides[existingKey]) {
+          items.push({
+            icon: '🗑️', text: 'Убрать покраску',
+            fn: () => {
+              removeTilePaint(s, playerTileX, playerTileY);
+              sendTileRemove(playerTileX, playerTileY);
+            }
+          });
+        }
+      }
+
       items.push({ icon: '👤', text: 'Профиль', fn: () => openModal('profile') });
       items.push({ icon: '🏆', text: 'Ачивки', fn: () => openModal('achievements') });
       items.push({ icon: '📋', text: 'Дейли квесты', fn: () => openModal('quests') });
@@ -1005,15 +1068,19 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const placedObjs = getPlacedObjectsAsGameObjects(s);
       const allObjects = [...s.objects, ...placedObjs];
 
-      // Disable player movement when card game overlay is active
-      const cgState = cardGameRef.current;
-      if (cgState && cgState.status === 'playing') {
-        // Don't update player position
-      } else if (activeGameRef.current) {
-        // Don't update player position during minigame
+      // Disable player movement when tile picker, card game, or minigame overlay is active
+      if (tilePicker) {
+        // Don't update player position while tile picker is open
       } else {
-        const { vx: playerVx, vy: playerVy } = updatePlayer(s.player, input, s.map, allObjects, dt);
-        updateAnimState(s.player.anim, playerVx, playerVy);
+        const cgState = cardGameRef.current;
+        if (cgState && cgState.status === 'playing') {
+          // Don't update player position
+        } else if (activeGameRef.current) {
+          // Don't update player position during minigame
+        } else {
+          const { vx: playerVx, vy: playerVy } = updatePlayer(s.player, input, s.map, allObjects, dt);
+          updateAnimState(s.player.anim, playerVx, playerVy);
+        }
       }
 
       updateBots(s, dt);
@@ -1059,7 +1126,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides);
 
       // === Card game overlay ===
       const cg = cardGameRef.current;
@@ -1459,6 +1526,74 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
                 </div>
               ))}
               <button onClick={() => setSmokingResult(null)} className="px-btn accent" style={{ marginTop: 12 }}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tile picker overlay */}
+      {tilePicker && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }}>
+          <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
+            <div className="px-panel-header">
+              <span>{tilePicker.type === 'floor' ? 'ВЫБРАТЬ ПОЛ' : 'ВЫБРАТЬ СТЕНУ'}</span>
+              <button onClick={() => setTilePicker(null)} style={{
+                background: 'none', border: 'none', color: 'var(--px-text)',
+                cursor: 'pointer', fontSize: 14, padding: '0 4px'
+              }}>✕</button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(5, 1fr)',
+                gap: 8,
+                marginBottom: 12
+              }}>
+                {[0, 1, 2, 3, 4].map((idx) => {
+                  const imgPath = tilePicker.type === 'floor'
+                    ? `/sprites/tiles/floor${idx + 1}.png`
+                    : `/sprites/walls/wall${idx + 1}.png`;
+                  const currentOverride = state.tileOverrides[`${tilePicker.x},${tilePicker.y}`];
+                  const isSelected = currentOverride?.textureIndex === idx;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        paintTile(state, tilePicker.x, tilePicker.y, tilePicker.type, idx);
+                        sendTilePaint(tilePicker.x, tilePicker.y, tilePicker.type, idx);
+                        setTilePicker(null);
+                      }}
+                      style={{
+                        width: 56, height: 56,
+                        border: `3px solid ${isSelected ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        padding: 0,
+                      }}
+                    >
+                      <img
+                        src={imgPath}
+                        alt={`Texture ${idx + 1}`}
+                        style={{
+                          width: '100%', height: '100%',
+                          objectFit: 'cover',
+                          imageRendering: 'pixelated',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>
+                ТЕКСТУРА {tilePicker.x},{tilePicker.y} • БЕСПЛАТНО
+              </div>
+              <button onClick={() => setTilePicker(null)} className="px-btn small" style={{ marginTop: 8, fontSize: 8 }}>
+                ОТМЕНА
+              </button>
             </div>
           </div>
         </div>

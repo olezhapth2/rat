@@ -54,6 +54,9 @@ app.prepare().then(() => {
   // === Shared whiteboard data ===
   let whiteboardData: string = '';
 
+  // === Shared tile overrides (floor/wall repaints) ===
+  const tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
+
   // === Shared placed items (visible to all players) ===
   interface PlacedItem {
     id: string;
@@ -81,6 +84,9 @@ app.prepare().then(() => {
       socket.emit('whiteboard:sync', whiteboardData);
     }
 
+    // Send current tile overrides to new player
+    socket.emit('tile:sync', tileOverrides);
+
     // Player registers
     socket.on('player:register', (data: { name: string; charId: string; hatId: string; color: string }) => {
       const player: ServerPlayer = {
@@ -104,6 +110,19 @@ app.prepare().then(() => {
         p.y = data.y;
         socket.broadcast.emit('player:moved', { id: socket.id, x: data.x, y: data.y });
       }
+    });
+
+    // === Tile painting ===
+    socket.on('tile:paint', (data: { x: number; y: number; type: 'floor' | 'wall'; textureIndex: number }) => {
+      const key = `${data.x},${data.y}`;
+      tileOverrides[key] = { type: data.type, textureIndex: data.textureIndex };
+      io.emit('tile:sync', tileOverrides);
+    });
+
+    socket.on('tile:remove', (data: { x: number; y: number }) => {
+      const key = `${data.x},${data.y}`;
+      delete tileOverrides[key];
+      io.emit('tile:sync', tileOverrides);
     });
 
     // === Shared items ===

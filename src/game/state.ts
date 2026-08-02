@@ -48,6 +48,7 @@ export interface GameState {
     doorName: string;
     petPetCount: number;
   };
+  tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
   bots: Bot[];
   objects: GameObject[];
   map: number[][];
@@ -98,6 +99,7 @@ function savePartial(state: GameState) {
       wallColor: state.player.wallColor,
       doorName: state.player.doorName,
       petPetCount: state.player.petPetCount,
+      tileOverrides: state.tileOverrides,
     })
   );
 }
@@ -156,6 +158,7 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     bots,
     objects: createObjects(),
     map: buildMap(),
+    tileOverrides: (saved?.tileOverrides as Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) || {},
     bossCall: { active: false, timer: 0, reward: 0 },
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
@@ -954,4 +957,17 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
   logActivity(state, '🐀', `Отнял у крыски: ${getItemEmoji(itemId)}`);
   persistState(state);
   return { ok: true, msg: `Вернул ${getItemEmoji(itemId)}` };
+}
+
+// === Tile Painting ===
+export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
+  const key = `${tileX},${tileY}`;
+  state.tileOverrides[key] = { type, textureIndex };
+  persistState(state);
+}
+
+export function removeTilePaint(state: GameState, tileX: number, tileY: number): void {
+  const key = `${tileX},${tileY}`;
+  delete state.tileOverrides[key];
+  persistState(state);
 }

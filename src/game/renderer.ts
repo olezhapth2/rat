@@ -1,7 +1,7 @@
 import { TILE, MAP_W, MAP_H, ROOMS } from './constants';
 import type { Player, GameObject, Bot } from './constants';
 import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite, drawPet } from './sprites';
-import { getFloorImage, getSideWallImage, getWallTopImage } from './tiles';
+import { getFloorImage, getFloorImageByIndex, getWallImageByIndex, getSideWallImage, getWallTopImage } from './tiles';
 import type { RemotePlayer } from './multiplayer';
 
 export interface Camera {
@@ -39,7 +39,9 @@ export function render(
   dropPreview: { x: number; y: number; w: number; h: number } | null,
   playerAnim?: AnimState,
   botAnims?: Record<string, AnimState>,
-  remotePlayers: RemotePlayer[] = []
+  remotePlayers: RemotePlayer[] = [],
+  tileOverrides?: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>
+
 ): void {
   const cw = canvas.width;
   const ch = canvas.height;
@@ -64,10 +66,17 @@ export function render(
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
       if (map[y][x] !== 1) continue;
-      if (floorImg && floorImg.complete && floorImg.naturalWidth > 0) {
+      const key = `${x},${y}`;
+      const override = tileOverrides?.[key];
+      let drawImg: HTMLImageElement | null = null;
+      if (override?.type === 'floor') {
+        drawImg = getFloorImageByIndex(override.textureIndex);
+      }
+      if (!drawImg) drawImg = floorImg;
+      if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        ctx.drawImage(floorImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(drawImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
       } else {
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
@@ -81,10 +90,17 @@ export function render(
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
       if (map[y][x] !== 3) continue;
-      if (sideImg && sideImg.complete && sideImg.naturalWidth > 0) {
+      const key = `${x},${y}`;
+      const override = tileOverrides?.[key];
+      let drawImg: HTMLImageElement | null = null;
+      if (override?.type === 'wall') {
+        drawImg = getWallImageByIndex(override.textureIndex);
+      }
+      if (!drawImg) drawImg = sideImg;
+      if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        ctx.drawImage(sideImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(drawImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
       } else {
         ctx.fillStyle = '#aaaaaa';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);

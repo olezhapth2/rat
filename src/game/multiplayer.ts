@@ -61,6 +61,7 @@ let onEmojiShow: ((data: { playerId: string; emoji: string }) => void) | null = 
 let onWhiteboardSync: ((data: string) => void) | null = null;
 let onCardGameStateUpdate: ((game: any) => void) | null = null;
 let onCardGameErrorUpdate: ((error: string) => void) | null = null;
+let onTileSyncUpdate: ((overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => void) | null = null;
 
 // === Public API ===
 
@@ -136,6 +137,10 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
 
     socket.on('cardgame:error', (error: string) => {
       onCardGameErrorUpdate?.(error);
+    });
+
+    socket.on('tile:sync', (overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => {
+      onTileSyncUpdate?.(overrides);
     });
   }
 
@@ -296,4 +301,18 @@ export function onWhiteboard(cb: (data: string) => void): void {
 
 export function onEmoji(cb: (data: { playerId: string; emoji: string }) => void): void {
   onEmojiShow = cb;
+}
+
+export function sendTilePaint(x: number, y: number, type: 'floor' | 'wall', textureIndex: number): void {
+  if (!socket?.connected) return;
+  socket.emit('tile:paint', { x, y, type, textureIndex });
+}
+
+export function sendTileRemove(x: number, y: number): void {
+  if (!socket?.connected) return;
+  socket.emit('tile:remove', { x, y });
+}
+
+export function onTileSync(cb: (overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => void): void {
+  onTileSyncUpdate = cb;
 }

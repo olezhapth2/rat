@@ -509,18 +509,18 @@ export function renderLightOverlay(
   // === ROOM LIGHT SOURCES ===
 
   // Boss office — warm overhead light
-  drawRadialLight(lc, sx((1 + 11 / 2) * TILE), sy((1 + 6 / 2) * TILE), 180 * zoom, '#ffeedd', 0.5);
+  drawRadialLight(lc, sx((1 + 12 / 2) * TILE), sy((1 + 6 / 2) * TILE), 180 * zoom, '#ffeedd', 0.5);
 
   // Office 1-3 — cool monitor glow
-  drawRadialLight(lc, sx(15 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
-  drawRadialLight(lc, sx(22 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
-  drawRadialLight(lc, sx(29 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(16 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(23 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(30 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
 
   // Chill zone — warm ambient
-  drawRadialLight(lc, sx(36 * TILE), sy(6 * TILE), 160 * zoom, '#ffe8c0', 0.45);
+  drawRadialLight(lc, sx(37 * TILE), sy(6 * TILE), 160 * zoom, '#ffe8c0', 0.45);
 
   // Smoking room — dim warm
-  drawRadialLight(lc, sx(36 * TILE), sy(15 * TILE), 100 * zoom, '#ffccaa', 0.3);
+  drawRadialLight(lc, sx(37 * TILE), sy(15 * TILE), 100 * zoom, '#ffccaa', 0.3);
 
   // Hall — overhead strip lights
   for (let hx = 5; hx <= 29; hx += 8) {
@@ -528,9 +528,9 @@ export function renderLightOverlay(
   }
 
   // Office 4-6 — cool overhead
-  drawRadialLight(lc, sx(15 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
-  drawRadialLight(lc, sx(22 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
-  drawRadialLight(lc, sx(33 * TILE), sy(25 * TILE), 120 * zoom, '#ddeeff', 0.35);
+  drawRadialLight(lc, sx(16 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(23 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(34 * TILE), sy(25 * TILE), 120 * zoom, '#ddeeff', 0.35);
 
   // Player proximity glow (small warm light around player)
   const playerScreenX = (player.x - offX) * zoom;

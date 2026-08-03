@@ -243,17 +243,19 @@ export interface Bot {
   _targetRoomId: string | null; _roomTimer: number;
   _stealCooldown: number;
   _lastVx: number; _lastVy: number;
-  _stolenItemId: string | null;
-  _stolenItemOriginalIdx: number;
+  _stolenCoins: number;
+  _chaseTimer: number;
+  _speedMultiplier: number;
+  _chasingPlayer: boolean;
 }
 
 export function createBots(): Bot[] {
   return [
-    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 15 * TILE, y: 4 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
-    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 22 * TILE, y: 4 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
-    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 29 * TILE, y: 4 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
-    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 13 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
-    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 37 * TILE, y: 16 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenItemId: null, _stolenItemOriginalIdx: -1 },
+    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 15 * TILE, y: 4 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 22 * TILE, y: 4 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 29 * TILE, y: 4 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 13 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 37 * TILE, y: 16 * TILE, radius: 6, role: 'крыса',     room: 'smoking', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
   ];
 }
 
@@ -414,7 +416,7 @@ export const ACHIEVEMENTS = [
   { id: 'rich',          name: 'Богач',                icon: '💰', desc: 'Накопи 500 алт' },
   { id: 'decorator',     name: 'Дизайнер',             icon: '🎨', desc: 'Оформи кабинет' },
   { id: 'social',        name: 'Социальный',           icon: '🤝', desc: 'Посети 3 кабинета' },
-  { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твой предмет' },
+  { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твои деньги' },
   { id: 'boss_meeting',  name: 'На приеме у босса',    icon: '👔', desc: 'Дойди до кабинета босса по вызову' },
   { id: 'secret_finder', name: 'Тайна раскрыта',        icon: '🔍', desc: 'Найди секрет за книжным шкафом' },
   { id: 'pet_lover',     name: 'Зоофил',                icon: '🐾', desc: 'Погладь питомца 10 раз' },

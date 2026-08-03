@@ -232,13 +232,12 @@ export function render(
           ctx.globalAlpha = 1;
         }
 
-        // Kryska stolen item — show floating item above her
-        if (c.bot && c.bot._stolenItemId) {
-          const carryEmoji = (window as any).__itemEmojis?.[c.bot._stolenItemId] || '📦';
+        // Kryska stolen coins — show floating coin above her
+        if (c.bot && (c.bot as any)._stolenCoins > 0) {
           ctx.font = '14px sans-serif';
           ctx.textAlign = 'center';
           const floatY = c.y - TILE * 1.5 + Math.sin(frame * 0.08) * 3;
-          ctx.fillText(carryEmoji, c.x + 8, floatY);
+          ctx.fillText('💰', c.x + 8, floatY);
         }
 
         // Bot speech bubble

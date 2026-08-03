@@ -943,9 +943,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       if (foundBot) {
         if (foundBot.id === 'kryska') {
           items.push({ icon: '💬', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); addXP(stateRef.current, 10); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
-          if ((foundBot as any)._stolenItemId) {
-            const stolenDef = ALL_ITEMS.find(i => i.id === (foundBot as any)._stolenItemId);
-            items.push({ icon: '📦', text: `Отнять: ${stolenDef?.e || ''} ${stolenDef?.n || ''}`, fn: () => {
+          if ((foundBot as any)._stolenCoins > 0) {
+            const coins = (foundBot as any)._stolenCoins;
+            items.push({ icon: '💰', text: `Вернуть ${coins} алт`, fn: () => {
               const res = takeBackFromKryska(stateRef.current, 'kryska');
               toast(res.msg, res.ok ? 'ok' : 'info');
             }});

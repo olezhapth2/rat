@@ -584,10 +584,28 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   const dxp = player.x - bot.x;
   const dyp = player.y - bot.y;
   const distToPlayer = Math.sqrt(dxp * dxp + dyp * dyp);
-  const playerIsNearby = distToPlayer < TILE * 8;
 
-  // If kryska has stolen item — run away from player
-  if (bot._stolenItemId) {
+  // If kryska has stolen coins — run away from player
+  if (bot._stolenCoins > 0) {
+    bot._chasingPlayer = true;
+
+    // Chase timer: 5 seconds then give up
+    bot._chaseTimer -= dt;
+    if (bot._chaseTimer <= 0) {
+      // Drop stolen coins (player gets them back)
+      state.player.coins += bot._stolenCoins;
+      logActivity(state, '🐀', `Крыска выбросила ${bot._stolenCoins} алт и убежала!`);
+      bot._speechBubble = '*пиии!* 😰';
+      bot._speechTime = now;
+      bot._emoji = '💨';
+      bot._emojiTime = now;
+      bot._stolenCoins = 0;
+      bot._chaseTimer = 0;
+      bot._chasingPlayer = false;
+      persistState(state);
+      return;
+    }
+
     // Flee from player
     const fleeX = bot.x - (dxp / (distToPlayer || 1)) * TILE * 15;
     const fleeY = bot.y - (dyp / (distToPlayer || 1)) * TILE * 15;
@@ -595,7 +613,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     const fdy = fleeY - bot.y;
     const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
     if (fdist > 4) {
-      const spd = 1.0 * dt;
+      const spd = 1.0 * bot._speedMultiplier * dt;
       const nx = bot.x + (fdx / fdist) * spd;
       const ny = bot.y + (fdy / fdist) * spd;
       if (canMoveBot(state.map, state.objects, nx, ny, bot.radius)) {
@@ -605,16 +623,17 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
         bot._lastVy = (fdy / fdist) * 1.0;
       }
     }
-    // After fleeing far enough or timer expires, drop the item (eat it)
-    if (distToPlayer > TILE * 12 || now - bot._emojiTime > 8000) {
+
+    // If player is far enough, eat the coins
+    if (distToPlayer > TILE * 12) {
       bot._speechBubble = '*проглотила* 🧀';
       bot._speechTime = now;
       bot._emoji = '💀';
       bot._emojiTime = now;
-      bot._stolenItemId = null;
-      bot._stolenItemOriginalIdx = -1;
-      unlockAchievement(state, 'kryska_victim');
-      logActivity(state, '🐀', 'Крыска съела твой предмет!');
+      logActivity(state, '🐀', `Крыска съела ${bot._stolenCoins} алт!`);
+      bot._stolenCoins = 0;
+      bot._chaseTimer = 0;
+      bot._chasingPlayer = false;
       persistState(state);
     }
     return;
@@ -662,30 +681,24 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     }
   }
 
-  // === Steal ONLY when player is nearby and can see ===
-  if (playerIsNearby && bot._stealCooldown <= 0 && state.player.placedItems.length > 0) {
-    for (let i = state.player.placedItems.length - 1; i >= 0; i--) {
-      const pi = state.player.placedItems[i];
-      const piDef = ALL_ITEMS.find(item => item.id === pi.id);
-      if (!piDef) continue;
-      const itemCenterX = pi.x + (piDef.w * TILE) / 2;
-      const itemCenterY = pi.y + (piDef.h * TILE) / 2;
-      const dx = bot.x - itemCenterX;
-      const dy = bot.y - itemCenterY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < TILE * 2 && Math.random() < 0.15) {
-        state.player.placedItems.splice(i, 1);
-        bot._stolenItemId = pi.id;
-        bot._stolenItemOriginalIdx = i;
-        bot._speechBubble = '*ухватила!* 🐀';
-        bot._speechTime = now;
-        bot._emoji = '🧀';
-        bot._emojiTime = now;
-        bot._stealCooldown = 600;
-        persistState(state);
-        break;
-      }
+  // === Steal coins from nearby player ===
+  if (distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
+    const stealAmount = Math.min(
+      state.player.coins,
+      10 + Math.floor(Math.random() * 40) // steal 10-50 coins
+    );
+    if (stealAmount > 0 && Math.random() < 0.3) {
+      state.player.coins -= stealAmount;
+      bot._stolenCoins = stealAmount;
+      bot._chaseTimer = 5; // 5 seconds to chase
+      bot._chasingPlayer = true;
+      bot._speechBubble = '*ухватила!* 🐀';
+      bot._speechTime = now;
+      bot._emoji = '🧀';
+      bot._emojiTime = now;
+      bot._stealCooldown = 300;
+      logActivity(state, '🐀', `Крыска украла ${stealAmount} алт!`);
+      persistState(state);
     }
   }
 
@@ -947,24 +960,26 @@ export function checkOfficeEvents(state: GameState): void {
 
 export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: boolean; msg: string } {
   const kryska = state.bots.find(b => b.id === kryskaId);
-  if (!kryska || !kryska._stolenItemId) return { ok: false, msg: 'Нечего отнимать' };
+  if (!kryska || kryska._stolenCoins <= 0) return { ok: false, msg: 'Нечего отнимать' };
 
   const dx = state.player.x - kryska.x;
   const dy = state.player.y - kryska.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist > TILE * 3) return { ok: false, msg: 'Слишком далеко!' };
 
-  const itemId = kryska._stolenItemId;
-  state.player.carrying = itemId;
-  kryska._stolenItemId = null;
-  kryska._stolenItemOriginalIdx = -1;
+  const coins = kryska._stolenCoins;
+  state.player.coins += coins;
+  kryska._stolenCoins = 0;
+  kryska._chaseTimer = 0;
+  kryska._chasingPlayer = false;
+  kryska._speedMultiplier += 0.05; // +5% speed permanently
   kryska._speechBubble = '*пиии!* 😰';
   kryska._speechTime = Date.now();
   kryska._emoji = '😨';
   kryska._emojiTime = Date.now();
-  logActivity(state, '🐀', `Отнял у крыски: ${getItemEmoji(itemId)}`);
+  logActivity(state, '🐀', `Отнял у крыски ${coins} алт!`);
   persistState(state);
-  return { ok: true, msg: `Вернул ${getItemEmoji(itemId)}` };
+  return { ok: true, msg: `Вернул ${coins} алт` };
 }
 
 // === Tile Painting ===

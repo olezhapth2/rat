@@ -22,6 +22,7 @@ import {
   leaveCardGame as mpLeaveCardGame, onCardGameState, onCardGameError,
   onTileSync,
   sendTilePaint, sendTileRemove,
+  sendPlayerSave, onPlayerDataSync,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
@@ -188,6 +189,33 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   // Active minigame overlay state
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const activeGameRef = useRef<string | null>(null);
+  const saveToServerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveToServer = useCallback(() => {
+    if (saveToServerTimerRef.current) clearTimeout(saveToServerTimerRef.current);
+    saveToServerTimerRef.current = setTimeout(() => {
+      const s = stateRef.current;
+      sendPlayerSave({
+        name: s.player.name,
+        charId: s.player.charId,
+        hatId: s.player.hatId,
+        coins: s.player.coins,
+        xp: s.player.xp,
+        level: s.player.level,
+        furniture: s.player.furniture,
+        placedItems: s.player.placedItems,
+        achievements: s.player.achievements,
+        petId: s.player.petId,
+        petPetCount: s.player.petPetCount,
+        wallColor: s.player.wallColor,
+        doorName: s.player.doorName,
+        av: s.player.av,
+        role: s.player.role,
+        visitedRooms: s.player.visitedRooms,
+        dailyQuests: s.dailyQuests,
+      });
+    }, 2000);
+  }, []);
 
   // Tile painting picker state
   const [tilePicker, setTilePicker] = useState<{ type: 'floor' | 'wall'; x: number; y: number } | null>(null);
@@ -803,6 +831,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         };
       });
       persistState(s);
+      saveToServer();
     });
 
     onEmoji((data) => {
@@ -822,6 +851,24 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
     onTileSync((overrides) => {
       stateRef.current.tileOverrides = overrides;
+    });
+
+    onPlayerDataSync((data) => {
+      const s = stateRef.current;
+      // Apply server data to local state
+      if (data.coins !== undefined) s.player.coins = data.coins;
+      if (data.xp !== undefined) s.player.xp = data.xp;
+      if (data.level !== undefined) s.player.level = data.level;
+      if (data.furniture) s.player.furniture = data.furniture;
+      if (data.placedItems) s.player.placedItems = data.placedItems;
+      if (data.achievements) s.player.achievements = data.achievements;
+      if (data.petId) s.player.petId = data.petId;
+      if (data.petPetCount !== undefined) s.player.petPetCount = data.petPetCount;
+      if (data.wallColor) s.player.wallColor = data.wallColor;
+      if (data.doorName) s.player.doorName = data.doorName;
+      if (data.visitedRooms) s.player.visitedRooms = data.visitedRooms;
+      if (data.dailyQuests) s.dailyQuests = data.dailyQuests;
+      console.log('[MP] Player data synced from server');
     });
 
     return () => disconnectMultiplayer();
@@ -996,6 +1043,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             fn: () => {
               s.player.petPetCount = (s.player.petPetCount || 0) + 1;
               persistState(s);
+              saveToServer();
               if (s.player.petPetCount >= 10) {
                 unlockAchievement(s, 'pet_lover');
                 toast('🐾 Зоофил! Питомец счастлив!', 'ok');
@@ -1164,6 +1212,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         if (s.player.visitedRooms.length >= 3) unlockAchievement(s, 'social');
         trackQuestProgress(s, 'visit_2');
         persistState(s);
+        saveToServer();
       }
 
       // Check interaction zones
@@ -1411,6 +1460,11 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       // Send position to server every 5 frames (~80ms)
       if (frameRef.current % 5 === 0) {
         sendPosition(s.player.x, s.player.y);
+      }
+
+      // Periodic save to server every 300 frames (~5 seconds)
+      if (frameRef.current % 300 === 0) {
+        saveToServer();
       }
 
       if (frameRef.current % 30 === 0) setTick((n) => n + 1);

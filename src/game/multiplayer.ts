@@ -62,6 +62,7 @@ let onWhiteboardSync: ((data: string) => void) | null = null;
 let onCardGameStateUpdate: ((game: any) => void) | null = null;
 let onCardGameErrorUpdate: ((error: string) => void) | null = null;
 let onTileSyncUpdate: ((overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => void) | null = null;
+let onPlayerDataSyncCb: ((data: any) => void) | null = null;
 
 // === Public API ===
 
@@ -141,6 +142,10 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
 
     socket.on('tile:sync', (overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => {
       onTileSyncUpdate?.(overrides);
+    });
+
+    socket.on('player:data_sync', (data: any) => {
+      onPlayerDataSyncCb?.(data);
     });
   }
 
@@ -315,4 +320,13 @@ export function sendTileRemove(x: number, y: number): void {
 
 export function onTileSync(cb: (overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => void): void {
   onTileSyncUpdate = cb;
+}
+
+export function sendPlayerSave(data: any): void {
+  if (!socket?.connected) return;
+  socket.emit('player:save', data);
+}
+
+export function onPlayerDataSync(cb: (data: any) => void): void {
+  onPlayerDataSyncCb = cb;
 }

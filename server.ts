@@ -3,13 +3,119 @@ import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import { type CardGameState, createGame, joinGame, playCard, drawCard } from './src/game/cardgame';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = dev ? 'localhost' : '0.0.0.0';
 const port = parseInt(process.env.PORT || '3001', 10);
 
+// === Persistence ===
+const DATA_DIR = join(process.cwd(), '.game-data');
+const STATE_FILE = join(DATA_DIR, 'game-state.json');
+const PLAYERS_FILE = join(DATA_DIR, 'players.json');
+
+interface PersistedState {
+  tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
+  sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }>;
+  whiteboardData: string;
+}
+
+interface PlayerData {
+  name: string;
+  charId: string;
+  hatId: string;
+  coins: number;
+  xp: number;
+  level: number;
+  furniture: string[];
+  placedItems: Array<{ id: string; x: number; y: number; surface: 'floor' | 'wall'; placedBy: string }>;
+  achievements: string[];
+  petId: string;
+  petPetCount: number;
+  wallColor: string;
+  doorName: string;
+  av: string;
+  role: string;
+  visitedRooms: string[];
+  dailyQuests: { date: string; progress: Record<string, number>; claimed: string[] };
+}
+
+function ensureDataDir() {
+  if (!existsSync(DATA_DIR)) {
+    const fs = require('fs');
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+function loadState(): PersistedState {
+  ensureDataDir();
+  try {
+    if (existsSync(STATE_FILE)) {
+      const raw = readFileSync(STATE_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load state:', e);
+  }
+  return { tileOverrides: {}, sharedItems: [], whiteboardData: '' };
+}
+
+function saveState(state: PersistedState) {
+  ensureDataDir();
+  try {
+    writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save state:', e);
+  }
+}
+
+function loadPlayers(): Record<string, PlayerData> {
+  ensureDataDir();
+  try {
+    if (existsSync(PLAYERS_FILE)) {
+      const raw = readFileSync(PLAYERS_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load players:', e);
+  }
+  return {};
+}
+
+function savePlayers(players: Record<string, PlayerData>) {
+  ensureDataDir();
+  try {
+    writeFileSync(PLAYERS_FILE, JSON.stringify(players, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save players:', e);
+  }
+}
+
+// Load persisted data
+const persistedState = loadState();
+const playersDb = loadPlayers();
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSave() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveState({
+      tileOverrides,
+      sharedItems,
+      whiteboardData,
+    });
+    saveTimer = null;
+  }, 1000);
+}
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
+
+// Shared state variables (declared here so scheduleSave can access them)
+let tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
+let sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }> = [];
+let whiteboardData: string = '';
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
@@ -34,7 +140,7 @@ app.prepare().then(() => {
 
   interface RpsGame {
     id: string;
-    playerA: string; // socket id
+    playerA: string;
     playerB: string;
     choiceA: 'rock' | 'paper' | 'scissors' | null;
     choiceB: 'rock' | 'paper' | 'scissors' | null;
@@ -43,7 +149,7 @@ app.prepare().then(() => {
     rewardB: number;
   }
 
-  const players = new Map<string, ServerPlayer>();
+  const onlinePlayers = new Map<string, ServerPlayer>();
   const rpsGames = new Map<string, RpsGame>();
   let rpsCounter = 0;
 
@@ -51,40 +157,26 @@ app.prepare().then(() => {
   const cardGames = new Map<string, CardGameState>();
   const playerCardGames = new Map<string, string>();
 
-  // === Shared whiteboard data ===
-  let whiteboardData: string = '';
+  // === Shared state (loaded from disk) ===
+  whiteboardData = persistedState.whiteboardData;
+  Object.assign(tileOverrides, persistedState.tileOverrides);
+  sharedItems.push(...persistedState.sharedItems);
 
-  // === Shared tile overrides (floor/wall repaints) ===
-  const tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
-
-  // === Shared placed items (visible to all players) ===
-  interface PlacedItem {
-    id: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    color?: string;
-  }
-  const sharedItems: PlacedItem[] = [];
+  console.log(`[Data] Loaded: ${Object.keys(tileOverrides).length} tile overrides, ${sharedItems.length} items`);
 
   function broadcastPlayers() {
-    const list = Array.from(players.values());
+    const list = Array.from(onlinePlayers.values());
     io.emit('players:list', list);
   }
 
   io.on('connection', (socket) => {
     console.log(`[+] Player connected: ${socket.id}`);
 
-    // Send current shared items to new player
+    // Send current shared state to new player
     socket.emit('items:sync', sharedItems);
-
-    // Send current whiteboard to new player
     if (whiteboardData) {
       socket.emit('whiteboard:sync', whiteboardData);
     }
-
-    // Send current tile overrides to new player
     socket.emit('tile:sync', tileOverrides);
 
     // Player registers
@@ -98,18 +190,33 @@ app.prepare().then(() => {
         y: 13 * 40 + 20,
         color: data.color,
       };
-      players.set(socket.id, player);
+      onlinePlayers.set(socket.id, player);
       broadcastPlayers();
+
+      // Send saved player data back to client
+      const playerKey = data.name.toLowerCase();
+      const saved = playersDb[playerKey];
+      if (saved) {
+        socket.emit('player:data_sync', saved);
+        console.log(`[Data] Loaded saved data for "${data.name}"`);
+      }
     });
 
     // Player moves
     socket.on('player:move', (data: { x: number; y: number }) => {
-      const p = players.get(socket.id);
+      const p = onlinePlayers.get(socket.id);
       if (p) {
         p.x = data.x;
         p.y = data.y;
         socket.broadcast.emit('player:moved', { id: socket.id, x: data.x, y: data.y });
       }
+    });
+
+    // === Player saves their data to server ===
+    socket.on('player:save', (data: PlayerData) => {
+      const playerKey = data.name.toLowerCase();
+      playersDb[playerKey] = data;
+      savePlayers(playersDb);
     });
 
     // === Tile painting (3x3 block) ===
@@ -124,6 +231,7 @@ app.prepare().then(() => {
         }
       }
       io.emit('tile:sync', tileOverrides);
+      scheduleSave();
     });
 
     socket.on('tile:remove', (data: { x: number; y: number }) => {
@@ -133,13 +241,15 @@ app.prepare().then(() => {
         }
       }
       io.emit('tile:sync', tileOverrides);
+      scheduleSave();
     });
 
     // === Shared items ===
-    socket.on('item:place', (data: PlacedItem) => {
-      sharedItems.push({ ...data, _owner: socket.id } as any);
-      console.log(`[Items] Placed: ${data.id} at (${data.x},${data.y}) by ${socket.id}`);
+    socket.on('item:place', (data: { id: string; x: number; y: number; w: number; h: number; color?: string }) => {
+      sharedItems.push(data);
+      console.log(`[Items] Placed: ${data.id} at (${data.x},${data.y})`);
       io.emit('items:sync', sharedItems);
+      scheduleSave();
     });
 
     socket.on('item:remove', (data: { index: number; id: string }) => {
@@ -148,6 +258,7 @@ app.prepare().then(() => {
         sharedItems.splice(idx, 1);
         console.log(`[Items] Removed: ${data.id} at index ${data.index}`);
         io.emit('items:sync', sharedItems);
+        scheduleSave();
       }
     });
 
@@ -155,6 +266,7 @@ app.prepare().then(() => {
     socket.on('whiteboard:update', (data: string) => {
       whiteboardData = data;
       socket.broadcast.emit('whiteboard:sync', data);
+      scheduleSave();
     });
 
     socket.on('whiteboard:request_sync', () => {
@@ -164,17 +276,15 @@ app.prepare().then(() => {
     });
 
     // === RPS Game ===
-    // Player A invites Player B
     socket.on('rps:invite', (data: { targetId: string }) => {
-      const playerA = players.get(socket.id);
-      const playerB = players.get(data.targetId);
+      const playerA = onlinePlayers.get(socket.id);
+      const playerB = onlinePlayers.get(data.targetId);
       if (!playerA || !playerB) return;
 
-      // Check if either is already in a game
       for (const game of rpsGames.values()) {
         if (game.playerA === socket.id || game.playerB === socket.id ||
             game.playerA === data.targetId || game.playerB === data.targetId) {
-          return; // already in a game
+          return;
         }
       }
 
@@ -191,14 +301,12 @@ app.prepare().then(() => {
       };
       rpsGames.set(gameId, game);
 
-      // Notify target player about invite
       io.to(data.targetId).emit('rps:invite_received', {
         gameId,
         fromId: socket.id,
         fromName: playerA.name,
       });
 
-      // Notify sender that invite was sent
       io.to(socket.id).emit('rps:invite_sent', {
         gameId,
         targetId: data.targetId,
@@ -206,14 +314,12 @@ app.prepare().then(() => {
       });
     });
 
-    // Player B accepts invite
     socket.on('rps:accept', (data: { gameId: string }) => {
       const game = rpsGames.get(data.gameId);
       if (!game || game.playerB !== socket.id) return;
 
-      // Notify both players game starts
-      const playerA = players.get(game.playerA);
-      const playerB = players.get(game.playerB);
+      const playerA = onlinePlayers.get(game.playerA);
+      const playerB = onlinePlayers.get(game.playerB);
 
       io.to(game.playerA).emit('rps:started', {
         gameId: data.gameId,
@@ -225,7 +331,6 @@ app.prepare().then(() => {
       });
     });
 
-    // Player declines invite
     socket.on('rps:decline', (data: { gameId: string }) => {
       const game = rpsGames.get(data.gameId);
       if (!game) return;
@@ -234,7 +339,6 @@ app.prepare().then(() => {
       rpsGames.delete(data.gameId);
     });
 
-    // Player makes a choice
     socket.on('rps:choice', (data: { gameId: string; choice: 'rock' | 'paper' | 'scissors' }) => {
       const game = rpsGames.get(data.gameId);
       if (!game) return;
@@ -242,7 +346,6 @@ app.prepare().then(() => {
       if (game.playerA === socket.id) game.choiceA = data.choice;
       else if (game.playerB === socket.id) game.choiceB = data.choice;
 
-      // Both chose? Determine winner
       if (game.choiceA && game.choiceB) {
         const a = game.choiceA;
         const b = game.choiceB;
@@ -265,7 +368,6 @@ app.prepare().then(() => {
           game.rewardB = 20;
         }
 
-        // Send results to both
         io.to(game.playerA).emit('rps:result', {
           gameId: game.id,
           myChoice: game.choiceA,
@@ -285,7 +387,6 @@ app.prepare().then(() => {
       }
     });
 
-    // Cancel game
     socket.on('rps:cancel', (data: { gameId: string }) => {
       const game = rpsGames.get(data.gameId);
       if (!game) return;
@@ -302,7 +403,7 @@ app.prepare().then(() => {
 
     // === Card Game (OKIЯ) ===
     socket.on('cardgame:create', () => {
-      const player = players.get(socket.id);
+      const player = onlinePlayers.get(socket.id);
       if (!player) return;
       if (playerCardGames.has(socket.id)) return;
 
@@ -314,7 +415,7 @@ app.prepare().then(() => {
     });
 
     socket.on('cardgame:join', (gameId: string) => {
-      const player = players.get(socket.id);
+      const player = onlinePlayers.get(socket.id);
       if (!player) return;
       if (playerCardGames.has(socket.id)) return;
 
@@ -393,7 +494,6 @@ app.prepare().then(() => {
     // Disconnect
     socket.on('disconnect', () => {
       console.log(`[-] Player disconnected: ${socket.id}`);
-      // Clean up any active RPS games
       for (const [id, game] of rpsGames) {
         if (game.playerA === socket.id || game.playerB === socket.id) {
           const otherId = game.playerA === socket.id ? game.playerB : game.playerA;
@@ -401,7 +501,6 @@ app.prepare().then(() => {
           rpsGames.delete(id);
         }
       }
-      // Clean up card games
       const cardGameId = playerCardGames.get(socket.id);
       if (cardGameId) {
         const cg = cardGames.get(cardGameId);
@@ -414,7 +513,7 @@ app.prepare().then(() => {
         }
         playerCardGames.delete(socket.id);
       }
-      players.delete(socket.id);
+      onlinePlayers.delete(socket.id);
       broadcastPlayers();
     });
   });

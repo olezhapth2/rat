@@ -993,8 +993,17 @@ export function paintTile(state: GameState, tileX: number, tileY: number, type: 
         const tileType = state.map[y]?.[x];
         if (type === 'floor' && tileType === 1) {
           state.tileOverrides[`${x},${y}`] = { type, textureIndex };
-        } else if (type === 'wall' && (tileType === 3 || tileType === 2)) {
-          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+        } else if (type === 'wall') {
+          // Allow painting wall tiles (S=3, W=2) AND floor tiles (F=1) that are directly below a wall
+          if (tileType === 3 || tileType === 2) {
+            state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+          } else if (tileType === 1) {
+            // Check if tile above is a wall — if so, paint this floor tile too
+            const above = state.map[y - 1]?.[x];
+            if (above === 3 || above === 2) {
+              state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+            }
+          }
         }
       }
     }

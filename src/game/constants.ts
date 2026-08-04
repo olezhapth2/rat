@@ -51,7 +51,7 @@ export const ROOMS: Room[] = [
   { id: 'library', name: 'Библиотека',  fx: 33, fy: 10, fw: 7,  fh: 9,  color1: '#c9c2b6', color2: '#b9b2a6' },
   { id: 'office4', name: 'Кабинет 4',   fx: 11, fy: 20, fw: 7,  fh: 9,  color1: '#a9c2ab', color2: '#99b29b' },
   { id: 'office5', name: 'Кабинет 5',   fx: 19, fy: 20, fw: 7,  fh: 9,  color1: '#cbb87c', color2: '#bba86c' },
-  { id: 'office6', name: 'Кабинет 6',   fx: 27, fy: 20, fw: 13, fh: 9,  color1: '#8fc0be', color2: '#7fb0ae' },
+  { id: 'office6', name: 'Кабинет 6',   fx: 28, fy: 20, fw: 12, fh: 9,  color1: '#8fc0be', color2: '#7fb0ae' },
 ];
 
 export const MAP_W = 40;
@@ -222,11 +222,7 @@ export function canMove(
 }
 
 export function createObjects(): GameObject[] {
-  return [
-    { id: 'bookshelf', type: 'furniture', x: 34 * TILE, y: 12 * TILE, w: 2, h: 3, solid: true, color: '#8B4513', label: 'Книжный шкаф', room: 'library', sprite: '/ast/obj/wall_book3.3.png' },
-    { id: 'basket_hoop', type: 'furniture', x: 4 * TILE, y: 12 * TILE, w: 2, h: 3, solid: true, color: '#ff6600', label: 'Корзина', room: 'hall', sprite: '/sprites/objects/small/basket_hoop.png' },
-    { id: 'coffee_machine', type: 'furniture', x: 35 * TILE, y: 3 * TILE, w: 1, h: 2, solid: false, noCollision: true, color: '#6b4423', label: 'Кофемашина', room: 'kitchen' },
-  ];
+  return [];
 }
 
 export interface Player {
@@ -283,7 +279,7 @@ export const ROOM_CENTERS: Record<string, { x: number; y: number }> = {
   library: { x: (33 + 7 / 2) * TILE, y: (10 + 9 / 2) * TILE },
   office4: { x: (11 + 7 / 2) * TILE, y: (20 + 9 / 2) * TILE },
   office5: { x: (19 + 7 / 2) * TILE, y: (20 + 9 / 2) * TILE },
-  office6: { x: (27 + 13 / 2) * TILE, y: (20 + 9 / 2) * TILE },
+  office6: { x: (28 + 12 / 2) * TILE, y: (20 + 9 / 2) * TILE },
 };
 
 export const BOT_PHRASES: Record<string, string[]> = {
@@ -358,63 +354,16 @@ export interface ShopItem {
   surface: 'floor' | 'wall';
   noCollision?: boolean;
   sprite: string;
-  minigame?: 'smoke' | 'microwave' | 'furniture_toss';
+  minigame?: 'smoke' | 'microwave' | 'furniture_toss' | 'book_prediction' | 'cardgame' | 'basketball';
 }
 
 export const SHOP: Record<string, ShopItem[]> = {
-  desks: [
-    { id: 'table_2', n: 'Стол классик', e: '🪵', p: 150, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_2.png' },
-    { id: 'table_3', n: 'Стол стекло', e: '🪵', p: 180, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_3.png' },
-    { id: 'table_4', n: 'Стол минимал', e: '🪵', p: 120, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_4.png' },
-    { id: 'table_5', n: 'Стол тёмный', e: '🪵', p: 160, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_5.png' },
-    { id: 'table_6', n: 'Стол светлый', e: '🪵', p: 140, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_6.png' },
-    { id: 'table_7', n: 'Стол офис', e: '🪵', p: 170, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_7.png' },
-  ],
-  chairs: [
-    { id: 'chear_1', n: 'Стул дерево', e: '🪑', p: 80, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_1.png' },
-    { id: 'chear_2', n: 'Стул белый', e: '🪑', p: 90, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_2.png' },
-    { id: 'chear_3', n: 'Стул чёрный', e: '🪑', p: 85, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_3.png' },
-    { id: 'chear_4', n: 'Стул офис', e: '🪑', p: 100, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_4.png' },
-    { id: 'chear_5', n: 'Стул зелёный', e: '🪑', p: 95, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_5.png' },
-    { id: 'chear_6', n: 'Стул винтаж', e: '🪑', p: 110, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/chairs/chear_6.png' },
-  ],
-  sofas: [
-    { id: 'sofa_1', n: 'Диван беж', e: '🛋️', p: 200, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_1.png' },
-    { id: 'sofa_2', n: 'Диван серый', e: '🛋️', p: 220, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_2.png' },
-    { id: 'sofa_3', n: 'Диван зелёный', e: '🛋️', p: 210, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_3.png' },
-    { id: 'sofa_4', n: 'Скамейка', e: '🛋️', p: 120, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_4.png' },
-    { id: 'sofa_5', n: 'Диван фиолет', e: '🛋️', p: 250, w: 3, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_5.png' },
-  ],
-  lights: [
-    { id: 'Lighht_1', n: 'Светильник 1', e: '💡', p: 70, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_1.png' },
-    { id: 'Lighht_2', n: 'Светильник 2', e: '💡', p: 80, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_2.png' },
-    { id: 'Lighht_3', n: 'Светильник 3', e: '💡', p: 75, w: 2, h: 3, surface: 'floor' as const, sprite: '/sprites/objects/lights/Lighht_3.png' },
-  ],
-  small: [
-    { id: 'Object2.1_1', n: 'Цветы', e: '🌿', p: 40, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_1.png' },
-    { id: 'Object2.1_3', n: 'Ёлка', e: '🎄', p: 60, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_3.png' },
-    { id: 'Object2.1_4', n: 'Подсолнух', e: '🌻', p: 35, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_4.png' },
-    { id: 'Object2.1_5', n: 'Пицца', e: '🍕', p: 50, w: 1, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/Object2.1_5.png' },
-  ],
-  wall: [
-    { id: 'wall_window1', n: 'Окно пейзаж', e: '🪟', p: 150, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window1.png' },
-    { id: 'wall_window2', n: 'Окно закат', e: '🪟', p: 150, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window2.png' },
-    { id: 'wall_window3', n: 'Окно горы', e: '🪟', p: 160, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window3.png' },
-    { id: 'wall_window4', n: 'Окно море', e: '🪟', p: 160, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window4.png' },
-    { id: 'wall_window5', n: 'Окно ночь', e: '🪟', p: 170, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_window5.png' },
-    { id: 'wall_decor1', n: 'Картина', e: '🖼️', p: 120, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_decor1.png' },
-    { id: 'wall_rat', n: 'Крыса на стене', e: '🐀', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_rat.png' },
-  ],
-  pets: [
-    { id: 'pet1', n: 'Кот', e: '🐱', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.png' },
-    { id: 'pet2', n: 'Пёс', e: '🐶', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.png' },
-    { id: 'pet3', n: 'Рыба', e: '🐟', p: 80, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.png' },
-    { id: 'pet4', n: 'Птица', e: '🐦', p: 90, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.png' },
-  ],
   minigames: [
-    { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/Obj3.2_malboro.png', minigame: 'smoke' as const },
-    { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_5.png', minigame: 'microwave' as const },
-    { id: 'minigame_furniture', n: 'Свалка мебели', e: '🪑', p: 70, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_4.png', minigame: 'furniture_toss' as const },
+    { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/Obj3.2_malboro.png', minigame: 'smoke' as const },
+    { id: 'minigame_bookshelf', n: 'Шкаф', e: '📖', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_book3.3.png', minigame: 'book_prediction' as const },
+    { id: 'minigame_plant', n: 'Растение', e: '🌿', p: 70, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/okia.png', minigame: 'cardgame' as const },
+    { id: 'minigame_basketball', n: 'Баскетбол', e: '🏀', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_2 1.png', minigame: 'basketball' as const },
+    { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_book3.5.png', minigame: 'microwave' as const },
   ],
 };
 

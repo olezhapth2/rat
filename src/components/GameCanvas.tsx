@@ -1530,7 +1530,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           🚬 ПЕРЕКУР
         </button>
       )}
-      {nearInteraction && nearInteraction.id === 'bookshelf' && (
+      {nearInteraction && nearInteraction.id === 'book_prediction' && (
         <button
           onClick={() => {
             if (Math.random() < 0.1) {
@@ -1583,24 +1583,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           }}
         >
           ⏱️ РАЗОГРЕТЬ ОБЕД
-        </button>
-      )}
-      {nearInteraction && nearInteraction.id === 'furniture_toss' && (
-        <button
-          onClick={() => {
-            furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
-            spawnFurnitureItem(furnitureTossRef.current);
-            setActiveGame('furniture_toss');
-          }}
-          className="px-btn"
-          style={{
-            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '12px 28px', fontSize: 13, zIndex: 50,
-            background: '#8B4513', borderColor: '#654321', color: '#fff',
-            animation: 'pulse 1.5s infinite',
-          }}
-        >
-          🪑 СВАЛКА МЕБЕЛИ
         </button>
       )}
       {nearInteraction && nearInteraction.id === 'cardgame' && !cardGame && (
@@ -2286,7 +2268,7 @@ function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameSta
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL', pets: 'ПИТОМЦЫ', minigames: 'ИГРЫ' };
+  const labels: Record<string, string> = { minigames: 'ИГРЫ' };
 
   return (
     <div>

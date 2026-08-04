@@ -408,11 +408,11 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'pet4', n: 'Птица', e: '🐦', p: 90, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.png' },
   ],
   minigames: [
-    { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/Obj3.2_malboro.png', minigame: 'smoke' as const },
-    { id: 'minigame_bookshelf', n: 'Шкаф', e: '📖', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_book3.3.png', minigame: 'book_prediction' as const },
-    { id: 'minigame_plant', n: 'Растение', e: '🌿', p: 70, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/okia.png', minigame: 'cardgame' as const },
-    { id: 'minigame_basketball', n: 'Баскетбол', e: '🏀', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_2 1.png', minigame: 'basketball' as const },
-    { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/ast/obj/wall_book3.5.png', minigame: 'microwave' as const },
+    { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/ashtray.png', minigame: 'smoke' as const },
+    { id: 'minigame_bookshelf', n: 'Шкаф', e: '📖', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/bookshelf.png', minigame: 'book_prediction' as const },
+    { id: 'minigame_plant', n: 'Растение', e: '🌿', p: 70, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/plant.png', minigame: 'cardgame' as const },
+    { id: 'minigame_basketball', n: 'Баскетбол', e: '🏀', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/basketball.png', minigame: 'basketball' as const },
+    { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/microwave.png', minigame: 'microwave' as const },
   ],
 };
 

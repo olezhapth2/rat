@@ -100,15 +100,11 @@ export function buildMap(): number[][] {
   // 4. Vertical walls between rooms (1-tile thick)
   // x=15: boss | office1 (y=1..8)
   for (let y = 1; y <= 8; y++) map[y][15] = W;
-  // x=21: office1 | office2 (y=1..8), office4 | office5 (y=20..28)
+  // x=21: office1 | office2 (y=1..8)
   for (let y = 1; y <= 8; y++) map[y][21] = W;
-  for (let y = 20; y < MAP_H; y++) map[y][21] = W;
-  // x=27: office2 | office3 (y=1..8), office5 | office6 (y=20..28)
+  // x=27: office2 | office3 (y=1..8)
   for (let y = 1; y <= 8; y++) map[y][27] = W;
-  for (let y = 20; y < MAP_H; y++) map[y][27] = W;
-  // x=32: office3 | кухня (y=1..8), hall | библиотека (y=10..18)
-  for (let y = 1; y <= 8; y++) map[y][32] = W;
-  for (let y = 10; y <= 18; y++) map[y][32] = W;
+
 
   // 5. Horizontal walls
   // y=9: top rooms | hall (x=0..32)
@@ -125,11 +121,6 @@ export function buildMap(): number[][] {
   for (const cx of [14, 22, 33]) {
     for (let dx = -1; dx <= 1; dx++) map[19][cx + dx] = F;
   }
-  // Vertical wall x=32: hall↔кухня, hall↔библиотека
-  for (const cy of [4, 13, 16]) {
-    for (let dy = -1; dy <= 1; dy++) map[cy + dy][32] = F;
-  }
-
   // 7. Wall-window cutouts — replace S with F where doorways enter through wall-window
   // Hall wall-window (y=10..12) cutouts at doorway x positions
   for (const cx of [7, 18, 24, 29]) {

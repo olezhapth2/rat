@@ -642,13 +642,13 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   // Kryska patrols between rooms
   if (bot._roomTimer <= 0) {
     const targets = [
-      { x: 16 * TILE, y: 4 * TILE },
-      { x: 10 * TILE, y: 12 * TILE },
-      { x: 18 * TILE, y: 14 * TILE },
-      { x: 37 * TILE, y: 6 * TILE },
-      { x: 37 * TILE, y: 16 * TILE },
-      { x: 16 * TILE, y: 14 * TILE },
-      { x: 30 * TILE, y: 25 * TILE },
+      { x: 14 * TILE, y: 5 * TILE },
+      { x: 10 * TILE, y: 14 * TILE },
+      { x: 22 * TILE, y: 14 * TILE },
+      { x: 37 * TILE, y: 5 * TILE },
+      { x: 37 * TILE, y: 15 * TILE },
+      { x: 30 * TILE, y: 14 * TILE },
+      { x: 30 * TILE, y: 24 * TILE },
     ];
     const t = targets[Math.floor(Math.random() * targets.length)];
     bot.wanderTargetX = t.x;

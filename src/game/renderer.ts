@@ -193,6 +193,18 @@ export function render(
           : (botAnims?.[c.bot?.id] ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 });
         drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name, c.color);
 
+        // Name label above character
+        ctx.font = 'bold 9px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        const nameY = bobY - TILE * 1.6;
+        // Background pill
+        const nameWidth = ctx.measureText(c.name).width;
+        ctx.fillStyle = c.isPlayer ? '#4ecca3cc' : '#1c1c2ccc';
+        drawRoundRect(ctx, c.x - nameWidth / 2 - 5, nameY - 8, nameWidth + 10, 14, 4);
+        ctx.fill();
+        ctx.fillStyle = c.isPlayer ? '#1c1c2c' : '#d4c896';
+        ctx.fillText(c.name, c.x, nameY + 1);
+
         // Carried item for player
         if (c.isPlayer && carrying) {
           const carryEmoji = (window as any).__itemEmojis?.[carrying] || '📦';
@@ -508,28 +520,28 @@ export function renderLightOverlay(
   // === ROOM LIGHT SOURCES ===
 
   // Boss office — warm overhead light
-  drawRadialLight(lc, sx((1 + 12 / 2) * TILE), sy((1 + 6 / 2) * TILE), 180 * zoom, '#ffeedd', 0.5);
+  drawRadialLight(lc, sx((1 + 9 / 2) * TILE), sy((1 + 8 / 2) * TILE), 180 * zoom, '#ffeedd', 0.5);
 
   // Office 1-3 — cool monitor glow
-  drawRadialLight(lc, sx(16 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
-  drawRadialLight(lc, sx(23 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
-  drawRadialLight(lc, sx(30 * TILE), sy(3.5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(14 * TILE), sy(5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(22 * TILE), sy(5 * TILE), 70 * zoom, '#aaccff', 0.25);
+  drawRadialLight(lc, sx(30 * TILE), sy(5 * TILE), 70 * zoom, '#aaccff', 0.25);
 
   // Chill zone — warm ambient
-  drawRadialLight(lc, sx(37 * TILE), sy(6 * TILE), 160 * zoom, '#ffe8c0', 0.45);
+  drawRadialLight(lc, sx(37 * TILE), sy(5 * TILE), 160 * zoom, '#ffe8c0', 0.45);
 
   // Smoking room — dim warm
   drawRadialLight(lc, sx(37 * TILE), sy(15 * TILE), 100 * zoom, '#ffccaa', 0.3);
 
   // Hall — overhead strip lights
   for (let hx = 5; hx <= 29; hx += 8) {
-    drawRadialLight(lc, sx(hx * TILE), sy(13 * TILE), 120 * zoom, '#ffffff', 0.35);
+    drawRadialLight(lc, sx(hx * TILE), sy(14 * TILE), 120 * zoom, '#ffffff', 0.35);
   }
 
   // Office 4-6 — cool overhead
-  drawRadialLight(lc, sx(16 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
-  drawRadialLight(lc, sx(23 * TILE), sy(25 * TILE), 100 * zoom, '#ddeeff', 0.3);
-  drawRadialLight(lc, sx(34 * TILE), sy(25 * TILE), 120 * zoom, '#ddeeff', 0.35);
+  drawRadialLight(lc, sx(14 * TILE), sy(24 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(22 * TILE), sy(24 * TILE), 100 * zoom, '#ddeeff', 0.3);
+  drawRadialLight(lc, sx(33 * TILE), sy(24 * TILE), 120 * zoom, '#ddeeff', 0.35);
 
   // Player proximity glow (small warm light around player)
   const playerScreenX = (player.x - offX) * zoom;

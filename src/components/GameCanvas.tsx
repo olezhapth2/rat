@@ -1215,9 +1215,34 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         saveToServer();
       }
 
-      // Check interaction zones
+      // Check interaction zones (room-based + placed mini-game items)
       const zone = checkInteractions(s.player.x, s.player.y);
-      setNearInteraction(zone);
+      if (zone) {
+        setNearInteraction(zone);
+      } else {
+        // Check placed items with mini-games
+        let foundMiniGame: InteractionZone | null = null;
+        for (const pi of s.player.placedItems) {
+          const def = ALL_ITEMS.find(i => i.id === pi.id);
+          if (!(def as any)?.minigame) continue;
+          const itemCenterX = pi.x + (def!.w * TILE) / 2;
+          const itemCenterY = pi.y + (def!.h * TILE) / 2;
+          const dx = s.player.x - itemCenterX;
+          const dy = s.player.y - itemCenterY;
+          if (Math.sqrt(dx * dx + dy * dy) < TILE * 2.5) {
+            foundMiniGame = {
+              id: (def as any).minigame,
+              x: itemCenterX,
+              y: itemCenterY,
+              radius: TILE * 2.5,
+              label: def!.n,
+              icon: def!.e,
+            };
+            break;
+          }
+        }
+        setNearInteraction(foundMiniGame);
+      }
 
       // Update drop preview for carried item — follows mouse cursor in real-time
       if (s.player.carrying && input.mouseX !== null && input.mouseY !== null) {
@@ -1489,7 +1514,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       <canvas ref={canvasRef} />
 
       {/* Interaction buttons — pixel style */}
-      {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'ashtray' && (
+      {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'smoke' && (
         <button
           onClick={() => {
             smokeCanvasRef.current = { taps: 0, targetTaps: 30, startTime: Date.now(), active: true, done: false, won: false, timeLeft: 20, lastTick: Date.now() };
@@ -2261,7 +2286,7 @@ function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameSta
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL', pets: 'ПИТОМЦЫ' };
+  const labels: Record<string, string> = { desks: 'DESKS', chairs: 'CHAIRS', sofas: 'SOFAS', lights: 'LIGHTS', small: 'SMALL', wall: 'WALL', pets: 'ПИТОМЦЫ', minigames: 'ИГРЫ' };
 
   return (
     <div>

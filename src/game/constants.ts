@@ -46,9 +46,9 @@ export const ROOMS: Room[] = [
   { id: 'office1', name: 'Кабинет 1',   fx: 16, fy: 1,  fw: 5,  fh: 8,  color1: '#c9c2b6', color2: '#b9b2a6' },
   { id: 'office2', name: 'Кабинет 2',   fx: 22, fy: 1,  fw: 5,  fh: 8,  color1: '#c9b8d1', color2: '#b9a8c1' },
   { id: 'office3', name: 'Кабинет 3',   fx: 28, fy: 1,  fw: 4,  fh: 8,  color1: '#d1abb7', color2: '#c19ba7' },
-  { id: 'kitchen', name: 'Кухня',       fx: 33, fy: 1,  fw: 7,  fh: 8,  color1: '#b8d4a3', color2: '#a8c493' },
+  { id: 'kitchen', name: 'Кухня',       fx: 33, fy: 1,  fw: 7,  fh: 8,  color1: '#c9c2b6', color2: '#b9b2a6' },
   { id: 'hall',    name: 'Зал',         fx: 1,  fy: 10, fw: 32, fh: 9,  color1: '#cbb896', color2: '#bba886' },
-  { id: 'library', name: 'Библиотека',  fx: 33, fy: 10, fw: 7,  fh: 9,  color1: '#a3b8d4', color2: '#93a8c4' },
+  { id: 'library', name: 'Библиотека',  fx: 33, fy: 10, fw: 7,  fh: 9,  color1: '#c9c2b6', color2: '#b9b2a6' },
   { id: 'office4', name: 'Кабинет 4',   fx: 11, fy: 20, fw: 7,  fh: 9,  color1: '#a9c2ab', color2: '#99b29b' },
   { id: 'office5', name: 'Кабинет 5',   fx: 19, fy: 20, fw: 7,  fh: 9,  color1: '#cbb87c', color2: '#bba86c' },
   { id: 'office6', name: 'Кабинет 6',   fx: 27, fy: 20, fw: 13, fh: 9,  color1: '#8fc0be', color2: '#7fb0ae' },
@@ -358,6 +358,7 @@ export interface ShopItem {
   surface: 'floor' | 'wall';
   noCollision?: boolean;
   sprite: string;
+  minigame?: 'smoke' | 'microwave' | 'furniture_toss';
 }
 
 export const SHOP: Record<string, ShopItem[]> = {
@@ -409,6 +410,11 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'pet2', n: 'Пёс', e: '🐶', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.png' },
     { id: 'pet3', n: 'Рыба', e: '🐟', p: 80, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.png' },
     { id: 'pet4', n: 'Птица', e: '🐦', p: 90, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.png' },
+  ],
+  minigames: [
+    { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/ast/obj/Obj3.2_malboro.png', minigame: 'smoke' as const },
+    { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/tables/table_5.png', minigame: 'microwave' as const },
+    { id: 'minigame_furniture', n: 'Свалка мебели', e: '🪑', p: 70, w: 2, h: 2, surface: 'floor' as const, sprite: '/sprites/objects/sofas/sofa_4.png', minigame: 'furniture_toss' as const },
   ],
 };
 
@@ -463,5 +469,5 @@ export const DAILY_QUESTS: DailyQuest[] = [
   { id: 'visit_2', name: 'Турист',       desc: 'Посети 2 разных комнаты',            icon: '🚶', target: 2, reward: 25 },
   { id: 'emoji_5', name: 'Эмодзи-кинг',  desc: 'Используй 5 эмодзи',                icon: '😀', target: 5, reward: 20 },
   { id: 'rps_3',   name: 'Игрок',        desc: 'Сыграй в КНБ 3 раза',               icon: '✊', target: 3, reward: 35 },
-  { id: 'read_1',  name: 'Книжный червь', desc: 'Прочитай книгу в библиотеке',       icon: '📖', target: 1, reward: 25 },
+  { id: 'smoke_1', name: 'Расслабься',   desc: 'Сыграй в сигаретную через пепельницу', icon: '🚬', target: 1, reward: 25 },
 ];

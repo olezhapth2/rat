@@ -490,7 +490,7 @@ export function updateBots(state: GameState, dt: number) {
     bot._roomTimer -= dt;
     if (bot._roomTimer <= 0 && !bot._targetRoomId) {
       // Pick a random room to visit (not always home)
-      const visitRooms = ['hall', 'smoking', 'chill', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6'];
+      const visitRooms = ['hall', 'library', 'kitchen', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6'];
       const target = visitRooms[Math.floor(Math.random() * visitRooms.length)];
       const center = ROOM_CENTERS[target];
       if (center) {
@@ -642,11 +642,11 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   // Kryska patrols between rooms
   if (bot._roomTimer <= 0) {
     const targets = [
-      { x: 14 * TILE, y: 5 * TILE },
-      { x: 10 * TILE, y: 14 * TILE },
-      { x: 22 * TILE, y: 14 * TILE },
-      { x: 37 * TILE, y: 5 * TILE },
-      { x: 37 * TILE, y: 15 * TILE },
+      { x: 8 * TILE, y: 5 * TILE },
+      { x: 18 * TILE, y: 14 * TILE },
+      { x: 24 * TILE, y: 14 * TILE },
+      { x: 36 * TILE, y: 5 * TILE },
+      { x: 36 * TILE, y: 14 * TILE },
       { x: 30 * TILE, y: 14 * TILE },
       { x: 30 * TILE, y: 24 * TILE },
     ];
@@ -851,11 +851,11 @@ export function updateRoomIncome(state: GameState, dt: number) {
       case 'hall':
         income = 1; // Hall
         break;
-      case 'smoking':
-        income = 1; // Smoking breaks
+      case 'library':
+        income = 3; // Reading = more income
         break;
-      case 'chill':
-        income = 0; // No income in chill zone
+      case 'kitchen':
+        income = 1; // Kitchen breaks
         break;
     }
 

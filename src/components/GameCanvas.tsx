@@ -201,7 +201,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
         xp: s.player.xp,
         level: s.player.level,
         furniture: s.player.furniture,
-        placedItems: s.player.placedItems,
         achievements: s.player.achievements,
         petId: s.player.petId,
         petPetCount: s.player.petPetCount,
@@ -878,12 +877,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
     onPlayerDataSync((data) => {
       const s = stateRef.current;
-      // Apply server data to local state
+      // Apply server data to local state (NO placedItems — managed by items:sync)
       if (data.coins !== undefined) s.player.coins = data.coins;
       if (data.xp !== undefined) s.player.xp = data.xp;
       if (data.level !== undefined) s.player.level = data.level;
       if (data.furniture) s.player.furniture = data.furniture;
-      if (data.placedItems) s.player.placedItems = data.placedItems;
       if (data.achievements) s.player.achievements = data.achievements;
       if (data.petId) s.player.petId = data.petId;
       if (data.petPetCount !== undefined) s.player.petPetCount = data.petPetCount;

@@ -1672,9 +1672,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
             {[0, 1, 2, 3, 4].map((idx) => {
-              const imgPath = state.tilePaintMode!.type === 'floor'
-                ? `/sprites/tiles/floor${idx + 1}.png`
-                : `/sprites/walls/wall${idx + 1}.png`;
+                const imgPath = state.tilePaintMode!.type === 'floor'
+                  ? `/sprites/tiles/floor${idx + 1}.webp`
+                  : `/sprites/walls/wall${idx + 1}.webp`;
               const isSelected = state.tilePaintMode!.textureIndex === idx;
               return (
                 <div

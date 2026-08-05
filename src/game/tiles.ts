@@ -18,26 +18,26 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 export async function preloadTileTextures(): Promise<void> {
   [floorImage, sideWallImage, wallTopImage] = await Promise.all([
-    loadImage('/sprites/tiles/floor4.png'),
-    loadImage('/sprites/walls/wall2.png'),
-    loadImage('/sprites/walls/walltop.png'),
+    loadImage('/sprites/tiles/floor4.webp'),
+    loadImage('/sprites/walls/wall2.webp'),
+    loadImage('/sprites/walls/walltop.webp'),
   ]);
   console.log('[Tiles] Loaded: floor4, wall2, walltop');
 
   floorImages = await Promise.all([
-    loadImage('/sprites/tiles/floor1.png'),
-    loadImage('/sprites/tiles/floor2.png'),
-    loadImage('/sprites/tiles/floor3.png'),
-    loadImage('/sprites/tiles/floor4.png'),
-    loadImage('/sprites/tiles/floor5.png'),
+    loadImage('/sprites/tiles/floor1.webp'),
+    loadImage('/sprites/tiles/floor2.webp'),
+    loadImage('/sprites/tiles/floor3.webp'),
+    loadImage('/sprites/tiles/floor4.webp'),
+    loadImage('/sprites/tiles/floor5.webp'),
   ]);
 
   wallImages = await Promise.all([
-    loadImage('/sprites/walls/wall1.png'),
-    loadImage('/sprites/walls/wall2.png'),
-    loadImage('/sprites/walls/wall3.png'),
-    loadImage('/sprites/walls/wall4.png'),
-    loadImage('/sprites/walls/wall5.png'),
+    loadImage('/sprites/walls/wall1.webp'),
+    loadImage('/sprites/walls/wall2.webp'),
+    loadImage('/sprites/walls/wall3.webp'),
+    loadImage('/sprites/walls/wall4.webp'),
+    loadImage('/sprites/walls/wall5.webp'),
   ]);
 
   console.log('[Tiles] Loaded all floor/wall variants');

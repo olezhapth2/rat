@@ -139,13 +139,28 @@ export function render(
 
   const entities: SortEntity[] = [];
 
-  // Furniture objects
+  // Wall items — always behind characters
   for (const obj of objects) {
     if (obj.type !== 'furniture') continue;
+    if (obj.surface !== 'wall') continue;
+    const bottomY = obj.y + obj.h * TILE;
+    entities.push({ sortY: bottomY - 1000, draw: () => drawFurniture(ctx, obj) });
+  }
+  for (const obj of placedObjects) {
+    if (obj.surface !== 'wall') continue;
+    const bottomY = obj.y + obj.h * TILE;
+    entities.push({ sortY: bottomY - 1000, draw: () => drawFurniture(ctx, obj) });
+  }
+
+  // Floor items
+  for (const obj of objects) {
+    if (obj.type !== 'furniture') continue;
+    if (obj.surface === 'wall') continue;
     const bottomY = obj.y + obj.h * TILE;
     entities.push({ sortY: bottomY, draw: () => drawFurniture(ctx, obj) });
   }
   for (const obj of placedObjects) {
+    if (obj.surface === 'wall') continue;
     const bottomY = obj.y + obj.h * TILE;
     entities.push({ sortY: bottomY, draw: () => drawFurniture(ctx, obj) });
   }

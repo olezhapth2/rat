@@ -1,4 +1,4 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H, canMove } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_TEXTURES, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H, canMove } from './constants';
 import type { Player, Bot, GameObject, Room, OfficeEvent } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
@@ -157,12 +157,15 @@ export function createInitialState(authUser?: { charId: string; name: string; co
   const botAnims: Record<string, AnimState> = {};
   for (const b of bots) botAnims[b.id] = createAnimState();
 
-  return {
+  const tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> =
+    (saved?.tileOverrides as Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) || {};
+
+  const state: GameState = {
     player,
     bots,
     objects: createObjects(),
     map: buildMap(),
-    tileOverrides: (saved?.tileOverrides as Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) || {},
+    tileOverrides,
 
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
@@ -170,6 +173,13 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     tilePaintMode: null,
     _placedItemsVersion: 0,
   };
+
+  // Apply default room textures for new players (no saved overrides)
+  if (Object.keys(tileOverrides).length === 0) {
+    applyDefaultRoomTextures(state);
+  }
+
+  return state;
 }
 
 export function persistState(state: GameState) {
@@ -832,6 +842,7 @@ export function getPlacedObjectsAsGameObjects(state: GameState): GameObject[] {
       label: def?.n || pi.id,
       room: 'placed',
       sprite: (def as any)?.sprite || undefined,
+      surface: def?.surface || 'floor',
     };
   });
 }
@@ -975,6 +986,38 @@ export function findFloorSnap(map: number[][], tileX: number, tileY: number): { 
   return best;
 }
 
+/** Apply default room textures to all F and S tiles based on room definitions.
+ *  Only sets overrides that don't already exist (player-painted tiles are preserved). */
+export function applyDefaultRoomTextures(state: GameState): void {
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      const tileType = state.map[y]?.[x];
+      if (tileType !== 1 && tileType !== 3) continue;
+      const key = `${x},${y}`;
+      if (state.tileOverrides[key]) continue;
+      const room = getRoomAt(x, y);
+      if (room) {
+        const tex = ROOM_TEXTURES[room.id];
+        if (tex) {
+          if (tileType === 1) {
+            state.tileOverrides[key] = { type: 'floor', textureIndex: tex.floor };
+          } else if (tileType === 3) {
+            state.tileOverrides[key] = { type: 'wall', textureIndex: tex.wall };
+          }
+        }
+      } else {
+        // Corridor / passage tiles outside rooms — use hall texture
+        if (tileType === 1) {
+          state.tileOverrides[key] = { type: 'floor', textureIndex: 2 };
+        } else if (tileType === 3) {
+          state.tileOverrides[key] = { type: 'wall', textureIndex: 1 };
+        }
+      }
+    }
+  }
+  persistState(state);
+}
+
 export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
   // Paint 3x3 block (texture is a 3x3 spritesheet)
   for (let dy = 0; dy < 3; dy++) {
@@ -1006,7 +1049,7 @@ export function removeTilePaint(state: GameState, tileX: number, tileY: number):
 
 export function resetAllTileOverrides(state: GameState): void {
   state.tileOverrides = {};
-  persistState(state);
+  applyDefaultRoomTextures(state);
 }
 
 // === Tile Paint Mode ===

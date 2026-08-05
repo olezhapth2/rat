@@ -51,6 +51,30 @@ export const ROOMS: Room[] = [
   { id: 'office15',name: 'Кабинет 15',  fx: 46, fy: 28, fw: 11, fh: 16, color1: '#c9b8d1', color2: '#b9a8c1' },
 ];
 
+// Default textures per room: { floor: textureIndex, wall: textureIndex }
+// floor1-5, wall1-5 (0-indexed)
+export const ROOM_TEXTURES: Record<string, { floor: number; wall: number }> = {
+  boss:     { floor: 0, wall: 0 },
+  office1:  { floor: 1, wall: 1 },
+  office2:  { floor: 2, wall: 2 },
+  office3:  { floor: 3, wall: 3 },
+  office4:  { floor: 4, wall: 4 },
+  office5:  { floor: 0, wall: 2 },
+  office6:  { floor: 1, wall: 3 },
+  hall:     { floor: 2, wall: 1 },
+  library:  { floor: 3, wall: 0 },
+  office7:  { floor: 4, wall: 4 },
+  office8:  { floor: 0, wall: 3 },
+  office9:  { floor: 1, wall: 1 },
+  office10: { floor: 2, wall: 2 },
+  office11: { floor: 3, wall: 0 },
+  office12: { floor: 4, wall: 4 },
+  office13: { floor: 0, wall: 1 },
+  office14: { floor: 1, wall: 3 },
+  office15: { floor: 2, wall: 2 },
+  kitchen:  { floor: 4, wall: 0 },
+};
+
 export const MAP_W = 58;
 export const MAP_H = 45;
 export const MAP_PW = MAP_W * TILE;
@@ -144,6 +168,7 @@ export interface GameObject {
   label?: string;
   room?: string;
   sprite?: string;
+  surface?: 'floor' | 'wall';
 }
 
 const SOLID_ZONE_RATIO = 0.35;

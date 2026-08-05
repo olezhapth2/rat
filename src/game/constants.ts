@@ -398,6 +398,7 @@ export const ALL_ITEMS: ShopItem[] = Object.values(SHOP).flat();
 if (typeof window !== 'undefined') {
   (window as any).__itemEmojis = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.e]));
   (window as any).__itemDefs = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, { w: i.w, h: i.h }]));
+  (window as any).__itemSprites = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.sprite]));
 }
 
 export const AVATARS = ['🧑‍🚀', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🔧', '👩‍🔬', '🧑‍🍳', '🦊', '🐱', '🐨', '🐸', '👻'];

@@ -192,13 +192,10 @@ export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: s
     return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };
   }
 
-  const inFurniture = state.player.furniture.filter(id => id === itemId).length;
-  const inPlaced = state.player.placedItems.filter(pi => pi.id === itemId).length;
-  const totalOwned = inFurniture + inPlaced;
-  if (totalOwned > 0) return { ok: false, msg: 'Уже есть' };
   if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
   state.player.coins -= item.p;
   state.player.furniture.push(itemId);
+  state.player.carrying = itemId;
   addXP(state, 5);
   persistState(state);
   return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };

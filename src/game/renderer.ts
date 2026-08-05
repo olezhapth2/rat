@@ -4,6 +4,8 @@ import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite, drawPet
 import { getFloorImage, getFloorImageByIndex, getWallImageByIndex, getSideWallImage, getWallTopImage } from './tiles';
 import type { RemotePlayer } from './multiplayer';
 
+const carryImgCache: Record<string, HTMLImageElement> = {};
+
 export interface Camera {
   x: number;
   y: number;
@@ -188,25 +190,43 @@ export function render(
 
         // Carried item for player
         if (c.isPlayer && carrying) {
-          const carryEmoji = (window as any).__itemEmojis?.[carrying] || '📦';
           const carryDef = (window as any).__itemDefs?.[carrying];
+          const carrySprite = (window as any).__itemSprites?.[carrying];
           const itemW = (carryDef?.w || 1) * TILE;
           const itemH = (carryDef?.h || 1) * TILE;
           const itemX = c.x - itemW / 2;
           const itemY = bobY - TILE * 1.2 - itemH;
+          // Shadow
           ctx.fillStyle = 'rgba(0,0,0,0.1)';
           drawRoundRect(ctx, itemX + 2, itemY + 2, itemW, itemH, 4);
           ctx.fill();
+          // White background card
           ctx.fillStyle = '#ffffffdd';
           drawRoundRect(ctx, itemX, itemY, itemW, itemH, 4);
           ctx.fill();
           ctx.strokeStyle = '#4ecca3';
           ctx.lineWidth = 2;
           ctx.stroke();
-          const emojiSize = Math.min(itemW, itemH) * 0.6;
-          ctx.font = `${emojiSize}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.fillText(carryEmoji, itemX + itemW / 2, itemY + itemH / 2 + emojiSize * 0.35);
+          // Draw sprite image
+          if (carrySprite) {
+            if (!carryImgCache[carrying]) {
+              const img = new Image();
+              img.src = carrySprite;
+              carryImgCache[carrying] = img;
+            }
+            const img = carryImgCache[carrying];
+            if (img.complete && img.naturalWidth > 0) {
+              const pad = 4;
+              ctx.drawImage(img, itemX + pad, itemY + pad, itemW - pad * 2, itemH - pad * 2);
+            } else {
+              const carryEmoji = (window as any).__itemEmojis?.[carrying] || '📦';
+              const emojiSize = Math.min(itemW, itemH) * 0.6;
+              ctx.font = `${emojiSize}px sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.fillText(carryEmoji, itemX + itemW / 2, itemY + itemH / 2 + emojiSize * 0.35);
+            }
+          }
+          // Connecting line from card to player
           ctx.strokeStyle = '#4ecca340';
           ctx.lineWidth = 1;
           ctx.beginPath();

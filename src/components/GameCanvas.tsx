@@ -27,6 +27,7 @@ import {
 } from '../game/multiplayer';
 import { login, getCurrentUser, logout } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
+import AdminPanel from './AdminPanel';
 
 interface CtxItem {
   icon: string;
@@ -218,6 +219,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
   // Tile painting picker state
   const [tilePicker, setTilePicker] = useState<{ type: 'floor' | 'wall'; x: number; y: number } | null>(null);
+  // Admin panel
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Minigame canvas state refs
   const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
@@ -1798,6 +1801,21 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           ))}
         </div>
 
+        {/* Admin button (pers5 only) */}
+        {player.charId === 'pers5' && (
+          <div
+            onClick={() => setShowAdmin(true)}
+            style={{
+              background: 'var(--px-panel)', border: '2px solid var(--px-danger)',
+              boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
+              padding: '8px 14px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+              fontSize: 11, color: 'var(--px-danger)',
+            }}
+          >
+            ⚙️ ADMIN
+          </div>
+        )}
+
         {/* MP + coins */}
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
@@ -1873,6 +1891,9 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           {toastType === 'ok' ? '> ' : '! '}{toastMsg}
         </div>
       )}
+
+      {/* Admin Panel */}
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
       {/* Confetti */}
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}

@@ -147,6 +147,26 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
     socket.on('player:data_sync', (data: any) => {
       onPlayerDataSyncCb?.(data);
     });
+
+    // Admin events
+    socket.on('admin:players-list', (list: any[]) => {
+      onAdminPlayersListCb?.(list);
+    });
+    socket.on('admin:achievements-list', (list: any[]) => {
+      onAdminAchievementsListCb?.(list);
+    });
+    socket.on('admin:error', (msg: string) => {
+      onAdminErrorCb?.(msg);
+    });
+    socket.on('admin:player-added', (data: any) => {
+      onAdminPlayerAddedCb?.(data);
+    });
+    socket.on('admin:player-deleted', (data: any) => {
+      onAdminPlayerDeletedCb?.(data);
+    });
+    socket.on('admin:money-adjusted', (data: any) => {
+      onAdminMoneyAdjustedCb?.(data);
+    });
   }
 
 export function disconnectMultiplayer(): void {
@@ -335,3 +355,47 @@ export function sendPlayerSave(data: any): void {
 export function onPlayerDataSync(cb: (data: any) => void): void {
   onPlayerDataSyncCb = cb;
 }
+
+// === ADMIN API ===
+export function adminGetPlayers(): void {
+  socket?.emit('admin:get-players');
+}
+
+export function adminAddPlayer(name: string, charId: string): void {
+  socket?.emit('admin:add-player', { name, charId });
+}
+
+export function adminDeletePlayer(key: string): void {
+  socket?.emit('admin:delete-player', { key });
+}
+
+export function adminAdjustMoney(key: string, amount: number): void {
+  socket?.emit('admin:adjust-money', { key, amount });
+}
+
+export function adminGetAchievements(): void {
+  socket?.emit('admin:get-achievements');
+}
+
+export function adminCreateAchievement(name: string, icon: string, desc: string): void {
+  socket?.emit('admin:create-achievement', { name, icon, desc });
+}
+
+export function adminGrantAchievement(key: string, achievementId: string): void {
+  socket?.emit('admin:grant-achievement', { key, achievementId });
+}
+
+// Admin callbacks
+let onAdminPlayersListCb: ((list: any[]) => void) | null = null;
+let onAdminAchievementsListCb: ((list: any[]) => void) | null = null;
+let onAdminErrorCb: ((msg: string) => void) | null = null;
+let onAdminPlayerAddedCb: ((data: any) => void) | null = null;
+let onAdminPlayerDeletedCb: ((data: any) => void) | null = null;
+let onAdminMoneyAdjustedCb: ((data: any) => void) | null = null;
+
+export function onAdminPlayersList(cb: (list: any[]) => void): void { onAdminPlayersListCb = cb; }
+export function onAdminAchievementsList(cb: (list: any[]) => void): void { onAdminAchievementsListCb = cb; }
+export function onAdminError(cb: (msg: string) => void): void { onAdminErrorCb = cb; }
+export function onAdminPlayerAdded(cb: (data: any) => void): void { onAdminPlayerAddedCb = cb; }
+export function onAdminPlayerDeleted(cb: (data: any) => void): void { onAdminPlayerDeletedCb = cb; }
+export function onAdminMoneyAdjusted(cb: (data: any) => void): void { onAdminMoneyAdjustedCb = cb; }

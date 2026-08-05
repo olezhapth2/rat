@@ -3,7 +3,7 @@ import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import { type CardGameState, createGame, joinGame, playCard, drawCard } from './src/game/cardgame';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -14,6 +14,7 @@ const port = parseInt(process.env.PORT || '3001', 10);
 const DATA_DIR = join(process.cwd(), '.game-data');
 const STATE_FILE = join(DATA_DIR, 'game-state.json');
 const PLAYERS_FILE = join(DATA_DIR, 'players.json');
+const ACHIEVEMENTS_FILE = join(DATA_DIR, 'custom-achievements.json');
 
 interface PersistedState {
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
@@ -41,10 +42,22 @@ interface PlayerData {
   dailyQuests: { date: string; progress: Record<string, number>; claimed: string[] };
 }
 
+interface CustomAchievement {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) {
     const fs = require('fs');
     fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  // Ensure custom sprites directory exists
+  const spritesDir = join(DATA_DIR, 'custom-sprites');
+  if (!existsSync(spritesDir)) {
+    mkdirSync(spritesDir, { recursive: true });
   }
 }
 
@@ -92,9 +105,32 @@ function savePlayers(players: Record<string, PlayerData>) {
   }
 }
 
+function loadCustomAchievements(): CustomAchievement[] {
+  ensureDataDir();
+  try {
+    if (existsSync(ACHIEVEMENTS_FILE)) {
+      const raw = readFileSync(ACHIEVEMENTS_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load custom achievements:', e);
+  }
+  return [];
+}
+
+function saveCustomAchievements(achievements: CustomAchievement[]) {
+  ensureDataDir();
+  try {
+    writeFileSync(ACHIEVEMENTS_FILE, JSON.stringify(achievements, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save custom achievements:', e);
+  }
+}
+
 // Load persisted data
 const persistedState = loadState();
 const playersDb = loadPlayers();
+const customAchievements = loadCustomAchievements();
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleSave() {
@@ -120,6 +156,30 @@ let whiteboardData: string = '';
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true);
+    // Serve custom sprites from .game-data/custom-sprites/
+    if (parsedUrl.pathname?.startsWith('/custom-sprites/')) {
+      const fileName = parsedUrl.pathname.replace('/custom-sprites/', '');
+      const filePath = join(DATA_DIR, 'custom-sprites', fileName);
+      if (existsSync(filePath)) {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'svg': 'image/svg+xml',
+        };
+        res.setHeader('Content-Type', mimeTypes[ext || ''] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        const fileContent = readFileSync(filePath);
+        res.end(fileContent);
+        return;
+      }
+      res.statusCode = 404;
+      res.end('Not found');
+      return;
+    }
     handle(req, res, parsedUrl);
   });
 
@@ -497,6 +557,121 @@ app.prepare().then(() => {
         }
         for (const p of game.players) {
           io.to(p.id).emit('cardgame:state', game);
+        }
+      }
+    });
+
+    // === ADMIN EVENTS (pers5 only) ===
+    function isAdmin(): boolean {
+      const player = onlinePlayers.get(socket.id);
+      return player?.charId === 'pers5';
+    }
+
+    // Get all players list
+    socket.on('admin:get-players', () => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const list = Object.entries(playersDb).map(([key, data]) => ({
+        key,
+        name: data.name,
+        charId: data.charId,
+        coins: data.coins,
+        level: data.level,
+        achievements: data.achievements,
+      }));
+      socket.emit('admin:players-list', list);
+    });
+
+    // Add new player
+    socket.on('admin:add-player', (data: { name: string; charId: string; password?: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const key = data.name.toLowerCase();
+      if (playersDb[key]) return socket.emit('admin:error', 'Player already exists');
+      playersDb[key] = {
+        name: data.name,
+        charId: data.charId,
+        hatId: 'none',
+        coins: 100,
+        xp: 0,
+        level: 1,
+        furniture: [],
+        placedItems: [],
+        achievements: [],
+        petId: '',
+        petPetCount: 0,
+        wallColor: '#2a2a4a',
+        doorName: '',
+        av: '🧑‍🚀',
+        role: 'Разработчик',
+        visitedRooms: [],
+        dailyQuests: { date: '', progress: {}, claimed: [] },
+      };
+      savePlayers(playersDb);
+      socket.emit('admin:player-added', { name: data.name, charId: data.charId });
+      // Refresh list
+      const list = Object.entries(playersDb).map(([k, d]) => ({
+        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
+      }));
+      socket.emit('admin:players-list', list);
+    });
+
+    // Delete player
+    socket.on('admin:delete-player', (data: { key: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      if (!playersDb[data.key]) return socket.emit('admin:error', 'Player not found');
+      delete playersDb[data.key];
+      savePlayers(playersDb);
+      socket.emit('admin:player-deleted', { key: data.key });
+      const list = Object.entries(playersDb).map(([k, d]) => ({
+        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
+      }));
+      socket.emit('admin:players-list', list);
+    });
+
+    // Adjust money
+    socket.on('admin:adjust-money', (data: { key: string; amount: number }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const player = playersDb[data.key];
+      if (!player) return socket.emit('admin:error', 'Player not found');
+      player.coins = Math.max(0, player.coins + data.amount);
+      savePlayers(playersDb);
+      socket.emit('admin:money-adjusted', { key: data.key, coins: player.coins });
+      // If player is online, sync to them
+      for (const [sid, sp] of onlinePlayers) {
+        if (sp.name.toLowerCase() === data.key) {
+          io.to(sid).emit('player:data_sync', player);
+        }
+      }
+    });
+
+    // Get custom achievements
+    socket.on('admin:get-achievements', () => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      socket.emit('admin:achievements-list', customAchievements);
+    });
+
+    // Create custom achievement
+    socket.on('admin:create-achievement', (data: { name: string; icon: string; desc: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const id = `custom_${Date.now()}`;
+      customAchievements.push({ id, name: data.name, icon: data.icon, desc: data.desc });
+      saveCustomAchievements(customAchievements);
+      socket.emit('admin:achievement-created', { id, name: data.name, icon: data.icon, desc: data.desc });
+      socket.emit('admin:achievements-list', customAchievements);
+    });
+
+    // Grant achievement to player
+    socket.on('admin:grant-achievement', (data: { key: string; achievementId: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const player = playersDb[data.key];
+      if (!player) return socket.emit('admin:error', 'Player not found');
+      if (!player.achievements.includes(data.achievementId)) {
+        player.achievements.push(data.achievementId);
+        savePlayers(playersDb);
+      }
+      socket.emit('admin:achievement-granted', { key: data.key, achievementId: data.achievementId });
+      for (const [sid, sp] of onlinePlayers) {
+        if (sp.name.toLowerCase() === data.key) {
+          io.to(sid).emit('player:data_sync', player);
         }
       }
     });

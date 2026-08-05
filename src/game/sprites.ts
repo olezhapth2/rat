@@ -38,20 +38,20 @@ let onLoadCallback: (() => void) | null = null;
 
 // Character → file mapping
 const CHAR_FILES: Record<string, string> = {
-  pers1: '/sprites/pers/pers1.png',
-  pers2: '/sprites/pers/pers2.png',
-  pers3: '/sprites/pers/pers3.png',
-  pers4: '/sprites/pers/pers4.png',
-  pers5: '/sprites/pers/pers5.png',
-  kryska: '/sprites/pers/kryska.png',
+  pers1: '/sprites/pers/pers1.webp',
+  pers2: '/sprites/pers/pers2.webp',
+  pers3: '/sprites/pers/pers3.webp',
+  pers4: '/sprites/pers/pers4.webp',
+  pers5: '/sprites/pers/pers5.webp',
+  kryska: '/sprites/pers/kryska.webp',
 };
 
 // Pet files
 const PET_FILES: Record<string, string> = {
-  pet1: '/sprites/pets/pet1.png',
-  pet2: '/sprites/pets/pet2.png',
-  pet3: '/sprites/pets/pet3.png',
-  pet4: '/sprites/pets/pet4.png',
+  pet1: '/sprites/pets/pet1.webp',
+  pet2: '/sprites/pets/pet2.webp',
+  pet3: '/sprites/pets/pet3.webp',
+  pet4: '/sprites/pets/pet4.webp',
 };
 
 function loadImage(url: string): Promise<HTMLImageElement> {

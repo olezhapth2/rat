@@ -70,8 +70,8 @@ function makeFallback(charId: string): HTMLImageElement {
   const ctx = c.getContext('2d')!;
   // Simple colored rect with first letter
   const colors: Record<string, string> = {
-    pers1: '#e94560', pers2: '#ffa726', pers3: '#4ecca3',
-    pers4: '#2196f3', pers5: '#9c27b0', kryska: '#888',
+    pers1: '#4ecca3', pers2: '#ffa726', pers3: '#9c27b0',
+    pers4: '#2196f3', pers5: '#e94560', kryska: '#888',
   };
   ctx.fillStyle = colors[charId] || '#ccc';
   ctx.beginPath();

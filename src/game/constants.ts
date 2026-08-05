@@ -16,46 +16,43 @@ export interface Room {
 }
 
 /*
-  Expanded boss (14 wide), new Кухня and Библиотека replace chill/smoking.
-
-  Top row (y=1..8):
-    boss    x=1..14  (14 wide)
-    wall    x=15
-    office1 x=16..20 (5 wide)
-    wall    x=21
-    office2 x=22..26 (5 wide)
-    wall    x=27
-    office3 x=28..31 (4 wide)
-    wall    x=32
-    кухня   x=33..39 (7 wide)
-
-  Hall (y=10..18):
-    hall    x=1..32
-    wall    x=33
-    библиотека x=33..39 y=10..18 (7×9)
-
-  Bottom row (y=20..28):
-    office4 x=11..17 (7 wide)
-    wall    x=18
-    office5 x=19..25 (7 wide)
-    wall    x=26
-    office6 x=27..39 (13 wide)
+  58×45 grid — Frame 454.png
+  
+  Top rooms (y=1..9):      7 rooms, W at x=9,16,23,30,37,44
+  Hall (y=14..16):         full-width F
+  Middle rooms (y=21..27): 5 rooms, W at x=16,21,33,43,50
+  Lower area (y=31..37):   left hall + 5 rooms, W at x=16,24,31,38,45
+  Bottom rooms (y=38..44): left hall + 7 rooms, W at x=7,11,15,24,31,38,45
+  Borders:                 y=0,44 all W; x=0,57 all W
 */
 export const ROOMS: Room[] = [
-  { id: 'boss',    name: 'Босс',        fx: 1,  fy: 1,  fw: 14, fh: 8,  color1: '#dcb98a', color2: '#c8a97a' },
-  { id: 'office1', name: 'Кабинет 1',   fx: 16, fy: 1,  fw: 5,  fh: 8,  color1: '#c9c2b6', color2: '#b9b2a6' },
-  { id: 'office2', name: 'Кабинет 2',   fx: 22, fy: 1,  fw: 5,  fh: 8,  color1: '#c9b8d1', color2: '#b9a8c1' },
-  { id: 'office3', name: 'Кабинет 3',   fx: 28, fy: 1,  fw: 4,  fh: 8,  color1: '#d1abb7', color2: '#c19ba7' },
-  { id: 'kitchen', name: 'Кухня',       fx: 33, fy: 1,  fw: 7,  fh: 8,  color1: '#c9c2b6', color2: '#b9b2a6' },
-  { id: 'hall',    name: 'Зал',         fx: 1,  fy: 10, fw: 32, fh: 9,  color1: '#cbb896', color2: '#bba886' },
-  { id: 'library', name: 'Библиотека',  fx: 33, fy: 10, fw: 7,  fh: 9,  color1: '#c9c2b6', color2: '#b9b2a6' },
-  { id: 'office4', name: 'Кабинет 4',   fx: 11, fy: 20, fw: 7,  fh: 9,  color1: '#a9c2ab', color2: '#99b29b' },
-  { id: 'office5', name: 'Кабинет 5',   fx: 19, fy: 20, fw: 7,  fh: 9,  color1: '#cbb87c', color2: '#bba86c' },
-  { id: 'office6', name: 'Кабинет 6',   fx: 28, fy: 20, fw: 12, fh: 9,  color1: '#8fc0be', color2: '#7fb0ae' },
+  // Top rooms (y=1..9)
+  { id: 'boss',    name: 'Босс',        fx: 1,  fy: 4,  fw: 8,  fh: 6,  color1: '#dcb98a', color2: '#c8a97a' },
+  { id: 'office1', name: 'Кабинет 1',   fx: 10, fy: 4,  fw: 6,  fh: 6,  color1: '#c9c2b6', color2: '#b9b2a6' },
+  { id: 'office2', name: 'Кабинет 2',   fx: 17, fy: 4,  fw: 6,  fh: 6,  color1: '#c9b8d1', color2: '#b9a8c1' },
+  { id: 'office3', name: 'Кабинет 3',   fx: 24, fy: 4,  fw: 6,  fh: 6,  color1: '#d1abb7', color2: '#c19ba7' },
+  { id: 'office4', name: 'Кабинет 4',   fx: 31, fy: 4,  fw: 6,  fh: 6,  color1: '#a9c2ab', color2: '#99b29b' },
+  { id: 'office5', name: 'Кабинет 5',   fx: 38, fy: 4,  fw: 6,  fh: 6,  color1: '#cbb87c', color2: '#bba86c' },
+  { id: 'office6', name: 'Кабинет 6',   fx: 45, fy: 4,  fw: 12, fh: 6,  color1: '#8fc0be', color2: '#7fb0ae' },
+  // Hall (y=14..16)
+  { id: 'hall',    name: 'Зал',         fx: 1,  fy: 14, fw: 56, fh: 3,  color1: '#cbb896', color2: '#bba886' },
+  // Middle rooms (y=21..27)
+  { id: 'library', name: 'Библиотека',  fx: 1,  fy: 14, fw: 10, fh: 14, color1: '#c9c2b6', color2: '#b9b2a6' },
+  { id: 'office7', name: 'Кабинет 7',   fx: 17, fy: 21, fw: 4,  fh: 7,  color1: '#d1abb7', color2: '#c19ba7' },
+  { id: 'office8', name: 'Кабинет 8',   fx: 22, fy: 21, fw: 11, fh: 7,  color1: '#a9c2ab', color2: '#99b29b' },
+  { id: 'office9', name: 'Кабинет 9',   fx: 34, fy: 21, fw: 9,  fh: 7,  color1: '#c9b8d1', color2: '#b9a8c1' },
+  { id: 'office10',name: 'Кабинет 10',  fx: 44, fy: 21, fw: 13, fh: 7,  color1: '#dcb98a', color2: '#c8a97a' },
+  // Bottom rooms (y=28..44)
+  { id: 'kitchen', name: 'Кухня',       fx: 1,  fy: 28, fw: 15, fh: 16, color1: '#cbb87c', color2: '#bba86c' },
+  { id: 'office11',name: 'Кабинет 11',  fx: 17, fy: 28, fw: 7,  fh: 16, color1: '#8fc0be', color2: '#7fb0ae' },
+  { id: 'office12',name: 'Кабинет 12',  fx: 25, fy: 28, fw: 6,  fh: 16, color1: '#d1abb7', color2: '#c19ba7' },
+  { id: 'office13',name: 'Кабинет 13',  fx: 32, fy: 28, fw: 6,  fh: 16, color1: '#c9c2b6', color2: '#b9b2a6' },
+  { id: 'office14',name: 'Кабинет 14',  fx: 39, fy: 28, fw: 6,  fh: 16, color1: '#a9c2ab', color2: '#99b29b' },
+  { id: 'office15',name: 'Кабинет 15',  fx: 46, fy: 28, fw: 11, fh: 16, color1: '#c9b8d1', color2: '#b9a8c1' },
 ];
 
-export const MAP_W = 40;
-export const MAP_H = 29;
+export const MAP_W = 58;
+export const MAP_H = 45;
 export const MAP_PW = MAP_W * TILE;
 export const MAP_PH = MAP_H * TILE;
 
@@ -74,81 +71,58 @@ function carve(map: number[][], rx: number, ry: number, rw: number, rh: number) 
   }
 }
 
+const MAP_DATA = [
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+  'WSSSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WSSSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WSSSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WWWWWWWFFWWWWWFFWWWFFWWWWWWFFWWWFFFWWWWWWFFWWWFFFFFWWWWWWW',
+  'WSSSSSSFFSSSSSFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WSSSSSSFFSSSSSFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WSSSSSSFFSSSSSFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WFFFFFFFFFFWWWWWWWWWWWWFFWWWWWWWWWWWWWFFWWWWWWWWFFWWWWWWWW',
+  'WFFFFFFFFFFSSSSSSWSSSSSFFWSSSSSSSSSSSWFFSSSSSSSWFFSSSSSSSW',
+  'WFFFFFFFFFFSSSSSSWSSSSSFFWSSSSSSSSSSSWFFSSSSSSSWFFSSSSSSSW',
+  'WFFFFFFFFFFSSSSSSWSSSSSFFWSSSSSSSSSSSWFFSSSSSSSWFFSSSSSSSW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFWFFFFFFFFFFFWFFFFFFFFFWFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFWFFFFFFFFFFFWFFFFFFFFFWFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFWFFFFFFFFFFFWFFFFFFFFFWFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFFFFFFFFFFFFFFFFFFFFFWFFFFFFFFFWWW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFFFFFFFFFFFFFFFFFFFFFWFFFFFFFFFWWW',
+  'WFFFFFFFFFFFFFFFFWFFFFFFFFFFFFFFFFFFFFFFFFFFFWFFFFFFFFFWWW',
+  'WFFFFFFFFFFFFFFFWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+  'WFFFFFFFFFFFFFFFWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WFFFFFFFFFFFFFFFWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WFFFFFFFFFFFFFFFWSSSSSSWSSSSSSWSSSSSSWSSSSSSWSSSSSSSSSSSWW',
+  'WFFFFFFFFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WWWWFFWWWFFWWWFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WSSSFFSSSFFSSSFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WSSSFFSSSFFSSSFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WSSSFFSSSFFSSSFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFWFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFWWWFFWWWWWWFFWWWFFFWWWWWWFFWWWFFFFFWWWWWWW',
+  'WWWWFFWWWFFWWWFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WSSSFFSSSFFSSSFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WSSSFFSSSFFSSSFFSSSFFSSSSSSFFSSSFFFSSSSSSFFSSSFFFFFSSSSSWW',
+  'WSSSFFSSSFFSSSFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFW',
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+];
+
+const CHAR_MAP: Record<string, number> = { 'W': W, 'S': S, 'F': F };
+
 export function buildMap(): number[][] {
-  const map: number[][] = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(E));
-
-  // 1. Carve room interiors as floor
-  for (const r of ROOMS) {
-    carve(map, r.fx, r.fy, r.fw, r.fh);
-  }
-
-  // 2. Wall-window (S): top SIDE_WALL_DEPTH rows of each room
-  for (const r of ROOMS) {
-    for (let d = 0; d < SIDE_WALL_DEPTH; d++) {
-      const sy = r.fy + d;
-      if (sy >= r.fy + r.fh) continue;
-      for (let x = r.fx; x < r.fx + r.fw; x++) {
-        if (map[sy]?.[x] === F) map[sy][x] = S;
-      }
-    }
-  }
-
-  // 3. Outer walls
-  for (let x = 0; x < MAP_W; x++) { map[0][x] = W; map[MAP_H - 1][x] = W; }
-  for (let y = 0; y < MAP_H; y++) { map[y][0] = W; map[y][MAP_W - 1] = W; }
-
-  // 4. Vertical walls between rooms (1-tile thick)
-  // x=15: boss | office1 (y=1..8)
-  for (let y = 1; y <= 8; y++) map[y][15] = W;
-  // x=21: office1 | office2 (y=1..8)
-  for (let y = 1; y <= 8; y++) map[y][21] = W;
-  // x=27: office2 | office3 (y=1..8)
-  for (let y = 1; y <= 8; y++) map[y][27] = W;
-
-
-  // 5. Horizontal walls
-  // y=9: top rooms | hall (x=0..32)
-  for (let x = 0; x <= 32; x++) map[9][x] = W;
-  // y=19: hall | bottom offices (x=0..39)
-  for (let x = 0; x <= 39; x++) map[19][x] = W;
-
-  // 6. Doorways — 3-tile breaks in walls
-  // Top wall y=9: boss→hall, office1→hall, office2→hall, office3→hall
-  for (const cx of [7, 18, 24, 29]) {
-    for (let dx = -1; dx <= 1; dx++) map[9][cx + dx] = F;
-  }
-  // Bottom wall y=19: hall→office4, hall→office5, hall→office6
-  for (const cx of [14, 22, 33]) {
-    for (let dx = -1; dx <= 1; dx++) map[19][cx + dx] = F;
-  }
-  // 7. Wall-window cutouts — replace S with F where doorways enter through wall-window
-  // Hall wall-window (y=10..12) cutouts at doorway x positions
-  for (const cx of [7, 18, 24, 29]) {
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let y = 10; y <= 12; y++) {
-        if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
-      }
-    }
-  }
-  // Bottom rooms wall-window (y=20..22) cutouts
-  for (const cx of [14, 22, 33]) {
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let y = 20; y <= 22; y++) {
-        if (map[y]?.[cx + dx] === S) map[y][cx + dx] = F;
-      }
-    }
-  }
-  // Кухня/библиотека side cutout (x=33..34, y=1..2 and y=10..12)
-  for (let y = 1; y <= 2; y++) {
-    map[y][33] = F;
-    map[y][34] = F;
-  }
-  for (let y = 10; y <= 12; y++) {
-    map[y][33] = F;
-    map[y][34] = F;
-  }
-
-  return map;
+  return MAP_DATA.map(row => row.split('').map(ch => CHAR_MAP[ch] ?? E));
 }
 
 export function isWalkable(map: number[][], gx: number, gy: number): boolean {
@@ -224,8 +198,8 @@ export interface Player {
 
 export function createPlayer(): Player {
   return {
-    x: 17 * TILE + TILE / 2,
-    y: 14 * TILE + TILE / 2,
+    x: 29 * TILE + TILE / 2,
+    y: 15 * TILE + TILE / 2,
     speed: 3, radius: 6,
     vx: 0, vy: 0,
   };
@@ -250,37 +224,47 @@ export interface Bot {
 
 export function createBots(): Bot[] {
   return [
-    { id: 'pers1',  name: 'Петя',       color: '#e94560', x: 18 * TILE, y: 5 * TILE,  radius: 8, role: 'PM',        room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers2',  name: 'Аня',        color: '#ffa726', x: 24 * TILE, y: 5 * TILE,  radius: 8, role: 'Дизайнер',  room: 'office2', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers3',  name: 'Сергей',     color: '#2196f3', x: 30 * TILE, y: 5 * TILE,  radius: 8, role: 'QA',        room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers5',  name: 'Ольга',      color: '#9c27b0', x: 17 * TILE, y: 14 * TILE, radius: 8, role: 'HR',        room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'kryska', name: 'Крыска',     color: '#888',     x: 36 * TILE, y: 14 * TILE, radius: 6, role: 'крыса',     room: 'library', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers1',  name: 'Олег',    color: '#4ecca3', x: 5 * TILE,  y: 7 * TILE,  radius: 8, role: 'Разработчик', room: 'boss',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers2',  name: 'Аня',     color: '#ffa726', x: 13 * TILE, y: 7 * TILE,  radius: 8, role: 'Дизайнер',   room: 'office1', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers3',  name: 'Алиса',   color: '#9c27b0', x: 27 * TILE, y: 7 * TILE,  radius: 8, role: 'HR',         room: 'office3', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers4',  name: 'Кирилл',  color: '#2196f3', x: 29 * TILE, y: 15 * TILE, radius: 8, role: 'QA',         room: 'hall',    wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'pers5',  name: 'Саша',    color: '#e94560', x: 28 * TILE, y: 25 * TILE, radius: 8, role: 'PM',         room: 'office8', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'kryska', name: 'Крыска',  color: '#888',     x: 8 * TILE,  y: 36 * TILE, radius: 6, role: 'крыса',      room: 'kitchen', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
   ];
 }
 
 export const EMOJI_CHAT = ['👋', '😂', '👍', '❤️', '🔥', '💀', '👀', '🎮'];
 
 export const ROOM_CENTERS: Record<string, { x: number; y: number }> = {
-  boss:    { x: (1 + 14 / 2) * TILE, y: (1 + 8 / 2) * TILE },
-  office1: { x: (16 + 5 / 2) * TILE, y: (1 + 8 / 2) * TILE },
-  office2: { x: (22 + 5 / 2) * TILE, y: (1 + 8 / 2) * TILE },
-  office3: { x: (28 + 4 / 2) * TILE, y: (1 + 8 / 2) * TILE },
-  kitchen: { x: (33 + 7 / 2) * TILE, y: (1 + 8 / 2) * TILE },
-  hall:    { x: (1 + 32 / 2) * TILE, y: (10 + 9 / 2) * TILE },
-  library: { x: (33 + 7 / 2) * TILE, y: (10 + 9 / 2) * TILE },
-  office4: { x: (11 + 7 / 2) * TILE, y: (20 + 9 / 2) * TILE },
-  office5: { x: (19 + 7 / 2) * TILE, y: (20 + 9 / 2) * TILE },
-  office6: { x: (28 + 12 / 2) * TILE, y: (20 + 9 / 2) * TILE },
+  boss:    { x: (1 + 8 / 2) * TILE,  y: (4 + 6 / 2) * TILE },
+  office1: { x: (10 + 6 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  office2: { x: (17 + 6 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  office3: { x: (24 + 6 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  office4: { x: (31 + 6 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  office5: { x: (38 + 6 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  office6: { x: (45 + 12 / 2) * TILE, y: (4 + 6 / 2) * TILE },
+  hall:    { x: (1 + 56 / 2) * TILE, y: (14 + 3 / 2) * TILE },
+  library: { x: (1 + 10 / 2) * TILE, y: (14 + 14 / 2) * TILE },
+  office7: { x: (17 + 4 / 2) * TILE, y: (21 + 7 / 2) * TILE },
+  office8: { x: (22 + 11 / 2) * TILE, y: (21 + 7 / 2) * TILE },
+  office9: { x: (34 + 9 / 2) * TILE,  y: (21 + 7 / 2) * TILE },
+  office10:{ x: (44 + 13 / 2) * TILE, y: (21 + 7 / 2) * TILE },
+  kitchen: { x: (1 + 15 / 2) * TILE, y: (28 + 16 / 2) * TILE },
+  office11:{ x: (17 + 7 / 2) * TILE, y: (28 + 16 / 2) * TILE },
+  office12:{ x: (25 + 6 / 2) * TILE, y: (28 + 16 / 2) * TILE },
+  office13:{ x: (32 + 6 / 2) * TILE, y: (28 + 16 / 2) * TILE },
+  office14:{ x: (39 + 6 / 2) * TILE, y: (28 + 16 / 2) * TILE },
+  office15:{ x: (46 + 11 / 2) * TILE, y: (28 + 16 / 2) * TILE },
 };
 
 export const BOT_PHRASES: Record<string, string[]> = {
   pers1: [
-    'Клиент прислал новый бриф',
-    'Надо обсудить концепцию',
-    'Какой шрифт выберем?',
-    'Мудборд готов',
-    'Палитра утверждена',
-    'Ревью дизайна в 15:00',
+    'Код скомпилировался с первого раза',
+    'Пулл реквест готов к ревью',
+    'Баг в продакшене, пофиксил',
+    'Рефакторю этот модуль',
+    'Деплой прошёл успешно',
+    'Тесты зелёные',
   ],
   pers2: [
     'Нарисовала новые макеты',
@@ -291,28 +275,28 @@ export const BOT_PHRASES: Record<string, string[]> = {
     'Тени добавила на карточки',
   ],
   pers3: [
-    'Проверяю адаптив',
-    'На мобилке что-то поехало',
-    'Пиксель в пиксель сверяю',
-    'Отступы не бьются',
-    'Гайдлайн обновила',
-    'Размер шрифта не тот',
-  ],
-  pers4: [
-    'Лендинг почти готов',
-    'Анимации добавил',
-    'Hover-эффекты доработал',
-    'Градиент обновил',
-    'Фон поменял',
-    'Кнопки стилизовал',
-  ],
-  pers5: [
     'Брендбук обновила',
     'Нужны новые баннеры',
     'Презентация для клиента',
     'Мокапы 준비ила',
     'Палитра расширилась',
     'Дизайн-система растёт',
+  ],
+  pers4: [
+    'Баг в.edge case нашла',
+    'Регрессионный тест написала',
+    'Сценарий протестировала',
+    'Нашла баг в форме',
+    'Откатываем на прошлую версию',
+    'Всё работает, закрываю тикет',
+  ],
+  pers5: [
+    'Спринт завершён',
+    'Дедлайн через неделю',
+    'Оценки от команды собраны',
+    'Статус проекта обновлён',
+    'Ретроспектива в 17:00',
+    'Новый тикет в бэклоге',
   ],
   kryska: [
     '*пии-пии*',
@@ -322,21 +306,23 @@ export const BOT_PHRASES: Record<string, string[]> = {
 };
 
 export const BOT_REACTIONS: Record<string, string[]> = {
-  pers1: ['👋', '🤔', '📋', '😅'],
+  pers1: ['👋', '💻', '🔧', '🚀'],
   pers2: ['👋', '🎨', '✨', '😊'],
-  pers3: ['👋', '🐛', '😤', '🔍'],
-  pers4: ['👋', '💻', '🔧', '🚀'],
-  pers5: ['👋', '📋', '💼', '🤝'],
+  pers3: ['👋', '💼', '🤝', '📋'],
+  pers4: ['👋', '🐛', '😤', '🔍'],
+  pers5: ['👋', '📋', '📊', '🗓️'],
   kryska: ['🐀', '🧀', '👀', '💀'],
 };
 
 export const BOT_CONVERSATIONS: string[][] = [
-  ['Петя', 'Сергей', 'Макет готов?', 'Почти...'],
-  ['Аня', 'Петя', 'Презентация готова', 'Ок смотрю'],
-  ['Аня', 'Сергей', 'Палитра ок?', 'Нужны правки'],
-  ['Петя', 'Аня', 'Сколько осталось?', 'День-два'],
-  ['Сергей', 'Петя', 'Кто подписал?', 'Не я!'],
-  ['Аня', 'Сергей', 'Дизайн пройден?', 'Есть замечания'],
+  ['Олег', 'Кирилл', 'Тесты прошли?', 'Почти...'],
+  ['Аня', 'Олег', 'Макет готов', 'Ок смотрю'],
+  ['Аня', 'Кирилл', 'Дизайн ок?', 'Нужны правки'],
+  ['Олег', 'Аня', 'Сколько осталось?', 'День-два'],
+  ['Кирилл', 'Олег', 'Кто деплоил?', 'Не я!'],
+  ['Аня', 'Кирилл', 'Дизайн пройден?', 'Есть замечания'],
+  ['Саша', 'Олег', 'Спринт готов?', 'Почти'],
+  ['Саша', 'Аня', 'Макет для клиента?', 'Завтра будет'],
 ];
 
 export interface ShopItem {
@@ -424,7 +410,6 @@ export const ACHIEVEMENTS = [
   { id: 'decorator',     name: 'Дизайнер',             icon: '🎨', desc: 'Оформи кабинет' },
   { id: 'social',        name: 'Социальный',           icon: '🤝', desc: 'Посети 3 кабинета' },
   { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твои деньги' },
-  { id: 'boss_meeting',  name: 'На приеме у босса',    icon: '👔', desc: 'Дойди до кабинета босса по вызову' },
   { id: 'secret_finder', name: 'Тайна раскрыта',        icon: '🔍', desc: 'Найди секрет за книжным шкафом' },
   { id: 'pet_lover',     name: 'Зоофил',                icon: '🐾', desc: 'Погладь питомца 10 раз' },
 ];

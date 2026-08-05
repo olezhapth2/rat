@@ -61,12 +61,13 @@ export function render(
   const ex = Math.min(MAP_W, Math.ceil((cam.x + cw / cam.zoom) / TILE) + 1);
   const ey = Math.min(MAP_H, Math.ceil((cam.y + ch / cam.zoom) / TILE) + 1);
 
-  // ===== 1. FLOOR (F=1) =====
+  // ===== 1. FLOOR (F=1, S=3, W=2) — floor under everything except E =====
   const floorImg = getFloorImage();
   for (let y = sy; y < ey; y++) {
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
-      if (map[y][x] !== 1) continue;
+      const tile = map[y][x];
+      if (tile === 0) continue;
       const key = `${x},${y}`;
       const override = tileOverrides?.[key];
       let drawImg: HTMLImageElement | null = null;
@@ -77,7 +78,9 @@ export function render(
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        ctx.drawImage(drawImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
+        const sw = drawImg.naturalWidth / 3;
+        const sh = drawImg.naturalHeight / 3;
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
       } else {
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
@@ -101,7 +104,9 @@ export function render(
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        ctx.drawImage(drawImg, tx * TILE, ty * TILE, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
+        const sw = drawImg.naturalWidth / 3;
+        const sh = drawImg.naturalHeight / 3;
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
       } else {
         ctx.fillStyle = '#aaaaaa';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
@@ -169,17 +174,17 @@ export function render(
           : (botAnims?.[c.bot?.id] ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 });
         drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name, c.color);
 
-        // Name label above character
+        // Name label above character — exactly at top edge of sprite
         ctx.font = 'bold 9px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
-        const nameY = bobY - TILE * 1.6;
+        const nameY = bobY - CHAR_H / 2;
         // Background pill
         const nameWidth = ctx.measureText(c.name).width;
         ctx.fillStyle = c.isPlayer ? '#4ecca3cc' : '#1c1c2ccc';
-        drawRoundRect(ctx, c.x - nameWidth / 2 - 5, nameY - 8, nameWidth + 10, 14, 4);
+        drawRoundRect(ctx, c.x - nameWidth / 2 - 5, nameY - 12, nameWidth + 10, 14, 4);
         ctx.fill();
         ctx.fillStyle = c.isPlayer ? '#1c1c2c' : '#d4c896';
-        ctx.fillText(c.name, c.x, nameY + 1);
+        ctx.fillText(c.name, c.x, nameY - 1);
 
         // Carried item for player
         if (c.isPlayer && carrying) {
@@ -316,9 +321,22 @@ export function render(
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
       if (map[y][x] !== 2) continue;
-      if (wtopImg && wtopImg.complete && wtopImg.naturalWidth > 0) {
-        const tx = ((x % 3) + 3) % 3;
-        ctx.drawImage(wtopImg, tx * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE);
+      const key = `${x},${y}`;
+      const override = tileOverrides?.[key];
+      const tx = ((x % 3) + 3) % 3;
+      const ty = ((y % 3) + 3) % 3;
+      let drawImg: HTMLImageElement | null = null;
+      if (override?.type === 'wall') {
+        drawImg = getWallImageByIndex(override.textureIndex);
+      }
+      if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
+        const sw = drawImg.naturalWidth / 3;
+        const sh = drawImg.naturalHeight / 3;
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
+      } else if (wtopImg && wtopImg.complete && wtopImg.naturalWidth > 0) {
+        const wsw = wtopImg.naturalWidth / 3;
+        const wsh = wtopImg.naturalHeight / 3;
+        ctx.drawImage(wtopImg, tx * wsw, ty * wsh, wsw, wsh, x * TILE, y * TILE, TILE, TILE);
       } else {
         ctx.fillStyle = '#777777';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
@@ -348,7 +366,9 @@ export function render(
       ctx.globalAlpha = 0.6;
       const tx = ((px % 3) + 3) % 3;
       const ty = ((py % 3) + 3) % 3;
-      ctx.drawImage(texImg, tx * TILE, ty * TILE, TILE, TILE, px * TILE + TILE, py * TILE + TILE, TILE, TILE);
+      const sw = texImg.naturalWidth / 3;
+      const sh = texImg.naturalHeight / 3;
+      ctx.drawImage(texImg, tx * sw, ty * sh, sw, sh, px * TILE + TILE, py * TILE + TILE, TILE, TILE);
     }
     ctx.globalAlpha = 1;
   }
@@ -391,39 +411,6 @@ function drawFurniture(ctx: CanvasRenderingContext2D, obj: GameObject): void {
     ctx.lineWidth = 1;
     ctx.strokeRect(ox + 2, oy + 2, ow - 4, oh - 4);
   }
-}
-
-function drawCharacter(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  color: string,
-  name: string,
-  isPlayer: boolean
-): void {
-  const w = TILE * 0.7;
-  const h = TILE * 1.8;
-  const r = w / 2;
-
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x - w / 2, y - h / 2 + r);
-  ctx.arcTo(x - w / 2, y - h / 2, x, y - h / 2, r);
-  ctx.arcTo(x + w / 2, y - h / 2, x + w / 2, y - h / 2 + r, r);
-  ctx.lineTo(x + w / 2, y + h / 2 - r);
-  ctx.arcTo(x + w / 2, y + h / 2, x, y + h / 2, r);
-  ctx.arcTo(x - w / 2, y + h / 2, x - w / 2, y + h / 2 - r, r);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = isPlayer ? '#2a8a6a' : '#333';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.fillStyle = '#333';
-  ctx.font = 'bold 10px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(name, x, y - h / 2 - 6);
 }
 
 function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

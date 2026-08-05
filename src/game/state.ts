@@ -52,11 +52,7 @@ export interface GameState {
   bots: Bot[];
   objects: GameObject[];
   map: number[][];
-  bossCall: {
-    active: boolean;
-    timer: number;
-    reward: number;
-  };
+
   dailyQuests: {
     date: string;
     progress: Record<string, number>;
@@ -68,9 +64,10 @@ export interface GameState {
     active: boolean;
     type: 'floor' | 'wall';
     textureIndex: number;
-    previewX: number; // tile X for preview
-    previewY: number; // tile Y for preview
+    previewX: number;
+    previewY: number;
   } | null;
+  _placedItemsVersion: number;
 }
 
 export interface OfficeEventState {
@@ -166,11 +163,12 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     objects: createObjects(),
     map: buildMap(),
     tileOverrides: (saved?.tileOverrides as Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) || {},
-    bossCall: { active: false, timer: 0, reward: 0 },
+
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
     officeEvents: { activeEvent: null, lastCheckedMinute: -1 },
     tilePaintMode: null,
+    _placedItemsVersion: 0,
   };
 }
 
@@ -231,6 +229,7 @@ export function pickUpItem(state: GameState, itemIndex: number): { ok: boolean; 
   const item = state.player.placedItems[itemIndex];
   state.player.carrying = item.id;
   state.player.placedItems.splice(itemIndex, 1);
+  state._placedItemsVersion++;
   logActivity(state, '📦', `Взял: ${getItemEmoji(item.id)}`);
   persistState(state);
   return { ok: true, msg: `Взял ${getItemEmoji(item.id)}` };
@@ -270,6 +269,7 @@ export function dropItem(state: GameState, x: number, y: number): { ok: boolean;
     surface: def.surface,
     placedBy: 'player',
   });
+  state._placedItemsVersion++;
   state.player.carrying = null;
   addXP(state, 5);
   logActivity(state, '📦', `Поставил: ${def.e}`);
@@ -490,7 +490,7 @@ export function updateBots(state: GameState, dt: number) {
     bot._roomTimer -= dt;
     if (bot._roomTimer <= 0 && !bot._targetRoomId) {
       // Pick a random room to visit (not always home)
-      const visitRooms = ['hall', 'library', 'kitchen', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6'];
+      const visitRooms = ['hall', 'library', 'kitchen', 'boss', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6', 'office7', 'office8', 'office9', 'office10', 'office11', 'office12', 'office13', 'office14', 'office15'];
       const target = visitRooms[Math.floor(Math.random() * visitRooms.length)];
       const center = ROOM_CENTERS[target];
       if (center) {
@@ -730,7 +730,7 @@ function canMoveBot(map: number[][], objects: GameObject[], px: number, py: numb
     if (t === 2 || t === 0) return false;
     if (t === 3) {
       const below = map[gy + 1]?.[gx];
-      if (below !== 1) return false;
+      if (below !== 1 && below !== 3) return false;
     }
   }
   for (const obj of objects) {
@@ -746,50 +746,7 @@ function canMoveBot(map: number[][], objects: GameObject[], px: number, py: numb
   return true;
 }
 
-// === Boss Call Mechanic ===
-let bossCallCooldown = 0;
 
-export function updateBossCall(state: GameState, dt: number) {
-  bossCallCooldown -= dt;
-  if (bossCallCooldown > 0) return;
-  bossCallCooldown = 99999;
-}
-
-export function triggerBossCall(state: GameState) {
-  const reward = 30 + Math.floor(Math.random() * 40); // 30-70 coins
-  state.bossCall = { active: true, timer: 60, reward }; // 60 sec to arrive
-  bossCallCooldown = 600; // 10 min cooldown between calls
-  logActivity(state, '👔', 'Босс вызывает в кабинет!');
-}
-
-export function checkBossCallReward(state: GameState) {
-  if (!state.bossCall.active) return;
-
-  const bossRoom = ROOMS.find(r => r.id === 'boss');
-  if (!bossRoom) return;
-
-  const gx = Math.floor(state.player.x / TILE);
-  const gy = Math.floor(state.player.y / TILE);
-
-  // Check if player is in boss room
-  if (gx >= bossRoom.fx && gx < bossRoom.fx + bossRoom.fw && gy >= bossRoom.fy && gy < bossRoom.fy + bossRoom.fh) {
-    // Arrived! Give reward
-    addCoins(state, state.bossCall.reward);
-    unlockAchievement(state, 'boss_meeting');
-    logActivity(state, '👔', `Босс дал ${state.bossCall.reward} алт`);
-    state.bossCall = { active: false, timer: 0, reward: 0 };
-  }
-}
-
-export function updateBossCallTimer(state: GameState, dt: number) {
-  if (!state.bossCall.active) return;
-  state.bossCall.timer -= dt;
-  if (state.bossCall.timer <= 0) {
-    // Expired
-    logActivity(state, '👔', 'Босс разочарован...');
-    state.bossCall = { active: false, timer: 0, reward: 0 };
-  }
-}
 
 // === Daily Quests ===
 export function trackQuestProgress(state: GameState, questId: string, amount: number = 1) {
@@ -843,6 +800,15 @@ export function updateRoomIncome(state: GameState, dt: number) {
       case 'office4':
       case 'office5':
       case 'office6':
+      case 'office7':
+      case 'office8':
+      case 'office9':
+      case 'office10':
+      case 'office11':
+      case 'office12':
+      case 'office13':
+      case 'office14':
+      case 'office15':
         income = 2; // Work in office
         break;
       case 'boss':
@@ -983,6 +949,66 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
 }
 
 // === Tile Painting ===
+
+/** Find the best 3×3 block of S=3 tiles near (tileX, tileY).
+ *  Returns the block with the most S tiles. Only S tiles get painted. */
+export function findWallSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bestScore = 0;
+  let bestDist = Infinity;
+  for (let oy = tileY - 4; oy <= tileY + 1; oy++) {
+    for (let ox = tileX - 4; ox <= tileX + 1; ox++) {
+      if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
+      let score = 0;
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          if (map[oy + dy]?.[ox + dx] === 3) score++;
+        }
+      }
+      if (score === 0) continue;
+      const closestX = Math.max(ox, Math.min(tileX, ox + 2));
+      const closestY = Math.max(oy, Math.min(tileY, oy + 2));
+      const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
+      if (score > bestScore || (score === bestScore && dist < bestDist)) {
+        bestScore = score;
+        bestDist = dist;
+        best = { x: ox, y: oy };
+      }
+    }
+  }
+  return best;
+}
+
+/** Find the best 3×3 block of floor tiles near (tileX, tileY).
+ *  Floor = F=1 + S=3 (S has floor underneath). Only W=2 and E=0 are excluded. */
+export function findFloorSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bestScore = 0;
+  let bestDist = Infinity;
+  for (let oy = tileY - 4; oy <= tileY + 1; oy++) {
+    for (let ox = tileX - 4; ox <= tileX + 1; ox++) {
+      if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
+      let score = 0;
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          const t = map[oy + dy]?.[ox + dx];
+          if (t === 1 || t === 3) score++;
+        }
+      }
+      if (score === 0) continue;
+      const closestX = Math.max(ox, Math.min(tileX, ox + 2));
+      const closestY = Math.max(oy, Math.min(tileY, oy + 2));
+      const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
+      if (score > bestScore || (score === bestScore && dist < bestDist)) {
+        bestScore = score;
+        bestDist = dist;
+        best = { x: ox, y: oy };
+      }
+    }
+  }
+  return best;
+}
+
 export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
   // Paint 3x3 block (texture is a 3x3 spritesheet)
   for (let dy = 0; dy < 3; dy++) {
@@ -991,19 +1017,10 @@ export function paintTile(state: GameState, tileX: number, tileY: number, type: 
       const y = tileY + dy;
       if (y >= 0 && y < MAP_H && x >= 0 && x < MAP_W) {
         const tileType = state.map[y]?.[x];
-        if (type === 'floor' && tileType === 1) {
+        if (type === 'floor' && (tileType === 1 || tileType === 3)) {
           state.tileOverrides[`${x},${y}`] = { type, textureIndex };
-        } else if (type === 'wall') {
-          // Allow painting wall tiles (S=3, W=2) AND floor tiles (F=1) that are directly below a wall
-          if (tileType === 3 || tileType === 2) {
-            state.tileOverrides[`${x},${y}`] = { type, textureIndex };
-          } else if (tileType === 1) {
-            // Check if tile above is a wall — if so, paint this floor tile too
-            const above = state.map[y - 1]?.[x];
-            if (above === 3 || above === 2) {
-              state.tileOverrides[`${x},${y}`] = { type, textureIndex };
-            }
-          }
+        } else if (type === 'wall' && tileType === 3) {
+          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
         }
       }
     }
@@ -1018,6 +1035,11 @@ export function removeTilePaint(state: GameState, tileX: number, tileY: number):
       delete state.tileOverrides[`${tileX + dx},${tileY + dy}`];
     }
   }
+  persistState(state);
+}
+
+export function resetAllTileOverrides(state: GameState): void {
+  state.tileOverrides = {};
   persistState(state);
 }
 

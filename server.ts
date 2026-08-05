@@ -225,7 +225,7 @@ app.prepare().then(() => {
         for (let dx = 0; dx < 3; dx++) {
           const x = data.x + dx;
           const y = data.y + dy;
-          if (y >= 0 && y < 29 && x >= 0 && x < 40) {
+          if (y >= 0 && y < 45 && x >= 0 && x < 58) {
             tileOverrides[`${x},${y}`] = { type: data.type, textureIndex: data.textureIndex };
           }
         }
@@ -239,6 +239,14 @@ app.prepare().then(() => {
         for (let dx = 0; dx < 3; dx++) {
           delete tileOverrides[`${data.x + dx},${data.y + dy}`];
         }
+      }
+      io.emit('tile:sync', tileOverrides);
+      scheduleSave();
+    });
+
+    socket.on('tile:reset', () => {
+      for (const key of Object.keys(tileOverrides)) {
+        delete tileOverrides[key];
       }
       io.emit('tile:sync', tileOverrides);
       scheduleSave();

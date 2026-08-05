@@ -5,7 +5,7 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROO
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, updateBossCall, checkBossCallReward, updateBossCallTimer, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -21,7 +21,7 @@ import {
   playCardGame as mpPlayCardGame, drawCardGame as mpDrawCardGame,
   leaveCardGame as mpLeaveCardGame, onCardGameState, onCardGameError,
   onTileSync,
-  sendTilePaint, sendTileRemove,
+  sendTilePaint, sendTileRemove, sendTileReset,
   sendPlayerSave, onPlayerDataSync,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
@@ -120,7 +120,7 @@ export default function GameCanvas() {
               </div>
             )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginBottom: 16 }}>
-              {['Аня', 'Саша', 'Кирилл', 'Олег', 'Алиса'].map(n => (
+              {['Олег', 'Аня', 'Алиса', 'Кирилл', 'Саша'].map(n => (
                 <span key={n} onClick={() => setAuthName(n)} className="px-btn small" style={{
                   background: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-accent)' : 'var(--px-panel)',
                   color: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-text-dark)' : 'var(--px-text-dim)',
@@ -226,6 +226,8 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
   const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
   const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
   const minigameMouseRef = useRef({ x: 0, y: 0, down: false, clicked: false, released: false });
+  const cachedPlacedObjsRef = useRef<GameObject[]>([]);
+  const cachedPlacedVersionRef = useRef(-1);
 
   const state = stateRef.current;
   const player = state.player;
@@ -380,9 +382,19 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       if (s.tilePaintMode?.active) {
         const tileX = Math.floor(worldX / TILE);
         const tileY = Math.floor(worldY / TILE);
-        // Snap to 3x3 grid
-        const snapX = Math.floor(tileX / 3) * 3;
-        const snapY = Math.floor(tileY / 3) * 3;
+        let snapX: number;
+        let snapY: number;
+        if (s.tilePaintMode.type === 'wall') {
+          const wallSnap = findWallSnap(s.map, tileX, tileY);
+          if (!wallSnap) return;
+          snapX = wallSnap.x;
+          snapY = wallSnap.y;
+        } else {
+          const floorSnap = findFloorSnap(s.map, tileX, tileY);
+          if (!floorSnap) return;
+          snapX = floorSnap.x;
+          snapY = floorSnap.y;
+        }
         paintTile(s, snapX, snapY, s.tilePaintMode.type, s.tilePaintMode.textureIndex);
         sendTilePaint(snapX, snapY, s.tilePaintMode.type, s.tilePaintMode.textureIndex);
         return;
@@ -503,8 +515,19 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         const worldY = e.clientY / cam.zoom + cam.y;
         const tileX = Math.floor(worldX / TILE);
         const tileY = Math.floor(worldY / TILE);
-        const snapX = Math.floor(tileX / 3) * 3;
-        const snapY = Math.floor(tileY / 3) * 3;
+        let snapX: number;
+        let snapY: number;
+        if (s.tilePaintMode.type === 'wall') {
+          const wallSnap = findWallSnap(s.map, tileX, tileY);
+          if (!wallSnap) { updateTilePaintPreview(s, -1, -1); return; }
+          snapX = wallSnap.x;
+          snapY = wallSnap.y;
+        } else {
+          const floorSnap = findFloorSnap(s.map, tileX, tileY);
+          if (!floorSnap) { updateTilePaintPreview(s, -1, -1); return; }
+          snapX = floorSnap.x;
+          snapY = floorSnap.y;
+        }
         updateTilePaintPreview(s, snapX, snapY);
         return;
       }
@@ -830,6 +853,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           placedBy: 'server',
         };
       });
+      s._placedItemsVersion++;
       persistState(s);
       saveToServer();
     });
@@ -1061,28 +1085,30 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         const playerTileY = Math.floor(s.player.y / TILE);
         const tileType = s.map[playerTileY]?.[playerTileX];
 
-        // Snap to 3x3 grid (texture is 3x3 spritesheet)
-        const snapX = Math.floor(playerTileX / 3) * 3;
-        const snapY = Math.floor(playerTileY / 3) * 3;
-
-        if (tileType === 1) {
-          items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', snapX, snapY) });
+        if (tileType === 1 || tileType === 3) {
+          const floorSnap = findFloorSnap(s.map, playerTileX, playerTileY);
+          if (floorSnap) {
+            items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', floorSnap.x, floorSnap.y) });
+          }
         }
 
-        const adjacentTiles = [
+        // Check current tile AND adjacent tiles for walls (S=3 or W=2)
+        const tilesToCheck = [
+          { x: playerTileX, y: playerTileY },
           { x: playerTileX, y: playerTileY - 1 },
           { x: playerTileX, y: playerTileY + 1 },
           { x: playerTileX - 1, y: playerTileY },
           { x: playerTileX + 1, y: playerTileY },
         ];
-        for (const t of adjacentTiles) {
+        let wallPaintAdded = false;
+        for (const t of tilesToCheck) {
           const tt = s.map[t.y]?.[t.x];
-          if (tt === 3 || tt === 2) {
-            // Snap wall tile to 3x3 grid
-            const wallSnapX = Math.floor(t.x / 3) * 3;
-            const wallSnapY = Math.floor(t.y / 3) * 3;
-            items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', wallSnapX, wallSnapY) });
-            break;
+          if (tt === 3) {
+            const wallSnap = findWallSnap(s.map, t.x, t.y);
+            if (wallSnap && !wallPaintAdded) {
+              items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', wallSnap.x, wallSnap.y) });
+              wallPaintAdded = true;
+            }
           }
         }
 
@@ -1091,8 +1117,14 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           items.push({
             icon: '🗑️', text: 'Убрать покраску',
             fn: () => {
-              removeTilePaint(s, snapX, snapY);
-              sendTileRemove(snapX, snapY);
+              const existing = s.tileOverrides[existingKey];
+              if (existing?.type === 'wall') {
+                const ws = findWallSnap(s.map, playerTileX, playerTileY);
+                if (ws) { removeTilePaint(s, ws.x, ws.y); sendTileRemove(ws.x, ws.y); }
+              } else {
+                const fs = findFloorSnap(s.map, playerTileX, playerTileY);
+                if (fs) { removeTilePaint(s, fs.x, fs.y); sendTileRemove(fs.x, fs.y); }
+              }
             }
           });
         }
@@ -1105,16 +1137,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       items.push({ icon: '🛒', text: 'Магазин', fn: () => openModal('shop') });
       items.push({ icon: '📋', text: 'Инвентарь', fn: () => openModal('inventory') });
       items.push({ icon: '📐', text: 'Whiteboard', fn: () => openModal('whiteboard') });
-
-      // Room-specific mini-games
-      const playerGx = Math.floor(s.player.x / TILE);
-      const playerGy = Math.floor(s.player.y / TILE);
-      const pRoom = getRoomAt(playerGx, playerGy);
-      if (pRoom) {
-        if (pRoom.id === 'smoking') {
-          items.push({ icon: '🚬', text: 'Прокурить 🚬', fn: () => setActiveGame('smoke') });
-        }
-      }
 
       showCtx(e.clientX, e.clientY, items);
     };
@@ -1168,7 +1190,11 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const s = stateRef.current;
       const cam = cameraRef.current;
       const input = inputRef.current;
-      const placedObjs = getPlacedObjectsAsGameObjects(s);
+      if (s._placedItemsVersion !== cachedPlacedVersionRef.current) {
+        cachedPlacedObjsRef.current = getPlacedObjectsAsGameObjects(s);
+        cachedPlacedVersionRef.current = s._placedItemsVersion;
+      }
+      const placedObjs = cachedPlacedObjsRef.current;
       const allObjects = [...s.objects, ...placedObjs];
 
       // Disable player movement when tile picker, card game, or minigame overlay is active
@@ -1197,9 +1223,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         }
       }
 
-      updateBossCall(s, dt);
-      updateBossCallTimer(s, dt);
-      checkBossCallReward(s);
       updateRoomIncome(s, dt);
       checkOfficeEvents(s);
 
@@ -1500,15 +1523,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
     return () => { running = false; };
   }, []);
 
-  function getPlacedObjects(s: GameState): GameObject[] {
-    return getPlacedObjectsAsGameObjects(s);
-  }
-
-  // Detect current room
-  const gx = Math.floor(player.x / TILE);
-  const gy = Math.floor(player.y / TILE);
-  const currentRoom = state.map[gy]?.[gx] === 2 ? getRoomAt(gx, gy) : null;
-
   return (
     <>
       <canvas ref={canvasRef} />
@@ -1685,6 +1699,18 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
             })}
           </div>
           <span style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>ESC для выхода</span>
+          <div
+            onClick={() => {
+              resetAllTileOverrides(state);
+              sendTileReset();
+            }}
+            style={{
+              fontSize: 9, color: '#ff6b6b', cursor: 'pointer',
+              border: '1px solid #ff6b6b44', borderRadius: 4, padding: '2px 6px',
+            }}
+          >
+            СБРОСИТЬ ВСЁ
+          </div>
         </div>
       )}
 
@@ -1717,34 +1743,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         ))}
       </div>
 
-      {/* Room indicator */}
-      {currentRoom && (
-        <div className="px-panel" style={{
-          position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)',
-          padding: '6px 16px', fontSize: 9, color: 'var(--px-title)', zIndex: 10, pointerEvents: 'none',
-        }}>
-          &gt; {currentRoom.name}
-        </div>
-      )}
-
-      {/* Boss Call Alert */}
-      {state.bossCall.active && (
-        <div className="px-panel" style={{
-          position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)',
-          padding: '10px 20px', fontSize: 11, color: 'var(--px-title)', zIndex: 100, pointerEvents: 'none',
-          display: 'flex', alignItems: 'center', gap: 10, borderColor: 'var(--px-danger)',
-        }}>
-          <span>👔 BOSS CALL!</span>
-          <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
-            {Math.ceil(state.bossCall.timer)}s +{state.bossCall.reward}
-          </span>
-        </div>
-      )}
-
       {/* Office Event Banner */}
       {state.officeEvents?.activeEvent && (
         <div className="px-panel" style={{
-          position: 'fixed', top: state.bossCall.active ? 70 : 40, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)',
           padding: '6px 16px', fontSize: 10, zIndex: 40, pointerEvents: 'none',
           borderColor: 'var(--px-title)',
           animation: 'pulse 2s infinite',

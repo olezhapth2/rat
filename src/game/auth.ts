@@ -7,11 +7,11 @@ export interface UserData {
 }
 
 const USERS: Record<string, UserData> = {
-  'аня':     { name: 'Аня',     password: '123456', charId: 'pers2', color: '#ffa726', role: 'Дизайнер' },
-  'саша':    { name: 'Саша',    password: '123456', charId: 'pers1', color: '#e94560', role: 'PM' },
-  'кирилл':  { name: 'Кирилл',  password: '123456', charId: 'pers3', color: '#2196f3', role: 'QA' },
-  'олег':    { name: 'Олег',    password: '123456', charId: 'pers4', color: '#4ecca3', role: 'Разработчик' },
-  'алиса':   { name: 'Алиса',   password: '123456', charId: 'pers5', color: '#9c27b0', role: 'HR' },
+  'олег':   { name: 'Олег',   password: '123456', charId: 'pers1', color: '#4ecca3', role: 'Разработчик' },
+  'аня':    { name: 'Аня',    password: '123456', charId: 'pers2', color: '#ffa726', role: 'Дизайнер' },
+  'алиса':  { name: 'Алиса',  password: '123456', charId: 'pers3', color: '#9c27b0', role: 'HR' },
+  'кирилл': { name: 'Кирилл', password: '123456', charId: 'pers4', color: '#2196f3', role: 'QA' },
+  'саша':   { name: 'Саша',   password: '123456', charId: 'pers5', color: '#e94560', role: 'PM' },
 };
 
 const SESSION_KEY = 'auth_session';
@@ -43,4 +43,11 @@ export function logout() {
 
 export function getAllUsers() {
   return Object.entries(USERS).map(([key, u]) => ({ login: key, ...u }));
+}
+
+export function addUser(login: string, name: string, password: string, charId: string, color: string, role: string): { ok: boolean; msg: string } {
+  const key = login.trim().toLowerCase();
+  if (USERS[key]) return { ok: false, msg: 'Логин уже занят' };
+  USERS[key] = { name, password, charId, color, role };
+  return { ok: true, msg: `Игрок ${name} добавлен` };
 }

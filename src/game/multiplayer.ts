@@ -318,6 +318,11 @@ export function sendTileRemove(x: number, y: number): void {
   socket.emit('tile:remove', { x, y });
 }
 
+export function sendTileReset(): void {
+  if (!socket?.connected) return;
+  socket.emit('tile:reset');
+}
+
 export function onTileSync(cb: (overrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) => void): void {
   onTileSyncUpdate = cb;
 }

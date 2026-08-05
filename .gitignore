@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# server game state
+.game-data/
+
 # source assets (raw exports, not needed in deploy)
 /public/ast/
 MacBook Air - 1.png

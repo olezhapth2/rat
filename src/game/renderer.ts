@@ -70,7 +70,7 @@ export function render(
     for (let x = sx; x < ex; x++) {
       const tile = map[y][x];
       if (tile === 0) continue;
-      const key = `${x},${y}`;
+      const key = `floor:${x},${y}`;
       const override = tileOverrides?.[key];
       let drawImg: HTMLImageElement | null = null;
       if (override?.type === 'floor') {
@@ -96,7 +96,7 @@ export function render(
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
       if (map[y][x] !== 3) continue;
-      const key = `${x},${y}`;
+      const key = `wall:${x},${y}`;
       const override = tileOverrides?.[key];
       let drawImg: HTMLImageElement | null = null;
       if (override?.type === 'wall') {
@@ -356,7 +356,7 @@ export function render(
     if (!map[y]) continue;
     for (let x = sx; x < ex; x++) {
       if (map[y][x] !== 2) continue;
-      const key = `${x},${y}`;
+      const key = `wall:${x},${y}`;
       const override = tileOverrides?.[key];
       const tx = ((x % 3) + 3) % 3;
       const ty = ((y % 3) + 3) % 3;

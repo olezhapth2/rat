@@ -78,7 +78,25 @@ export interface OfficeEventState {
 function loadState(): Record<string, unknown> | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Migrate old tileOverrides format ("x,y" → "type:x,y")
+      if (parsed.tileOverrides) {
+        const newOverrides: Record<string, unknown> = {};
+        let migrated = false;
+        for (const [key, value] of Object.entries(parsed.tileOverrides)) {
+          if (key.includes(':')) {
+            newOverrides[key] = value;
+          } else {
+            migrated = true;
+            const ov = value as { type: string; textureIndex: number };
+            newOverrides[`${ov.type}:${key}`] = value;
+          }
+        }
+        if (migrated) parsed.tileOverrides = newOverrides;
+      }
+      return parsed;
+    }
   } catch {}
   return null;
 }
@@ -929,88 +947,67 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
 
 // === Tile Painting ===
 
-/** Find the best 3×3 block of S=3 tiles near (tileX, tileY).
- *  Returns the block with the most S tiles. Only S tiles get painted. */
+/** Find any S=3 tile near (tileX, tileY). No 3×3 requirement. */
 export function findWallSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
-  let best: { x: number; y: number } | null = null;
-  let bestVal = -Infinity;
-  for (let oy = tileY - 2; oy <= tileY + 2; oy++) {
-    for (let ox = tileX - 2; ox <= tileX + 2; ox++) {
-      if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
-      let score = 0;
-      for (let dy = 0; dy < 3; dy++) {
-        for (let dx = 0; dx < 3; dx++) {
-          if (map[oy + dy]?.[ox + dx] === 3) score++;
-        }
-      }
-      if (score === 0) continue;
-      const closestX = Math.max(ox, Math.min(tileX, ox + 2));
-      const closestY = Math.max(oy, Math.min(tileY, oy + 2));
-      const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
-      const val = score * 10 - dist;
-      if (val > bestVal) {
-        bestVal = val;
-        best = { x: ox, y: oy };
+  for (let r = 0; r <= 4; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        const gx = tileX + dx;
+        const gy = tileY + dy;
+        if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) continue;
+        if (map[gy]?.[gx] === 3) return { x: gx, y: gy };
       }
     }
   }
-  return best;
+  return null;
 }
 
-/** Find the best 3×3 block of floor tiles near (tileX, tileY).
- *  Floor = F=1 + S=3 (S has floor underneath). Only W=2 and E=0 are excluded. */
+/** Find any F=1 or S=3 tile near (tileX, tileY). No 3×3 requirement. */
 export function findFloorSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
-  let best: { x: number; y: number } | null = null;
-  let bestVal = -Infinity;
-  for (let oy = tileY - 2; oy <= tileY + 2; oy++) {
-    for (let ox = tileX - 2; ox <= tileX + 2; ox++) {
-      if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
-      let score = 0;
-      for (let dy = 0; dy < 3; dy++) {
-        for (let dx = 0; dx < 3; dx++) {
-          const t = map[oy + dy]?.[ox + dx];
-          if (t === 1 || t === 3) score++;
-        }
-      }
-      if (score === 0) continue;
-      const closestX = Math.max(ox, Math.min(tileX, ox + 2));
-      const closestY = Math.max(oy, Math.min(tileY, oy + 2));
-      const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
-      const val = score * 10 - dist;
-      if (val > bestVal) {
-        bestVal = val;
-        best = { x: ox, y: oy };
+  for (let r = 0; r <= 4; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        const gx = tileX + dx;
+        const gy = tileY + dy;
+        if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) continue;
+        const t = map[gy]?.[gx];
+        if (t === 1 || t === 3) return { x: gx, y: gy };
       }
     }
   }
-  return best;
+  return null;
 }
 
 /** Apply default room textures to all F and S tiles based on room definitions.
- *  Only sets overrides that don't already exist (player-painted tiles are preserved). */
+ *  Only sets overrides that don't already exist (player-painted tiles are preserved).
+ *  Uses separate floor: and wall: keys so they don't overwrite each other. */
 export function applyDefaultRoomTextures(state: GameState): void {
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
       const tileType = state.map[y]?.[x];
       if (tileType !== 1 && tileType !== 3) continue;
-      const key = `${x},${y}`;
-      if (state.tileOverrides[key]) continue;
+      const floorKey = `floor:${x},${y}`;
+      const wallKey = `wall:${x},${y}`;
+      if (state.tileOverrides[floorKey] || state.tileOverrides[wallKey]) continue;
       const room = getRoomAt(x, y);
       if (room) {
         const tex = ROOM_TEXTURES[room.id];
         if (tex) {
           if (tileType === 1) {
-            state.tileOverrides[key] = { type: 'floor', textureIndex: tex.floor };
+            state.tileOverrides[floorKey] = { type: 'floor', textureIndex: tex.floor };
           } else if (tileType === 3) {
-            state.tileOverrides[key] = { type: 'wall', textureIndex: tex.wall };
+            state.tileOverrides[floorKey] = { type: 'floor', textureIndex: tex.floor };
+            state.tileOverrides[wallKey] = { type: 'wall', textureIndex: tex.wall };
           }
         }
       } else {
-        // Corridor / passage tiles outside rooms — use hall texture
         if (tileType === 1) {
-          state.tileOverrides[key] = { type: 'floor', textureIndex: 2 };
+          state.tileOverrides[floorKey] = { type: 'floor', textureIndex: 2 };
         } else if (tileType === 3) {
-          state.tileOverrides[key] = { type: 'wall', textureIndex: 1 };
+          state.tileOverrides[floorKey] = { type: 'floor', textureIndex: 2 };
+          state.tileOverrides[wallKey] = { type: 'wall', textureIndex: 1 };
         }
       }
     }
@@ -1019,17 +1016,17 @@ export function applyDefaultRoomTextures(state: GameState): void {
 }
 
 export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
-  // Paint 3x3 block (texture is a 3x3 spritesheet)
   for (let dy = 0; dy < 3; dy++) {
     for (let dx = 0; dx < 3; dx++) {
       const x = tileX + dx;
       const y = tileY + dy;
       if (y >= 0 && y < MAP_H && x >= 0 && x < MAP_W) {
         const tileType = state.map[y]?.[x];
+        const key = `${type}:${x},${y}`;
         if (type === 'floor' && (tileType === 1 || tileType === 3)) {
-          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+          state.tileOverrides[key] = { type, textureIndex };
         } else if (type === 'wall' && tileType === 3) {
-          state.tileOverrides[`${x},${y}`] = { type, textureIndex };
+          state.tileOverrides[key] = { type, textureIndex };
         }
       }
     }
@@ -1037,11 +1034,11 @@ export function paintTile(state: GameState, tileX: number, tileY: number, type: 
   persistState(state);
 }
 
-export function removeTilePaint(state: GameState, tileX: number, tileY: number): void {
-  // Remove 3x3 block
+export function removeTilePaint(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall'): void {
   for (let dy = 0; dy < 3; dy++) {
     for (let dx = 0; dx < 3; dx++) {
-      delete state.tileOverrides[`${tileX + dx},${tileY + dy}`];
+      const key = `${type}:${tileX + dx},${tileY + dy}`;
+      delete state.tileOverrides[key];
     }
   }
   persistState(state);

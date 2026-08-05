@@ -313,9 +313,9 @@ export function sendTilePaint(x: number, y: number, type: 'floor' | 'wall', text
   socket.emit('tile:paint', { x, y, type, textureIndex });
 }
 
-export function sendTileRemove(x: number, y: number): void {
+export function sendTileRemove(x: number, y: number, type: 'floor' | 'wall'): void {
   if (!socket?.connected) return;
-  socket.emit('tile:remove', { x, y });
+  socket.emit('tile:remove', { x, y, type });
 }
 
 export function sendTileReset(): void {

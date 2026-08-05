@@ -1115,19 +1115,25 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           }
         }
 
-        const existingKey = `${playerTileX},${playerTileY}`;
-        if (s.tileOverrides[existingKey]) {
+        const floorKey = `floor:${playerTileX},${playerTileY}`;
+        const wallKey = `wall:${playerTileX},${playerTileY}`;
+        const hasFloor = s.tileOverrides[floorKey];
+        const hasWall = s.tileOverrides[wallKey];
+        if (hasFloor) {
           items.push({
-            icon: '🗑️', text: 'Убрать покраску',
+            icon: '🗑️', text: 'Убрать покраску пола',
             fn: () => {
-              const existing = s.tileOverrides[existingKey];
-              if (existing?.type === 'wall') {
-                const ws = findWallSnap(s.map, playerTileX, playerTileY);
-                if (ws) { removeTilePaint(s, ws.x, ws.y); sendTileRemove(ws.x, ws.y); }
-              } else {
-                const fs = findFloorSnap(s.map, playerTileX, playerTileY);
-                if (fs) { removeTilePaint(s, fs.x, fs.y); sendTileRemove(fs.x, fs.y); }
-              }
+              removeTilePaint(s, playerTileX, playerTileY, 'floor');
+              sendTileRemove(playerTileX, playerTileY, 'floor');
+            }
+          });
+        }
+        if (hasWall) {
+          items.push({
+            icon: '🗑️', text: 'Убрать покраску стены',
+            fn: () => {
+              removeTilePaint(s, playerTileX, playerTileY, 'wall');
+              sendTileRemove(playerTileX, playerTileY, 'wall');
             }
           });
         }

@@ -226,7 +226,8 @@ app.prepare().then(() => {
           const x = data.x + dx;
           const y = data.y + dy;
           if (y >= 0 && y < 45 && x >= 0 && x < 58) {
-            tileOverrides[`${x},${y}`] = { type: data.type, textureIndex: data.textureIndex };
+            const key = `${data.type}:${x},${y}`;
+            tileOverrides[key] = { type: data.type, textureIndex: data.textureIndex };
           }
         }
       }
@@ -234,10 +235,11 @@ app.prepare().then(() => {
       scheduleSave();
     });
 
-    socket.on('tile:remove', (data: { x: number; y: number }) => {
+    socket.on('tile:remove', (data: { x: number; y: number; type: 'floor' | 'wall' }) => {
       for (let dy = 0; dy < 3; dy++) {
         for (let dx = 0; dx < 3; dx++) {
-          delete tileOverrides[`${data.x + dx},${data.y + dy}`];
+          const key = `${data.type}:${data.x + dx},${data.y + dy}`;
+          delete tileOverrides[key];
         }
       }
       io.emit('tile:sync', tileOverrides);

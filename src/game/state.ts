@@ -1,5 +1,5 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_TEXTURES, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H, canMove } from './constants';
-import type { Player, Bot, GameObject, Room, OfficeEvent } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, MAP_W, MAP_H, canMove } from './constants';
+import type { Player, Bot, GameObject } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
 const STORAGE_KEY = 'secretgang';
@@ -35,7 +35,6 @@ export interface GameState {
     _dropPreview: { x: number; y: number; w: number; h: number } | null;
     activities: Activity[];
     achievements: string[];
-    visitedRooms: string[];
     _lastEmoji: string | null;
     _emojiTime: number;
     charId: string;  // character sprite ID (e.g. 'pers1', 'pers2')
@@ -58,8 +57,7 @@ export interface GameState {
     progress: Record<string, number>;
     claimed: string[];
   };
-  botAnims: Record<string, AnimState>; // botId → animation state
-  officeEvents: OfficeEventState;
+  botAnims: Record<string, AnimState>;
   tilePaintMode: {
     active: boolean;
     type: 'floor' | 'wall';
@@ -68,11 +66,6 @@ export interface GameState {
     previewY: number;
   } | null;
   _placedItemsVersion: number;
-}
-
-export interface OfficeEventState {
-  activeEvent: OfficeEvent | null;
-  lastCheckedMinute: number;
 }
 
 function loadState(): Record<string, unknown> | null {
@@ -152,7 +145,6 @@ export function createInitialState(authUser?: { charId: string; name: string; co
     _dropPreview: null as { x: number; y: number; w: number; h: number } | null,
     activities: [] as Activity[],
     achievements: (saved?.achievements as string[]) || [],
-    visitedRooms: ['hall'] as string[],
     _lastEmoji: null as string | null,
     _emojiTime: 0,
     charId,
@@ -187,15 +179,9 @@ export function createInitialState(authUser?: { charId: string; name: string; co
 
     dailyQuests: { date: today, progress: {}, claimed: [] },
     botAnims,
-    officeEvents: { activeEvent: null, lastCheckedMinute: -1 },
     tilePaintMode: null,
     _placedItemsVersion: 0,
   };
-
-  // Apply default room textures for new players (no saved overrides)
-  if (Object.keys(tileOverrides).length === 0) {
-    applyDefaultRoomTextures(state);
-  }
 
   return state;
 }
@@ -514,18 +500,19 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
       }
     }
 
-    // === 2. Room walking ===
+    // === 2. Random wandering ===
     bot._roomTimer -= dt;
     if (bot._roomTimer <= 0 && !bot._targetRoomId) {
-      // Pick a random room to visit (not always home)
-      const visitRooms = ['hall', 'library', 'kitchen', 'boss', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6', 'office7', 'office8', 'office9', 'office10', 'office11', 'office12', 'office13', 'office14', 'office15'];
-      const target = visitRooms[Math.floor(Math.random() * visitRooms.length)];
-      const center = ROOM_CENTERS[target];
-      if (center) {
-        bot._targetRoomId = target;
-        bot.wanderTargetX = center.x + (Math.random() - 0.5) * TILE * 4;
-        bot.wanderTargetY = center.y + (Math.random() - 0.5) * TILE * 4;
-        bot._roomTimer = 300 + Math.random() * 400; // stay in room for 5-12 min
+      // Pick a random walkable tile on the map
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const rx = Math.floor(Math.random() * MAP_W);
+        const ry = Math.floor(Math.random() * MAP_H);
+        if (map[ry]?.[rx] === 1) {
+          bot.wanderTargetX = rx * TILE + TILE / 2;
+          bot.wanderTargetY = ry * TILE + TILE / 2;
+          bot._roomTimer = 200 + Math.random() * 400;
+          break;
+        }
       }
     }
 
@@ -547,7 +534,6 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
         } else {
           bot.wanderTargetX = null;
           bot.wanderTargetY = null;
-          bot._targetRoomId = null;
           bot._lastVx = 0;
           bot._lastVy = 0;
         }
@@ -556,12 +542,7 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
         bot.wanderTargetY = null;
         bot._lastVx = 0;
         bot._lastVy = 0;
-        // Arrived at room — start room timer
-        if (bot._targetRoomId) {
-          bot.room = bot._targetRoomId;
-          bot._roomTimer = 200 + Math.random() * 300;
-          bot._targetRoomId = null;
-        }
+        bot._roomTimer = 200 + Math.random() * 300;
       }
     }
 
@@ -775,59 +756,6 @@ export function getQuestProgress(state: GameState, questId: string): number {
   return state.dailyQuests.progress[questId] || 0;
 }
 
-// === Room Passive Income ===
-let roomIncomeTimer = 0;
-
-export function updateRoomIncome(state: GameState, dt: number) {
-  roomIncomeTimer -= dt;
-  if (roomIncomeTimer > 0) return;
-
-  // Check which room player is in
-  const gx = Math.floor(state.player.x / TILE);
-  const gy = Math.floor(state.player.y / TILE);
-  const room = getRoomAt(gx, gy);
-
-  if (room) {
-    let income = 0;
-    switch (room.id) {
-      case 'office1':
-      case 'office2':
-      case 'office3':
-      case 'office4':
-      case 'office5':
-      case 'office6':
-      case 'office7':
-      case 'office8':
-      case 'office9':
-      case 'office10':
-      case 'office11':
-      case 'office12':
-      case 'office13':
-      case 'office14':
-      case 'office15':
-        income = 2; // Work in office
-        break;
-      case 'boss':
-        income = 5; // Boss room pays more
-        break;
-      case 'hall':
-        income = 1; // Hall
-        break;
-      case 'library':
-        income = 3; // Reading = more income
-        break;
-      case 'kitchen':
-        income = 1; // Kitchen breaks
-        break;
-    }
-
-    if (income > 0) {
-      addCoins(state, income);
-      roomIncomeTimer = 120; // Every 2 minutes
-    }
-  }
-}
-
 // === Update pet following player ===
 export function updatePet(state: GameState, dt: number) {
   const p = state.player;
@@ -858,7 +786,6 @@ export function getPlacedObjectsAsGameObjects(state: GameState): GameObject[] {
       noCollision: !!(def as any)?.noCollision,
       color: def?.surface === 'wall' ? '#a0c4ff' : '#ffffff',
       label: def?.n || pi.id,
-      room: 'placed',
       sprite: (def as any)?.sprite || undefined,
       surface: def?.surface || 'floor',
     };
@@ -895,29 +822,6 @@ export function updateDropPreview(state: GameState, cursorWorldX?: number, curso
     } else {
       state.player._dropPreview = null;
     }
-  }
-}
-
-export function checkOfficeEvents(state: GameState): void {
-  const now = new Date();
-  const currentMinute = now.getHours() * 60 + now.getMinutes();
-
-  if (currentMinute === state.officeEvents.lastCheckedMinute) return;
-  state.officeEvents.lastCheckedMinute = currentMinute;
-
-  const event = OFFICE_EVENTS.find(e => {
-    const eventStart = e.hour * 60 + e.minute;
-    const eventEnd = eventStart + e.duration;
-    return currentMinute >= eventStart && currentMinute < eventEnd;
-  });
-
-  if (event && state.officeEvents.activeEvent?.id !== event.id) {
-    state.officeEvents.activeEvent = event;
-    logActivity(state, event.icon, event.message);
-    addXP(state, 5);
-  } else if (!event && state.officeEvents.activeEvent) {
-    state.officeEvents.activeEvent = null;
-    logActivity(state, '⏰', 'Бонусное время окончено');
   }
 }
 
@@ -980,41 +884,6 @@ export function findFloorSnap(map: number[][], tileX: number, tileY: number): { 
   return null;
 }
 
-/** Apply default room textures to all F and S tiles based on room definitions.
- *  Only sets overrides that don't already exist (player-painted tiles are preserved).
- *  Uses separate floor: and wall: keys so they don't overwrite each other. */
-export function applyDefaultRoomTextures(state: GameState): void {
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      const tileType = state.map[y]?.[x];
-      if (tileType !== 1 && tileType !== 3) continue;
-      const floorKey = `floor:${x},${y}`;
-      const wallKey = `wall:${x},${y}`;
-      if (state.tileOverrides[floorKey] || state.tileOverrides[wallKey]) continue;
-      const room = getRoomAt(x, y);
-      if (room) {
-        const tex = ROOM_TEXTURES[room.id];
-        if (tex) {
-          if (tileType === 1) {
-            state.tileOverrides[floorKey] = { type: 'floor', textureIndex: tex.floor };
-          } else if (tileType === 3) {
-            state.tileOverrides[floorKey] = { type: 'floor', textureIndex: tex.floor };
-            state.tileOverrides[wallKey] = { type: 'wall', textureIndex: tex.wall };
-          }
-        }
-      } else {
-        if (tileType === 1) {
-          state.tileOverrides[floorKey] = { type: 'floor', textureIndex: 2 };
-        } else if (tileType === 3) {
-          state.tileOverrides[floorKey] = { type: 'floor', textureIndex: 2 };
-          state.tileOverrides[wallKey] = { type: 'wall', textureIndex: 1 };
-        }
-      }
-    }
-  }
-  persistState(state);
-}
-
 export function paintTile(state: GameState, tileX: number, tileY: number, type: 'floor' | 'wall', textureIndex: number): void {
   for (let dy = 0; dy < 3; dy++) {
     for (let dx = 0; dx < 3; dx++) {
@@ -1046,7 +915,7 @@ export function removeTilePaint(state: GameState, tileX: number, tileY: number, 
 
 export function resetAllTileOverrides(state: GameState): void {
   state.tileOverrides = {};
-  applyDefaultRoomTextures(state);
+  persistState(state);
 }
 
 // === Tile Paint Mode ===

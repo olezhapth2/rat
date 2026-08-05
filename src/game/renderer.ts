@@ -1,4 +1,4 @@
-import { TILE, MAP_W, MAP_H, ROOMS } from './constants';
+import { TILE, MAP_W, MAP_H } from './constants';
 import type { Player, GameObject, Bot } from './constants';
 import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite, drawPet } from './sprites';
 import { getFloorImage, getFloorImageByIndex, getWallImageByIndex, getSideWallImage, getWallTopImage } from './tiles';
@@ -114,18 +114,6 @@ export function render(
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
     }
-  }
-
-  // ===== 3. ROOM LABELS =====
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#00000015';
-  ctx.font = 'bold 11px sans-serif';
-  for (const room of ROOMS) {
-    ctx.fillText(
-      room.name.toUpperCase(),
-      (room.fx + room.fw / 2) * TILE,
-      room.fy * TILE + 14
-    );
   }
 
   // ===== 4. CHARACTERS =====

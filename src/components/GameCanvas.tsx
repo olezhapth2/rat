@@ -1,11 +1,11 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, getRoomAt, ROOMS } from '../game/constants';
+import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS } from '../game/constants';
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, updateRoomIncome, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, checkOfficeEvents, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
+import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
 import type { GameState, Activity } from '../game/state';
 import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
@@ -211,7 +211,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         doorName: s.player.doorName,
         av: s.player.av,
         role: s.player.role,
-        visitedRooms: s.player.visitedRooms,
         dailyQuests: s.dailyQuests,
       });
     }, 2000);
@@ -890,7 +889,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       if (data.petPetCount !== undefined) s.player.petPetCount = data.petPetCount;
       if (data.wallColor) s.player.wallColor = data.wallColor;
       if (data.doorName) s.player.doorName = data.doorName;
-      if (data.visitedRooms) s.player.visitedRooms = data.visitedRooms;
       if (data.dailyQuests) s.dailyQuests = data.dailyQuests;
       console.log('[MP] Player data synced from server');
     });
@@ -1235,22 +1233,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         }
       }
 
-      updateRoomIncome(s, dt);
-      checkOfficeEvents(s);
-
-      // Track room visits
-      const pgx = Math.floor(s.player.x / TILE);
-      const pgy = Math.floor(s.player.y / TILE);
-      const pRoom = getRoomAt(pgx, pgy);
-      if (pRoom && !s.player.visitedRooms.includes(pRoom.id)) {
-        s.player.visitedRooms.push(pRoom.id);
-        if (s.player.visitedRooms.length >= 3) unlockAchievement(s, 'social');
-        trackQuestProgress(s, 'visit_2');
-        persistState(s);
-        saveToServer();
-      }
-
-      // Check interaction zones (room-based + placed mini-game items)
+      // Check interaction zones (placed mini-game items)
       const zone = checkInteractions(s.player.x, s.player.y);
       if (zone) {
         setNearInteraction(zone);
@@ -1754,18 +1737,6 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
           </div>
         ))}
       </div>
-
-      {/* Office Event Banner */}
-      {state.officeEvents?.activeEvent && (
-        <div className="px-panel" style={{
-          position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)',
-          padding: '6px 16px', fontSize: 10, zIndex: 40, pointerEvents: 'none',
-          borderColor: 'var(--px-title)',
-          animation: 'pulse 2s infinite',
-        }}>
-          {state.officeEvents.activeEvent.icon} {state.officeEvents.activeEvent.name} — ×{state.officeEvents.activeEvent.bonusMultiplier} BONUS
-        </div>
-      )}
 
       {/* Bottom HUD — pixel style */}
       <div style={{

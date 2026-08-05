@@ -6,6 +6,21 @@ import type { RemotePlayer } from './multiplayer';
 
 const carryImgCache: Record<string, HTMLImageElement> = {};
 
+// Shadow constants
+const SHADOW_OFFSET_X = TILE * 0.3;
+const SHADOW_OFFSET_Y = TILE * 0.5;
+const SHADOW_ALPHA = 0.2;
+
+function drawBlobShadow(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, alpha = SHADOW_ALPHA): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.ellipse(cx + SHADOW_OFFSET_X, cy + SHADOW_OFFSET_Y, w / 2, h / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 export interface Camera {
   x: number;
   y: number;
@@ -116,6 +131,41 @@ export function render(
     }
   }
 
+  // ===== 3. AMBIENT OCCLUSION (wall-floor edges) =====
+  ctx.save();
+  for (let y = sy; y < ey; y++) {
+    if (!map[y]) continue;
+    for (let x = sx; x < ex; x++) {
+      const tile = map[y][x];
+      if (tile !== 1 && tile !== 3) continue; // only floor/side-wall tiles
+      // Check all 4 neighbors for walls
+      const hasWallTop = y > 0 && (map[y - 1][x] === 2);
+      const hasWallBottom = y < MAP_H - 1 && (map[y + 1]?.[x] === 2);
+      const hasWallLeft = x > 0 && (map[y][x - 1] === 2);
+      const hasWallRight = x < MAP_W - 1 && (map[y][x + 1] === 2);
+      if (!hasWallTop && !hasWallBottom && !hasWallLeft && !hasWallRight) continue;
+
+      const px = x * TILE;
+      const py = y * TILE;
+      const aoSize = TILE * 0.35;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      if (hasWallTop) {
+        ctx.fillRect(px, py, TILE, aoSize);
+      }
+      if (hasWallBottom) {
+        ctx.fillRect(px, py + TILE - aoSize, TILE, aoSize);
+      }
+      if (hasWallLeft) {
+        ctx.fillRect(px, py, aoSize, TILE);
+      }
+      if (hasWallRight) {
+        ctx.fillRect(px + TILE - aoSize, py, aoSize, TILE);
+      }
+    }
+  }
+  ctx.restore();
+
   // ===== 4. CHARACTERS =====
 
   // ===== 5. DEPTH-SORTED RENDERING (objects + characters by Y) =====
@@ -166,7 +216,10 @@ export function render(
   const petX = (player as any).petX as number | undefined;
   const petY = (player as any).petY as number | undefined;
   if (petId && petX !== undefined && petY !== undefined) {
-    entities.push({ sortY: petY, draw: () => drawPet(ctx, petX, petY, petId) });
+    entities.push({ sortY: petY, draw: () => {
+      drawBlobShadow(ctx, petX, petY + TILE * 0.3, TILE * 0.5, TILE * 0.3);
+      drawPet(ctx, petX, petY, petId);
+    }});
   }
 
   for (const c of allChars) {
@@ -177,6 +230,10 @@ export function render(
         const anim: AnimState = c.isPlayer
           ? (playerAnim ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 })
           : (botAnims?.[c.bot?.id] ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 });
+
+        // Offset drop shadow under character
+        drawBlobShadow(ctx, c.x, bobY + CHAR_H / 2 - TILE * 0.3, CHAR_W * 0.7, TILE * 0.4);
+
         drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name, c.color);
 
         // Name label above character — exactly at top edge of sprite
@@ -408,6 +465,11 @@ function drawFurniture(ctx: CanvasRenderingContext2D, obj: GameObject): void {
   const oy = obj.y;
   const ow = obj.w * TILE;
   const oh = obj.h * TILE;
+
+  // Offset drop shadow (only for floor items, not wall items)
+  if (obj.surface !== 'wall') {
+    drawBlobShadow(ctx, ox + ow / 2, oy + oh, ow * 0.6, TILE * 0.35, 0.18);
+  }
 
   // Draw sprite if available
   if (obj.sprite) {

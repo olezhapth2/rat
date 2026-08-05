@@ -2274,7 +2274,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
   const labels: Record<string, string> = { minigames: 'ИГРЫ' };
 
   return (
-    <div>
+    <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>CHOOSE FURNITURE</div>
         <div className="px-panel" style={{ padding: '6px 14px', fontSize: 10 }}>
@@ -2298,8 +2298,8 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
         const pItem = ALL_ITEMS.find(i => i.id === preview);
         if (!pItem) return null;
         return (
-          <div className="px-panel" style={{ padding: 12, marginBottom: 14, display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div style={{ width: 100, height: 100, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)' }}>
+          <div className="px-panel" style={{ position: 'sticky', top: 0, zIndex: 10, padding: 12, marginBottom: 10, display: 'flex', gap: 14, alignItems: 'center', background: 'var(--px-panel)', boxShadow: '0 4px 12px rgba(0,0,0,.5)' }}>
+            <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)', flexShrink: 0 }}>
               <img src={pItem.sprite} alt={pItem.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ flex: 1 }}>
@@ -2347,7 +2347,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
           );
         })}
       </div>
-    </div>
+    </>
   );
 }
 

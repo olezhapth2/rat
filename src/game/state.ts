@@ -490,7 +490,7 @@ export function updateBots(state: GameState, dt: number) {
     bot._roomTimer -= dt;
     if (bot._roomTimer <= 0 && !bot._targetRoomId) {
       // Pick a random room to visit (not always home)
-      const visitRooms = ['hall', 'library', 'kitchen', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6'];
+      const visitRooms = ['hall', 'office1', 'office2', 'office3', 'office4', 'office5', 'office6', 'office7', 'office8', 'office9', 'office10'];
       const target = visitRooms[Math.floor(Math.random() * visitRooms.length)];
       const center = ROOM_CENTERS[target];
       if (center) {
@@ -765,15 +765,13 @@ export function triggerBossCall(state: GameState) {
 export function checkBossCallReward(state: GameState) {
   if (!state.bossCall.active) return;
 
-  const bossRoom = ROOMS.find(r => r.id === 'boss');
+  const bossRoom = ROOMS.find(r => r.id === 'office1');
   if (!bossRoom) return;
 
   const gx = Math.floor(state.player.x / TILE);
   const gy = Math.floor(state.player.y / TILE);
 
-  // Check if player is in boss room
   if (gx >= bossRoom.fx && gx < bossRoom.fx + bossRoom.fw && gy >= bossRoom.fy && gy < bossRoom.fy + bossRoom.fh) {
-    // Arrived! Give reward
     addCoins(state, state.bossCall.reward);
     unlockAchievement(state, 'boss_meeting');
     logActivity(state, '👔', `Босс дал ${state.bossCall.reward} алт`);
@@ -843,19 +841,14 @@ export function updateRoomIncome(state: GameState, dt: number) {
       case 'office4':
       case 'office5':
       case 'office6':
+      case 'office7':
+      case 'office8':
+      case 'office9':
+      case 'office10':
         income = 2; // Work in office
-        break;
-      case 'boss':
-        income = 5; // Boss room pays more
         break;
       case 'hall':
         income = 1; // Hall
-        break;
-      case 'library':
-        income = 3; // Reading = more income
-        break;
-      case 'kitchen':
-        income = 1; // Kitchen breaks
         break;
     }
 

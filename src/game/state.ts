@@ -922,10 +922,9 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
  *  Returns the block with the most S tiles. Only S tiles get painted. */
 export function findWallSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
   let best: { x: number; y: number } | null = null;
-  let bestScore = 0;
-  let bestDist = Infinity;
-  for (let oy = tileY - 4; oy <= tileY + 1; oy++) {
-    for (let ox = tileX - 4; ox <= tileX + 1; ox++) {
+  let bestVal = -Infinity;
+  for (let oy = tileY - 2; oy <= tileY + 2; oy++) {
+    for (let ox = tileX - 2; ox <= tileX + 2; ox++) {
       if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
       let score = 0;
       for (let dy = 0; dy < 3; dy++) {
@@ -937,9 +936,9 @@ export function findWallSnap(map: number[][], tileX: number, tileY: number): { x
       const closestX = Math.max(ox, Math.min(tileX, ox + 2));
       const closestY = Math.max(oy, Math.min(tileY, oy + 2));
       const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
-      if (score > bestScore || (score === bestScore && dist < bestDist)) {
-        bestScore = score;
-        bestDist = dist;
+      const val = score * 10 - dist;
+      if (val > bestVal) {
+        bestVal = val;
         best = { x: ox, y: oy };
       }
     }
@@ -951,10 +950,9 @@ export function findWallSnap(map: number[][], tileX: number, tileY: number): { x
  *  Floor = F=1 + S=3 (S has floor underneath). Only W=2 and E=0 are excluded. */
 export function findFloorSnap(map: number[][], tileX: number, tileY: number): { x: number; y: number } | null {
   let best: { x: number; y: number } | null = null;
-  let bestScore = 0;
-  let bestDist = Infinity;
-  for (let oy = tileY - 4; oy <= tileY + 1; oy++) {
-    for (let ox = tileX - 4; ox <= tileX + 1; ox++) {
+  let bestVal = -Infinity;
+  for (let oy = tileY - 2; oy <= tileY + 2; oy++) {
+    for (let ox = tileX - 2; ox <= tileX + 2; ox++) {
       if (oy < 0 || ox < 0 || oy + 2 >= MAP_H || ox + 2 >= MAP_W) continue;
       let score = 0;
       for (let dy = 0; dy < 3; dy++) {
@@ -967,9 +965,9 @@ export function findFloorSnap(map: number[][], tileX: number, tileY: number): { 
       const closestX = Math.max(ox, Math.min(tileX, ox + 2));
       const closestY = Math.max(oy, Math.min(tileY, oy + 2));
       const dist = Math.abs(tileX - closestX) + Math.abs(tileY - closestY);
-      if (score > bestScore || (score === bestScore && dist < bestDist)) {
-        bestScore = score;
-        bestDist = dist;
+      const val = score * 10 - dist;
+      if (val > bestVal) {
+        bestVal = val;
         best = { x: ox, y: oy };
       }
     }

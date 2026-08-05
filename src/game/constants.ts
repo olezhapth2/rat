@@ -171,7 +171,7 @@ export interface GameObject {
   surface?: 'floor' | 'wall';
 }
 
-const SOLID_ZONE_RATIO = 0.35;
+const SOLID_ZONE_RATIO = 0;
 
 export function canMove(
   map: number[][],
@@ -187,13 +187,14 @@ export function canMove(
     [px - r, py + r],
     [px + r, py + r],
   ];
-  for (const [cx, cy] of corners) {
+  for (let i = 0; i < corners.length; i++) {
+    const [cx, cy] = corners[i];
     const gx = Math.floor(cx / TILE);
     const gy = Math.floor(cy / TILE);
     if (gy < 0 || gy >= MAP_H || gx < 0 || gx >= MAP_W) return false;
     const t = map[gy]?.[gx];
     if (t === W || t === E) return false;
-    if (t === S) {
+    if (t === S && i < 2) {
       const below = map[gy + 1]?.[gx];
       if (below !== F) return false;
     }

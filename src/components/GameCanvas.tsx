@@ -25,7 +25,7 @@ import {
   sendPlayerSave, onPlayerDataSync,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
-import { login, getCurrentUser, logout } from '../game/auth';
+import { loginAsync, registerAsync, getCurrentUser, logout, uploadAvatar, initAuth, type UserData } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
 
@@ -36,26 +36,32 @@ interface CtxItem {
 }
 
 export default function GameCanvas() {
-  const [authUser, setAuthUser] = useState<ReturnType<typeof getCurrentUser>>(null);
+  const [authUser, setAuthUser] = useState<UserData | null>(null);
   const [authName, setAuthName] = useState('');
   const [authPass, setAuthPass] = useState('');
   const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [secretToast, setSecretToast] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
+    initAuth();
     setAuthUser(getCurrentUser());
     setReady(true);
   }, []);
 
-  const handleAuth = () => {
-    const res = login(authName, authPass);
-    if (res.ok) {
-      setAuthUser(getCurrentUser());
+  const handleAuth = async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    const res = await loginAsync(authName, authPass);
+    setAuthLoading(false);
+    if (res.ok && res.user) {
+      setAuthUser(res.user);
       setAuthError('');
     } else {
-      setAuthError(res.msg);
+      setAuthError(res.msg || 'Ошибка');
     }
   };
 
@@ -75,7 +81,6 @@ export default function GameCanvas() {
                 onClick={() => {
                   setSecretClicks(prev => {
                     if (prev + 1 >= 5) {
-                      // Save coins via localStorage directly
                       try {
                         const raw = localStorage.getItem('secretgang');
                         const saved = raw ? JSON.parse(raw) : {};
@@ -97,41 +102,33 @@ export default function GameCanvas() {
                 OFFICE SIMULATOR
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              <input
-                type="text"
-                placeholder="USERNAME"
-                className="px-input"
-                value={authName}
-                onChange={(e) => setAuthName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-              />
-              <input
-                type="password"
-                placeholder="PASSWORD"
-                className="px-input"
-                value={authPass}
-                onChange={(e) => setAuthPass(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-              />
-            </div>
-            {authError && (
-              <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
-                {authError}
-              </div>
+
+            {!showRegister ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                  <input type="text" placeholder="LOGIN" className="px-input" value={authName}
+                    onChange={(e) => setAuthName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                  <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
+                    onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                </div>
+                {authError && (
+                  <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+                    {authError}
+                  </div>
+                )}
+                <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
+                  {authLoading ? '...' : 'LOGIN'}
+                </button>
+                <div style={{ textAlign: 'center' }}>
+                  <span onClick={() => setShowRegister(true)} style={{ fontSize: 9, color: 'var(--px-accent)', cursor: 'pointer' }}>
+                    Нет аккаунта? Создать
+                  </span>
+                </div>
+              </>
+            ) : (
+              <RegisterForm onDone={(user) => { setAuthUser(user); setShowRegister(false); }} onBack={() => setShowRegister(false)} />
             )}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginBottom: 16 }}>
-              {['Олег', 'Аня', 'Алиса', 'Кирилл', 'Саша'].map(n => (
-                <span key={n} onClick={() => setAuthName(n)} className="px-btn small" style={{
-                  background: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-accent)' : 'var(--px-panel)',
-                  color: authName.toLowerCase() === n.toLowerCase() ? 'var(--px-text-dark)' : 'var(--px-text-dim)',
-                  borderColor: authName.toLowerCase() === n.toLowerCase() ? '#2a8a6a' : 'var(--px-border-dark)',
-                }}>{n}</span>
-              ))}
-            </div>
-            <button onClick={handleAuth} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12 }}>
-              LOGIN
-            </button>
+
             {secretToast && (
               <div style={{ marginTop: 10, padding: '8px 12px', background: '#1a3a2a', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
                 {secretToast}
@@ -146,7 +143,7 @@ export default function GameCanvas() {
   return <GameInner authUser={authUser} />;
 }
 
-function GameInner({ authUser }: { authUser: { name: string; charId: string; color: string; role: string } }) {
+function GameInner({ authUser }: { authUser: UserData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cameraRef = useRef(createCamera());
   const inputRef = useRef(createInputState());
@@ -3187,5 +3184,85 @@ function ConfettiEffect({ trigger }: { trigger: number }) {
         />
       ))}
     </>
+  );
+}
+
+// ===== REGISTER FORM =====
+function RegisterForm({ onDone, onBack }: { onDone: (user: UserData) => void; onBack: () => void }) {
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const charId = 'custom_' + Date.now();
+  const color = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadAvatar(file);
+    if (url) setAvatar(url);
+  };
+
+  const handleRegister = async () => {
+    if (!login.trim() || !password || !name.trim()) {
+      setError('Заполни логин, пароль и имя');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    const res = await registerAsync({
+      login: login.trim(),
+      password,
+      name: name.trim(),
+      charId,
+      color,
+      role: role || 'Разработчик',
+      avatar,
+    });
+    setLoading(false);
+    if (res.ok && res.user) {
+      onDone(res.user);
+    } else {
+      setError(res.msg || 'Ошибка');
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>НОВЫЙ ИГРОК</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+        <input className="px-input" placeholder="LOGIN (для входа)" value={login} onChange={e => setLogin(e.target.value)} />
+        <input className="px-input" type="password" placeholder="PASSWORD" value={password} onChange={e => setPassword(e.target.value)} />
+        <input className="px-input" placeholder="NAME (имя в игре)" value={name} onChange={e => setName(e.target.value)} />
+        <input className="px-input" placeholder="ROLE (Должность)" value={role} onChange={e => setRole(e.target.value)} />
+        <div>
+          <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'inline-block' }}>
+            📷 АВАТАР
+            <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
+          </label>
+          {avatar && (
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src={avatar} alt="" style={{ width: 40, height: 40, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
+              <span style={{ fontSize: 8, color: 'var(--px-accent)' }}>OK</span>
+            </div>
+          )}
+        </div>
+      </div>
+      {error && (
+        <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={onBack} className="px-btn" style={{ flex: 1, fontSize: 10 }}>НАЗАД</button>
+        <button onClick={handleRegister} disabled={loading} className="px-btn accent" style={{ flex: 1, fontSize: 10 }}>
+          {loading ? '...' : 'СОЗДАТЬ'}
+        </button>
+      </div>
+    </div>
   );
 }

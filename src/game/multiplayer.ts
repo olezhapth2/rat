@@ -167,6 +167,23 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
     socket.on('admin:money-adjusted', (data: any) => {
       onAdminMoneyAdjustedCb?.(data);
     });
+
+    // Auth events
+    socket.on('auth:result', (data: { ok: boolean; msg?: string; user?: any }) => {
+      onAuthResultCb?.(data);
+    });
+    socket.on('auth:users-list', (list: any[]) => {
+      onAuthUsersListCb?.(list);
+    });
+    socket.on('auth:user-updated', (data: any) => {
+      onAuthUserUpdatedCb?.(data);
+    });
+    socket.on('admin:user-deleted', (data: any) => {
+      onAuthUserDeletedCb?.(data);
+    });
+    socket.on('auth:user-updated', (data: any) => {
+      onAuthUserSyncCb?.(data);
+    });
   }
 
 export function disconnectMultiplayer(): void {
@@ -399,3 +416,37 @@ export function onAdminError(cb: (msg: string) => void): void { onAdminErrorCb =
 export function onAdminPlayerAdded(cb: (data: any) => void): void { onAdminPlayerAddedCb = cb; }
 export function onAdminPlayerDeleted(cb: (data: any) => void): void { onAdminPlayerDeletedCb = cb; }
 export function onAdminMoneyAdjusted(cb: (data: any) => void): void { onAdminMoneyAdjustedCb = cb; }
+
+// === AUTH API ===
+export function authLogin(login: string, password: string): void {
+  socket?.emit('auth:login', { login, password });
+}
+
+export function authRegister(data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }): void {
+  socket?.emit('auth:register', data);
+}
+
+export function authGetUsers(): void {
+  socket?.emit('auth:get-users');
+}
+
+export function authUpdateUser(data: { login: string; name?: string; charId?: string; color?: string; role?: string; avatar?: string; password?: string }): void {
+  socket?.emit('auth:update-user', data);
+}
+
+export function authDeleteUser(login: string): void {
+  socket?.emit('auth:delete-user', { login });
+}
+
+// Auth callbacks
+let onAuthResultCb: ((data: { ok: boolean; msg?: string; user?: any }) => void) | null = null;
+let onAuthUsersListCb: ((list: any[]) => void) | null = null;
+let onAuthUserUpdatedCb: ((data: any) => void) | null = null;
+let onAuthUserDeletedCb: ((data: any) => void) | null = null;
+let onAuthUserSyncCb: ((data: any) => void) | null = null;
+
+export function onAuthResult(cb: (data: { ok: boolean; msg?: string; user?: any }) => void): void { onAuthResultCb = cb; }
+export function onAuthUsersList(cb: (list: any[]) => void): void { onAuthUsersListCb = cb; }
+export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpdatedCb = cb; }
+export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }
+export function onAuthUserSync(cb: (data: any) => void): void { onAuthUserSyncCb = cb; }

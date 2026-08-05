@@ -15,6 +15,7 @@ const DATA_DIR = join(process.cwd(), '.game-data');
 const STATE_FILE = join(DATA_DIR, 'game-state.json');
 const PLAYERS_FILE = join(DATA_DIR, 'players.json');
 const ACHIEVEMENTS_FILE = join(DATA_DIR, 'custom-achievements.json');
+const USERS_FILE = join(DATA_DIR, 'users.json');
 
 interface PersistedState {
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
@@ -47,6 +48,16 @@ interface CustomAchievement {
   name: string;
   icon: string;
   desc: string;
+}
+
+interface UserAccount {
+  login: string;
+  password: string;
+  name: string;
+  charId: string;
+  color: string;
+  role: string;
+  avatar: string; // path to avatar sprite
 }
 
 function ensureDataDir() {
@@ -127,10 +138,40 @@ function saveCustomAchievements(achievements: CustomAchievement[]) {
   }
 }
 
+function loadUsers(): Record<string, UserAccount> {
+  ensureDataDir();
+  try {
+    if (existsSync(USERS_FILE)) {
+      const raw = readFileSync(USERS_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load users:', e);
+  }
+  // Default users
+  return {
+    'олег':   { login: 'олег',   password: '123456', name: 'Олег',   charId: 'pers1', color: '#4ecca3', role: 'Разработчик', avatar: '' },
+    'аня':    { login: 'аня',    password: '123456', name: 'Аня',    charId: 'pers2', color: '#ffa726', role: 'Дизайнер',   avatar: '' },
+    'алиса':  { login: 'алиса',  password: '123456', name: 'Алиса',  charId: 'pers3', color: '#9c27b0', role: 'HR',         avatar: '' },
+    'кирилл': { login: 'кирилл', password: '123456', name: 'Кирилл', charId: 'pers4', color: '#2196f3', role: 'QA',         avatar: '' },
+    'саша':   { login: 'саша',   password: '123456', name: 'Саша',   charId: 'pers5', color: '#e94560', role: 'PM',         avatar: '' },
+  };
+}
+
+function saveUsers(users: Record<string, UserAccount>) {
+  ensureDataDir();
+  try {
+    writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save users:', e);
+  }
+}
+
 // Load persisted data
 const persistedState = loadState();
 const playersDb = loadPlayers();
 const customAchievements = loadCustomAchievements();
+const usersDb = loadUsers();
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleSave() {
@@ -180,6 +221,58 @@ app.prepare().then(() => {
       res.end('Not found');
       return;
     }
+
+    // Avatar upload endpoint
+    if (req.method === 'POST' && parsedUrl.pathname === '/api/upload-avatar') {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', async () => {
+        try {
+          const body = Buffer.concat(chunks);
+          const boundary = req.headers['content-type']?.split('boundary=')[1];
+          if (!boundary) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'No boundary' }));
+            return;
+          }
+          // Parse multipart form data
+          const parts = body.toString('binary').split('--' + boundary);
+          let fileData: Buffer | null = null;
+          let fileName = '';
+          for (const part of parts) {
+            if (part.includes('filename="')) {
+              const match = part.match(/filename="([^"]+)"/);
+              if (match) fileName = match[1];
+              const headerEnd = part.indexOf('\r\n\r\n');
+              if (headerEnd >= 0) {
+                const content = part.slice(headerEnd + 4);
+                // Remove trailing \r\n
+                const cleanContent = content.slice(0, content.lastIndexOf('\r\n') > 0 ? content.lastIndexOf('\r\n') : content.length);
+                fileData = Buffer.from(cleanContent, 'binary');
+              }
+            }
+          }
+          if (!fileData || !fileName) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'No file' }));
+            return;
+          }
+          // Save as webp
+          const outName = `avatar_${Date.now()}.webp`;
+          const outPath = join(DATA_DIR, 'custom-sprites', outName);
+          const sharp = require('sharp');
+          await sharp(fileData).resize(120, 120).webp({ quality: 90 }).toFile(outPath);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ url: `/custom-sprites/${outName}` }));
+        } catch (e) {
+          console.error('[Upload] Error:', e);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Upload failed' }));
+        }
+      });
+      return;
+    }
+
     handle(req, res, parsedUrl);
   });
 
@@ -674,6 +767,73 @@ app.prepare().then(() => {
           io.to(sid).emit('player:data_sync', player);
         }
       }
+    });
+
+    // === AUTH EVENTS ===
+    socket.on('auth:login', (data: { login: string; password: string }) => {
+      const key = data.login.trim().toLowerCase();
+      const user = usersDb[key];
+      if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
+      if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar } });
+    });
+
+    socket.on('auth:register', (data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }) => {
+      const key = data.login.trim().toLowerCase();
+      if (usersDb[key]) return socket.emit('auth:result', { ok: false, msg: 'Логин уже занят' });
+      usersDb[key] = {
+        login: key,
+        password: data.password,
+        name: data.name,
+        charId: data.charId,
+        color: data.color,
+        role: data.role,
+        avatar: data.avatar || '',
+      };
+      saveUsers(usersDb);
+      socket.emit('auth:result', { ok: true, user: { login: key, name: data.name, charId: data.charId, color: data.color, role: data.role, avatar: data.avatar } });
+    });
+
+    socket.on('auth:get-users', () => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const list = Object.entries(usersDb).map(([key, u]) => ({
+        login: key, name: u.name, charId: u.charId, color: u.color, role: u.role, avatar: u.avatar,
+      }));
+      socket.emit('auth:users-list', list);
+    });
+
+    socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; color?: string; role?: string; avatar?: string; password?: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const key = data.login.trim().toLowerCase();
+      const user = usersDb[key];
+      if (!user) return socket.emit('admin:error', 'User not found');
+      if (data.name !== undefined) user.name = data.name;
+      if (data.charId !== undefined) user.charId = data.charId;
+      if (data.color !== undefined) user.color = data.color;
+      if (data.role !== undefined) user.role = data.role;
+      if (data.avatar !== undefined) user.avatar = data.avatar;
+      if (data.password !== undefined && data.password.length > 0) user.password = data.password;
+      saveUsers(usersDb);
+      // Sync to online player if connected
+      for (const [sid, sp] of onlinePlayers) {
+        if (sp.name.toLowerCase() === key) {
+          io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar });
+        }
+      }
+      socket.emit('admin:user-updated', { login: key });
+    });
+
+    socket.on('auth:delete-user', (data: { login: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const key = data.login.trim().toLowerCase();
+      if (!usersDb[key]) return socket.emit('admin:error', 'User not found');
+      delete usersDb[key];
+      saveUsers(usersDb);
+      socket.emit('admin:user-deleted', { login: key });
+      const list = Object.entries(usersDb).map(([k, u]) => ({
+        login: k, name: u.name, charId: u.charId, color: u.color, role: u.role, avatar: u.avatar,
+      }));
+      socket.emit('auth:users-list', list);
     });
 
     // Disconnect

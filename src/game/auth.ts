@@ -1,37 +1,88 @@
 export interface UserData {
   name: string;
-  password: string;
   charId: string;
   color: string;
   role: string;
+  avatar: string;
+  login: string;
 }
-
-const USERS: Record<string, UserData> = {
-  'олег':   { name: 'Олег',   password: '123456', charId: 'pers1', color: '#4ecca3', role: 'Разработчик' },
-  'аня':    { name: 'Аня',    password: '123456', charId: 'pers2', color: '#ffa726', role: 'Дизайнер' },
-  'алиса':  { name: 'Алиса',  password: '123456', charId: 'pers3', color: '#9c27b0', role: 'HR' },
-  'кирилл': { name: 'Кирилл', password: '123456', charId: 'pers4', color: '#2196f3', role: 'QA' },
-  'саша':   { name: 'Саша',   password: '123456', charId: 'pers5', color: '#e94560', role: 'PM' },
-};
 
 const SESSION_KEY = 'auth_session';
+let pendingLogin: ((data: { ok: boolean; msg?: string; user?: UserData }) => void) | null = null;
 
-export function login(name: string, password: string): { ok: boolean; msg: string } {
-  const n = name.trim().toLowerCase();
-  const user = USERS[n];
-  if (!user) return { ok: false, msg: 'Имя не найдено' };
-  if (user.password !== password) return { ok: false, msg: 'Неверный пароль' };
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ name: n, ts: Date.now() }));
-  return { ok: true, msg: `С возвращением, ${user.name}!` };
+export function initAuth(): void {
+  // Dynamic import to avoid circular deps
+  import('./multiplayer').then(mp => {
+    mp.onAuthResult((data) => {
+      if (data.ok && data.user) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ ...data.user, ts: Date.now() }));
+      }
+      pendingLogin?.(data);
+      pendingLogin = null;
+    });
+    mp.onAuthUserSync((data) => {
+      // Update local session when admin changes user data
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (data.name !== undefined) session.name = data.name;
+        if (data.charId !== undefined) session.charId = data.charId;
+        if (data.color !== undefined) session.color = data.color;
+        if (data.role !== undefined) session.role = data.role;
+        if (data.avatar !== undefined) session.avatar = data.avatar;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      }
+    });
+  });
 }
 
-export function getCurrentUser(): UserData & { name: string } | null {
+export function login(name: string, password: string): { ok: boolean; msg: string } {
+  // Offline fallback — try local session
+  // Real auth goes through multiplayer
+  return { ok: false, msg: 'Подключение к серверу...' };
+}
+
+export function loginAsync(name: string, password: string): Promise<{ ok: boolean; msg?: string; user?: UserData }> {
+  return new Promise((resolve) => {
+    pendingLogin = resolve;
+    import('./multiplayer').then(mp => mp.authLogin(name, password));
+    // Timeout
+    setTimeout(() => {
+      if (pendingLogin === resolve) {
+        pendingLogin = null;
+        resolve({ ok: false, msg: 'Сервер недоступен' });
+      }
+    }, 5000);
+  });
+}
+
+export function registerAsync(data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }): Promise<{ ok: boolean; msg?: string; user?: UserData }> {
+  return new Promise((resolve) => {
+    pendingLogin = resolve;
+    import('./multiplayer').then(mp => mp.authRegister(data));
+    setTimeout(() => {
+      if (pendingLogin === resolve) {
+        pendingLogin = null;
+        resolve({ ok: false, msg: 'Сервер недоступен' });
+      }
+    }, 5000);
+  });
+}
+
+export function getCurrentUser(): UserData | null {
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
     if (!session?.name) return null;
-    const user = USERS[session.name];
-    return user ? { ...user, name: user.name } : null;
+    return {
+      name: session.name,
+      charId: session.charId,
+      color: session.color,
+      role: session.role,
+      avatar: session.avatar || '',
+      login: session.login || session.name,
+    };
   } catch {
     return null;
   }
@@ -41,13 +92,13 @@ export function logout() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function getAllUsers() {
-  return Object.entries(USERS).map(([key, u]) => ({ login: key, ...u }));
-}
-
-export function addUser(login: string, name: string, password: string, charId: string, color: string, role: string): { ok: boolean; msg: string } {
-  const key = login.trim().toLowerCase();
-  if (USERS[key]) return { ok: false, msg: 'Логин уже занят' };
-  USERS[key] = { name, password, charId, color, role };
-  return { ok: true, msg: `Игрок ${name} добавлен` };
+export function uploadAvatar(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/upload-avatar', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(data => resolve(data.url || null))
+      .catch(() => resolve(null));
+  });
 }

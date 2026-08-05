@@ -1,4 +1,4 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, ROOMS, ROOM_CENTERS, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, OFFICE_EVENTS, getRoomAt, MAP_W, MAP_H, canMove } from './constants';
 import type { Player, Bot, GameObject, Room, OfficeEvent } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
@@ -460,11 +460,14 @@ export function microwaveGame(state: GameState, stoppedAtMs: number): {
   return { stoppedAt: `${sec}с`, diff: diffSec, result, reward };
 }
 
-export function updateBots(state: GameState, dt: number) {
+export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<string>) {
   const { bots, map, objects, player } = state;
   const now = Date.now();
 
   for (const bot of bots) {
+    // Skip bots for online players (player is connected → no bot needed)
+    if (onlineCharIds && onlineCharIds.has(bot.id)) continue;
+
     if (bot.id === 'kryska') {
       updateKryska(bot, state, dt);
       continue;
@@ -508,7 +511,7 @@ export function updateBots(state: GameState, dt: number) {
         const spd = 0.5 * dt;
         const nx = bot.x + (dx / dist) * spd;
         const ny = bot.y + (dy / dist) * spd;
-        if (canMoveBot(map, objects, nx, ny, bot.radius)) {
+        if (canMove(map, objects, nx, ny, bot.radius)) {
           bot.x = nx;
           bot.y = ny;
           bot._lastVx = (dx / dist) * 0.5;
@@ -613,7 +616,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       const spd = 1.0 * bot._speedMultiplier * dt;
       const nx = bot.x + (fdx / fdist) * spd;
       const ny = bot.y + (fdy / fdist) * spd;
-      if (canMoveBot(state.map, state.objects, nx, ny, bot.radius)) {
+      if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
         bot.x = nx;
         bot.y = ny;
         bot._lastVx = (fdx / fdist) * 1.0;
@@ -663,7 +666,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       const spd = 0.8 * dt;
       const nx = bot.x + (dx / dist) * spd;
       const ny = bot.y + (dy / dist) * spd;
-      if (canMoveBot(state.map, state.objects, nx, ny, bot.radius)) {
+      if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
         bot.x = nx;
         bot.y = ny;
         bot._lastVx = (dx / dist) * 0.8;
@@ -709,38 +712,6 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   // Decay
   if (now - bot._speechTime > 5000) bot._speechBubble = null;
   if (now - bot._emojiTime > 4000) bot._emoji = null;
-}
-
-function canMoveBot(map: number[][], objects: GameObject[], px: number, py: number, radius: number): boolean {
-  const r = radius;
-  const corners: [number, number][] = [
-    [px - r, py - r],
-    [px + r, py - r],
-    [px - r, py + r],
-    [px + r, py + r],
-  ];
-  for (const [cx, cy] of corners) {
-    const gx = Math.floor(cx / TILE);
-    const gy = Math.floor(cy / TILE);
-    if (gy < 0 || gy >= map.length || gx < 0 || gx >= (map[0]?.length || 0)) return false;
-    const t = map[gy]?.[gx];
-    if (t === 2 || t === 0) return false;
-    if (t === 3) {
-      const below = map[gy + 1]?.[gx];
-      if (below !== 1 && below !== 3) return false;
-    }
-  }
-  for (const obj of objects) {
-    if (!obj.solid || obj.noCollision) continue;
-    const objLeft = obj.x;
-    const objRight = obj.x + obj.w * TILE;
-    const objBottom = obj.y + obj.h * TILE;
-    if (px + r <= objLeft || px - r >= objRight) continue;
-    const solidTop = obj.y + (obj.h * TILE) * 0.5;
-    const solidBottom = objBottom;
-    if (py + r > solidTop && py < solidBottom) return false;
-  }
-  return true;
 }
 
 

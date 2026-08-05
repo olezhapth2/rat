@@ -911,7 +911,10 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
       const s = stateRef.current;
 
       let foundBot: (typeof s.bots)[0] | null = null;
+      const onlineIdsCtx = new Set(remotePlayersRef.current.map(rp => rp.charId));
+      onlineIdsCtx.add(s.player.charId);
       for (const bot of s.bots) {
+        if (onlineIdsCtx.has(bot.id)) continue;
         const dx = worldX - bot.x;
         const dy = worldY - bot.y;
         if (Math.sqrt(dx * dx + dy * dy) < TILE * 1.5) {
@@ -1212,10 +1215,13 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
         }
       }
 
-      updateBots(s, dt);
+      const onlineCharIds = new Set(remotePlayersRef.current.map(rp => rp.charId));
+      onlineCharIds.add(s.player.charId);
+      updateBots(s, dt, onlineCharIds);
       updatePet(s, dt);
-      // Update bot animations
-      for (const bot of s.bots) {
+      const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.id));
+      // Update bot animations (only for visible bots)
+      for (const bot of visibleBots) {
         const bvx = (bot as any)._lastVx ?? 0;
         const bvy = (bot as any)._lastVy ?? 0;
         if (s.botAnims[bot.id]) {
@@ -1278,7 +1284,7 @@ function GameInner({ authUser }: { authUser: { name: string; charId: string; col
 
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, s.bots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides, s.tilePaintMode);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, visibleBots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides, s.tilePaintMode);
 
       // === Card game overlay ===
       const cg = cardGameRef.current;

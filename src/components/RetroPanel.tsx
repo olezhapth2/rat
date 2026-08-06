@@ -11,51 +11,83 @@ interface RetroPanelProps {
   isAdmin: boolean;
 }
 
-const CRT_OPTIONS: RetroSettings['crt'][] = ['off', 'low', 'medium', 'high', 'ultra', 'max', 'extreme'];
-const SCANLINE_OPTIONS: RetroSettings['scanlines'][] = ['off', 'subtle', 'thin', 'normal', 'thick', 'heavy', 'crt'];
-const NOISE_OPTIONS: RetroSettings['noise'][] = ['off', 'subtle', 'light', 'medium', 'heavy', 'static', 'snow'];
-const COLOR_OPTIONS: RetroSettings['color'][] = ['off', 'warm', 'cool', 'vivid', 'retro', 'gb', 'amber'];
-const VIGNETTE_OPTIONS: RetroSettings['vignette'][] = ['off', 'subtle', 'light', 'medium', 'strong', 'deep', 'tunnel'];
+type OptionDef = { value: string; label: string };
 
-function OptionGroup<T extends string>({
-  label,
-  icon,
-  options,
-  value,
-  onChange,
-  labels,
+const CRT_OPTIONS: OptionDef[] = [
+  { value: 'off', label: 'OFF' },
+  { value: 'barrel_strong', label: 'BARREL 1' },
+  { value: 'barrel_light', label: 'BARREL 2' },
+  { value: 'curve_strong', label: 'CURVE 1' },
+  { value: 'curve_light', label: 'CURVE 2' },
+  { value: 'glow_strong', label: 'GLOW 1' },
+  { value: 'glow_light', label: 'GLOW 2' },
+];
+const SCANLINE_OPTIONS: OptionDef[] = [
+  { value: 'off', label: 'OFF' },
+  { value: 'crt_thick', label: 'CRT 1' },
+  { value: 'crt_thin', label: 'CRT 2' },
+  { value: 'rgb_strong', label: 'RGB 1' },
+  { value: 'rgb_light', label: 'RGB 2' },
+  { value: 'h_strong', label: 'LINE 1' },
+  { value: 'h_light', label: 'LINE 2' },
+];
+const NOISE_OPTIONS: OptionDef[] = [
+  { value: 'off', label: 'OFF' },
+  { value: 'grain_strong', label: 'GRAIN 1' },
+  { value: 'grain_light', label: 'GRAIN 2' },
+  { value: 'vhs_strong', label: 'VHS 1' },
+  { value: 'vhs_light', label: 'VHS 2' },
+  { value: 'static_strong', label: 'TV 1' },
+  { value: 'static_light', label: 'TV 2' },
+];
+const COLOR_OPTIONS: OptionDef[] = [
+  { value: 'off', label: 'OFF' },
+  { value: 'warm', label: 'WARM' },
+  { value: 'cool', label: 'COOL' },
+  { value: 'vivid', label: 'VIVID' },
+  { value: 'retro', label: 'RETRO' },
+  { value: 'gb', label: 'GB' },
+  { value: 'amber', label: 'AMBER' },
+];
+const VIGNETTE_OPTIONS: OptionDef[] = [
+  { value: 'off', label: 'OFF' },
+  { value: 'dark_strong', label: 'DARK 1' },
+  { value: 'dark_light', label: 'DARK 2' },
+  { value: 'corner_strong', label: 'CORN 1' },
+  { value: 'corner_light', label: 'CORN 2' },
+  { value: 'tunnel_strong', label: 'TUN 1' },
+  { value: 'tunnel_light', label: 'TUN 2' },
+];
+
+function OptionGroup({
+  label, icon, options, value, onChange,
 }: {
-  label: string;
-  icon: string;
-  options: T[];
-  value: T;
-  onChange: (v: T) => void;
-  labels: Record<T, string>;
+  label: string; icon: string; options: OptionDef[]; value: string; onChange: (v: string) => void;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
         <Icon icon={icon} width={14} height={14} />
         {label}
       </div>
-      <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         {options.map((opt) => (
           <div
-            key={opt}
-            onClick={() => onChange(opt)}
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
             style={{
               padding: '4px 7px',
               fontSize: 8,
               cursor: 'pointer',
-              background: value === opt ? 'var(--px-accent)' : 'var(--px-panel-header)',
-              color: value === opt ? 'white' : 'var(--px-text-dim)',
-              border: `1px solid ${value === opt ? 'var(--px-accent)' : 'var(--px-border-dark)'}`,
-              borderRadius: 3,
-              transition: 'all 0.15s',
+              background: value === opt.value ? 'var(--px-accent)' : 'var(--px-panel-header)',
+              color: value === opt.value ? 'white' : 'var(--px-text-dim)',
+              border: `1px solid ${value === opt.value ? 'var(--px-accent)' : 'var(--px-border-dark)'}`,
+              borderRadius: 0,
+              transition: 'none',
               userSelect: 'none',
             }}
           >
-            {labels[opt]}
+            {opt.label}
           </div>
         ))}
       </div>
@@ -75,34 +107,14 @@ export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelPr
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 60,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 200,
-        pointerEvents: 'auto',
-      }}
-    >
-      {/* Toggle button */}
+    <div style={{ position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 200, pointerEvents: 'auto' }}>
       <div
         onClick={() => setCollapsed(!collapsed)}
         style={{
-          background: 'var(--px-panel)',
-          border: '2px solid var(--px-border)',
+          background: 'var(--px-panel)', border: '2px solid var(--px-border)',
           boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '5px 10px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          fontSize: 8,
-          color: 'var(--px-text-dim)',
-          borderRadius: 4,
-          userSelect: 'none',
-          margin: '0 auto',
-          width: 'fit-content',
+          padding: '6px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 10, color: 'var(--px-text-dim)', borderRadius: 0, userSelect: 'none', width: 'fit-content',
         }}
       >
         <Icon icon="streamline-pixel:photography-retouch-wand" width={16} height={16} />
@@ -110,63 +122,20 @@ export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelPr
         <span style={{ fontSize: 9, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
       </div>
 
-      {/* Panel */}
       {!collapsed && (
         <div
           style={{
-            background: 'var(--px-panel)',
-            border: '2px solid var(--px-border)',
-            boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-            padding: 10,
-            marginTop: 4,
-            borderRadius: 6,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            minWidth: 300,
+            background: 'var(--px-panel)', border: '2px solid var(--px-border)',
+            boxShadow: '3px 3px 0 var(--px-shadow)', padding: 12, marginTop: 4,
+            display: 'flex', flexDirection: 'column', gap: 10, minWidth: 320,
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <OptionGroup
-            label="CRT"
-            icon="streamline-pixel:computers-devices-electronics-television-vintage"
-            options={CRT_OPTIONS}
-            value={settings.crt}
-            onChange={(v) => update({ crt: v })}
-            labels={{ off: 'OFF', low: '1', medium: '2', high: '3', ultra: '4', max: '5', extreme: '6' }}
-          />
-          <OptionGroup
-            label="SCANLINES"
-            icon="streamline-pixel:design-color-spray"
-            options={SCANLINE_OPTIONS}
-            value={settings.scanlines}
-            onChange={(v) => update({ scanlines: v })}
-            labels={{ off: 'OFF', subtle: '1', thin: '2', normal: '3', thick: '4', heavy: '5', crt: '6' }}
-          />
-          <OptionGroup
-            label="NOISE"
-            icon="streamline-pixel:interface-essential-alert"
-            options={NOISE_OPTIONS}
-            value={settings.noise}
-            onChange={(v) => update({ noise: v })}
-            labels={{ off: 'OFF', subtle: '1', light: '2', medium: '3', heavy: '4', static: '5', snow: '6' }}
-          />
-          <OptionGroup
-            label="COLOR"
-            icon="streamline-pixel:design-color-painting-palette"
-            options={COLOR_OPTIONS}
-            value={settings.color}
-            onChange={(v) => update({ color: v })}
-            labels={{ off: 'OFF', warm: 'WARM', cool: 'COOL', vivid: 'VIV', retro: 'RET', gb: 'GB', amber: 'AMB' }}
-          />
-          <OptionGroup
-            label="VIGNETTE"
-            icon="streamline-pixel:interface-essential-view-eye"
-            options={VIGNETTE_OPTIONS}
-            value={settings.vignette}
-            onChange={(v) => update({ vignette: v })}
-            labels={{ off: 'OFF', subtle: '1', light: '2', medium: '3', strong: '4', deep: '5', tunnel: '6' }}
-          />
+          <OptionGroup label="CRT" icon="streamline-pixel:computers-devices-electronics-television-vintage" options={CRT_OPTIONS} value={settings.crt} onChange={(v) => update({ crt: v as any })} />
+          <OptionGroup label="SCANLINES" icon="streamline-pixel:design-color-spray" options={SCANLINE_OPTIONS} value={settings.scanlines} onChange={(v) => update({ scanlines: v as any })} />
+          <OptionGroup label="NOISE" icon="streamline-pixel:interface-essential-alert" options={NOISE_OPTIONS} value={settings.noise} onChange={(v) => update({ noise: v as any })} />
+          <OptionGroup label="COLOR" icon="streamline-pixel:design-color-painting-palette" options={COLOR_OPTIONS} value={settings.color} onChange={(v) => update({ color: v as any })} />
+          <OptionGroup label="VIGNETTE" icon="streamline-pixel:interface-essential-view-eye" options={VIGNETTE_OPTIONS} value={settings.vignette} onChange={(v) => update({ vignette: v as any })} />
         </div>
       )}
     </div>

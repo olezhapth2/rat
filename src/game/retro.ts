@@ -1,9 +1,9 @@
 export interface RetroSettings {
-  crt: 'off' | 'low' | 'medium' | 'high' | 'ultra' | 'max' | 'extreme';
-  scanlines: 'off' | 'subtle' | 'thin' | 'normal' | 'thick' | 'heavy' | 'crt';
-  noise: 'off' | 'subtle' | 'light' | 'medium' | 'heavy' | 'static' | 'snow';
+  crt: 'off' | 'barrel_strong' | 'barrel_light' | 'curve_strong' | 'curve_light' | 'glow_strong' | 'glow_light';
+  scanlines: 'off' | 'crt_thick' | 'crt_thin' | 'rgb_strong' | 'rgb_light' | 'h_strong' | 'h_light';
+  noise: 'off' | 'grain_strong' | 'grain_light' | 'vhs_strong' | 'vhs_light' | 'static_strong' | 'static_light';
   color: 'off' | 'warm' | 'cool' | 'vivid' | 'retro' | 'gb' | 'amber';
-  vignette: 'off' | 'subtle' | 'light' | 'medium' | 'strong' | 'deep' | 'tunnel';
+  vignette: 'off' | 'dark_strong' | 'dark_light' | 'corner_strong' | 'corner_light' | 'tunnel_strong' | 'tunnel_light';
 }
 
 export const RETRO_DEFAULTS: RetroSettings = {
@@ -30,70 +30,71 @@ export function saveRetroSettings(s: RetroSettings) {
   } catch {}
 }
 
+// CRT
 export function getCrtIntensity(s: RetroSettings): number {
-  switch (s.crt) {
-    case 'low': return 0.15;
-    case 'medium': return 0.3;
-    case 'high': return 0.5;
-    case 'ultra': return 0.7;
-    case 'max': return 0.85;
-    case 'extreme': return 1.0;
-    default: return 0;
-  }
+  if (s.crt.includes('strong')) return 0.6;
+  if (s.crt.includes('light')) return 0.25;
+  return 0;
+}
+export function getCrtType(s: RetroSettings): 'barrel' | 'curve' | 'glow' | 'none' {
+  if (s.crt.startsWith('barrel')) return 'barrel';
+  if (s.crt.startsWith('curve')) return 'curve';
+  if (s.crt.startsWith('glow')) return 'glow';
+  return 'none';
 }
 
+// Noise
 export function getNoiseOpacity(s: RetroSettings): number {
-  switch (s.noise) {
-    case 'subtle': return 0.008;
-    case 'light': return 0.015;
-    case 'medium': return 0.025;
-    case 'heavy': return 0.04;
-    case 'static': return 0.06;
-    case 'snow': return 0.08;
-    default: return 0;
-  }
+  if (s.noise === 'grain_strong') return 0.06;
+  if (s.noise === 'grain_light') return 0.025;
+  if (s.noise === 'static_strong') return 0.08;
+  if (s.noise === 'static_light') return 0.035;
+  return 0;
+}
+export function getNoiseType(s: RetroSettings): 'grain' | 'vhs' | 'static' | 'none' {
+  if (s.noise.startsWith('grain')) return 'grain';
+  if (s.noise.startsWith('vhs')) return 'vhs';
+  if (s.noise.startsWith('static')) return 'static';
+  return 'none';
+}
+export function isVhsNoise(s: RetroSettings): boolean {
+  return s.noise.startsWith('vhs');
 }
 
+// Scanlines
 export function getScanlineOpacity(s: RetroSettings): number {
-  switch (s.scanlines) {
-    case 'subtle': return 0.06;
-    case 'thin': return 0.1;
-    case 'normal': return 0.15;
-    case 'thick': return 0.2;
-    case 'heavy': return 0.28;
-    case 'crt': return 0.35;
-    default: return 0;
-  }
+  if (s.scanlines.includes('strong')) return 0.3;
+  if (s.scanlines.includes('light')) return 0.12;
+  return 0;
+}
+export function getScanlineType(s: RetroSettings): 'crt' | 'rgb' | 'h' | 'none' {
+  if (s.scanlines.startsWith('crt')) return 'crt';
+  if (s.scanlines.startsWith('rgb')) return 'rgb';
+  if (s.scanlines.startsWith('h_')) return 'h';
+  return 'none';
 }
 
-export function getScanlineGap(s: RetroSettings): number {
-  switch (s.scanlines) {
-    case 'crt': return 4;
-    case 'heavy': return 3;
-    case 'thick': return 3;
-    default: return 2;
-  }
-}
-
+// Vignette
 export function getVignetteOpacity(s: RetroSettings): number {
-  switch (s.vignette) {
-    case 'subtle': return 0.15;
-    case 'light': return 0.25;
-    case 'medium': return 0.35;
-    case 'strong': return 0.5;
-    case 'deep': return 0.65;
-    case 'tunnel': return 0.8;
-    default: return 0;
-  }
+  if (s.vignette.includes('strong')) return 0.6;
+  if (s.vignette.includes('light')) return 0.25;
+  return 0;
+}
+export function getVignetteType(s: RetroSettings): 'dark' | 'corner' | 'tunnel' | 'none' {
+  if (s.vignette.startsWith('dark')) return 'dark';
+  if (s.vignette.startsWith('corner')) return 'corner';
+  if (s.vignette.startsWith('tunnel')) return 'tunnel';
+  return 'none';
 }
 
+// Color
 export function getColorFilter(s: RetroSettings): string {
   switch (s.color) {
-    case 'warm': return 'contrast(1.05) brightness(1.02) sepia(0.1) saturate(1.15)';
-    case 'cool': return 'contrast(1.05) brightness(1.02) hue-rotate(8deg) saturate(1.1)';
-    case 'vivid': return 'contrast(1.12) brightness(1.04) saturate(1.35)';
-    case 'retro': return 'contrast(1.08) brightness(0.95) sepia(0.25) saturate(1.1)';
-    case 'gb': return 'contrast(1.2) brightness(1.05) saturate(0.6) hue-rotate(50deg)';
+    case 'warm': return 'contrast(1.05) brightness(1.02) sepia(0.12) saturate(1.15)';
+    case 'cool': return 'contrast(1.05) brightness(1.02) hue-rotate(10deg) saturate(1.1)';
+    case 'vivid': return 'contrast(1.15) brightness(1.05) saturate(1.4)';
+    case 'retro': return 'contrast(1.08) brightness(0.92) sepia(0.25) saturate(1.05)';
+    case 'gb': return 'contrast(1.2) brightness(1.05) saturate(0.5) hue-rotate(50deg)';
     case 'amber': return 'contrast(1.1) brightness(1.0) sepia(0.4) saturate(1.3) hue-rotate(-10deg)';
     default: return 'none';
   }

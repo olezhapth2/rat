@@ -18,6 +18,7 @@ function capitalize(s: string): string {
 export function initAuth(): void {
   // Dynamic import to avoid circular deps
   import('./multiplayer').then(mp => {
+    mp.connectAuth(); // Connect socket for auth events
     mp.onAuthResult((data) => {
       if (data.ok && data.user) {
         data.user.name = capitalize(data.user.name);

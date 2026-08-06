@@ -66,21 +66,40 @@ let onPlayerDataSyncCb: ((data: any) => void) | null = null;
 
 // === Public API ===
 
-export function connectMultiplayer(name: string, charId: string, hatId: string, color: string): void {
-  if (socket?.connected) return;
-
+export function connectAuth(): void {
+  if (socket) return;
   socket = io(process.env.NEXT_PUBLIC_SERVER_URL || window.location.origin, {
     transports: ['websocket', 'polling'],
   });
-
   socket.on('connect', () => {
     myId = socket!.id!;
-    console.log('[MP] Connected:', myId);
-    // Register player
-    socket!.emit('player:register', { name, charId, hatId, color });
-    registered = true;
-    onConnect?.();
+    console.log('[MP] Auth socket connected:', myId);
   });
+  socket.on('disconnect', () => {
+    console.log('[MP] Auth socket disconnected');
+  });
+
+  // Auth events — needed before login
+  socket.on('auth:result', (data: { ok: boolean; msg?: string; user?: any }) => {
+    onAuthResultCb?.(data);
+  });
+  socket.on('auth:users-list', (list: any[]) => {
+    onAuthUsersListCb?.(list);
+  });
+  socket.on('auth:user-updated', (data: any) => {
+    onAuthUserUpdatedCb?.(data);
+    onAuthUserSyncCb?.(data);
+  });
+  socket.on('admin:user-deleted', (data: any) => {
+    onAuthUserDeletedCb?.(data);
+  });
+}
+
+let gameListenersRegistered = false;
+
+function registerGameListeners(): void {
+  if (!socket || gameListenersRegistered) return;
+  gameListenersRegistered = true;
 
   socket.on('disconnect', () => {
     console.log('[MP] Disconnected');
@@ -167,30 +186,38 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
     socket.on('admin:money-adjusted', (data: any) => {
       onAdminMoneyAdjustedCb?.(data);
     });
-
-    // Auth events
-    socket.on('auth:result', (data: { ok: boolean; msg?: string; user?: any }) => {
-      onAuthResultCb?.(data);
-    });
-    socket.on('auth:users-list', (list: any[]) => {
-      onAuthUsersListCb?.(list);
-    });
-    socket.on('auth:user-updated', (data: any) => {
-      onAuthUserUpdatedCb?.(data);
-    });
-    socket.on('admin:user-deleted', (data: any) => {
-      onAuthUserDeletedCb?.(data);
-    });
-    socket.on('auth:user-updated', (data: any) => {
-      onAuthUserSyncCb?.(data);
-    });
   }
+
+export function connectMultiplayer(name: string, charId: string, hatId: string, color: string): void {
+  if (socket?.connected) {
+    myId = socket.id!;
+    registerGameListeners();
+    socket.emit('player:register', { name, charId, hatId, color });
+    registered = true;
+    onConnect?.();
+    return;
+  }
+
+  socket = io(process.env.NEXT_PUBLIC_SERVER_URL || window.location.origin, {
+    transports: ['websocket', 'polling'],
+  });
+
+  socket.on('connect', () => {
+    myId = socket!.id!;
+    console.log('[MP] Connected:', myId);
+    registerGameListeners();
+    socket!.emit('player:register', { name, charId, hatId, color });
+    registered = true;
+    onConnect?.();
+  });
+}
 
 export function disconnectMultiplayer(): void {
   socket?.disconnect();
   socket = null;
   myId = null;
   registered = false;
+  gameListenersRegistered = false;
 }
 
 export function sendPosition(x: number, y: number): void {

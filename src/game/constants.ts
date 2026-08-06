@@ -333,6 +333,13 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'wall_decor1', n: 'Картина', e: '🖼️', p: 120, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_decor1.webp' },
     { id: 'wall_rat', n: 'Крыса на стене', e: '🐀', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_rat.webp' },
     { id: 'wall_book1', n: 'Книжная полка', e: '📚', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_book1.webp' },
+    { id: 'poster1', n: 'Постер «Нет курению»', e: '🚫', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/poster1.webp' },
+    { id: 'poster2', n: 'Постер «Диаграмма»', e: '📊', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/poster2.webp' },
+    { id: 'poster3', n: 'Постер «Пузыри»', e: '🎨', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/poster3.webp' },
+    { id: 'poster4', n: 'Постер «Сердце»', e: '❤️', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/poster4.webp' },
+    { id: 'poster5', n: 'Постер «Смайлик»', e: '😊', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/poster5.webp' },
+    { id: 'wall_freez', n: 'Холодильник', e: '🧊', p: 200, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_freez.webp' },
+    { id: 'wall_safe', n: 'Сейф', e: '🔐', p: 250, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_safe.webp' },
   ],
   pets: [
     { id: 'pet1', n: 'Кот', e: '🐱', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp' },

@@ -8,13 +8,14 @@ import { saveRetroSettings } from '../game/retro';
 interface RetroPanelProps {
   settings: RetroSettings;
   onChange: (s: RetroSettings) => void;
+  isAdmin: boolean;
 }
 
-const CRT_OPTIONS: RetroSettings['crt'][] = ['off', 'low', 'medium', 'high'];
-const SCANLINE_OPTIONS: RetroSettings['scanlines'][] = ['off', 'thin', 'thick'];
-const NOISE_OPTIONS: RetroSettings['noise'][] = ['off', 'light', 'heavy'];
-const COLOR_OPTIONS: RetroSettings['color'][] = ['off', 'warm', 'cool', 'vivid'];
-const VIGNETTE_OPTIONS: RetroSettings['vignette'][] = ['off', 'light', 'strong'];
+const CRT_OPTIONS: RetroSettings['crt'][] = ['off', 'low', 'medium', 'high', 'ultra', 'max', 'extreme'];
+const SCANLINE_OPTIONS: RetroSettings['scanlines'][] = ['off', 'subtle', 'thin', 'normal', 'thick', 'heavy', 'crt'];
+const NOISE_OPTIONS: RetroSettings['noise'][] = ['off', 'subtle', 'light', 'medium', 'heavy', 'static', 'snow'];
+const COLOR_OPTIONS: RetroSettings['color'][] = ['off', 'warm', 'cool', 'vivid', 'retro', 'gb', 'amber'];
+const VIGNETTE_OPTIONS: RetroSettings['vignette'][] = ['off', 'subtle', 'light', 'medium', 'strong', 'deep', 'tunnel'];
 
 function OptionGroup<T extends string>({
   label,
@@ -37,13 +38,13 @@ function OptionGroup<T extends string>({
         <Icon icon={icon} width={10} height={10} />
         {label}
       </div>
-      <div style={{ display: 'flex', gap: 2 }}>
+      <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         {options.map((opt) => (
           <div
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              padding: '3px 6px',
+              padding: '3px 5px',
               fontSize: 7,
               cursor: 'pointer',
               background: value === opt ? 'var(--px-accent)' : 'var(--px-panel-header)',
@@ -62,8 +63,10 @@ function OptionGroup<T extends string>({
   );
 }
 
-export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
+export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelProps) {
   const [collapsed, setCollapsed] = useState(true);
+
+  if (!isAdmin) return null;
 
   const update = (partial: Partial<RetroSettings>) => {
     const next = { ...settings, ...partial };
@@ -120,7 +123,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
-            minWidth: 280,
+            minWidth: 300,
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -130,7 +133,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             options={CRT_OPTIONS}
             value={settings.crt}
             onChange={(v) => update({ crt: v })}
-            labels={{ off: 'OFF', low: '1', medium: '2', high: '3' }}
+            labels={{ off: 'OFF', low: '1', medium: '2', high: '3', ultra: '4', max: '5', extreme: '6' }}
           />
           <OptionGroup
             label="SCANLINES"
@@ -138,7 +141,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             options={SCANLINE_OPTIONS}
             value={settings.scanlines}
             onChange={(v) => update({ scanlines: v })}
-            labels={{ off: 'OFF', thin: 'THIN', thick: 'THICK' }}
+            labels={{ off: 'OFF', subtle: '1', thin: '2', normal: '3', thick: '4', heavy: '5', crt: '6' }}
           />
           <OptionGroup
             label="NOISE"
@@ -146,7 +149,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             options={NOISE_OPTIONS}
             value={settings.noise}
             onChange={(v) => update({ noise: v })}
-            labels={{ off: 'OFF', light: 'LIGHT', heavy: 'HEAVY' }}
+            labels={{ off: 'OFF', subtle: '1', light: '2', medium: '3', heavy: '4', static: '5', snow: '6' }}
           />
           <OptionGroup
             label="COLOR"
@@ -154,7 +157,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             options={COLOR_OPTIONS}
             value={settings.color}
             onChange={(v) => update({ color: v })}
-            labels={{ off: 'OFF', warm: 'WARM', cool: 'COOL', vivid: 'VIVID' }}
+            labels={{ off: 'OFF', warm: 'WARM', cool: 'COOL', vivid: 'VIV', retro: 'RET', gb: 'GB', amber: 'AMB' }}
           />
           <OptionGroup
             label="VIGNETTE"
@@ -162,7 +165,7 @@ export default function RetroPanel({ settings, onChange }: RetroPanelProps) {
             options={VIGNETTE_OPTIONS}
             value={settings.vignette}
             onChange={(v) => update({ vignette: v })}
-            labels={{ off: 'OFF', light: 'LIGHT', strong: 'STRONG' }}
+            labels={{ off: 'OFF', subtle: '1', light: '2', medium: '3', strong: '4', deep: '5', tunnel: '6' }}
           />
         </div>
       )}

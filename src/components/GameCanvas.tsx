@@ -1997,7 +1997,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
 
       {/* Retro Effects Panel */}
-      <RetroPanel settings={retroSettings} onChange={setRetroSettings} />
+      <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} />
     </>
   );
 }

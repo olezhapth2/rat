@@ -82,10 +82,10 @@ export function render(
         const ty = ((y % 3) + 3) % 3;
         const sw = drawImg.naturalWidth / 3;
         const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#4a4a4a';
-        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
       }
     }
   }
@@ -108,10 +108,10 @@ export function render(
         const ty = ((y % 3) + 3) % 3;
         const sw = drawImg.naturalWidth / 3;
         const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#aaaaaa';
-        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
       }
     }
   }
@@ -355,14 +355,14 @@ export function render(
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
         const sw = drawImg.naturalWidth / 3;
         const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else if (wtopImg && wtopImg.complete && wtopImg.naturalWidth > 0) {
         const wsw = wtopImg.naturalWidth / 3;
         const wsh = wtopImg.naturalHeight / 3;
-        ctx.drawImage(wtopImg, tx * wsw, ty * wsh, wsw, wsh, x * TILE, y * TILE, TILE, TILE);
+        ctx.drawImage(wtopImg, tx * wsw, ty * wsh, wsw, wsh, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#777777';
-        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
       }
     }
   }

@@ -47,11 +47,12 @@ interface CustomAchievement {
 }
 
 const CHAR_OPTIONS = [
-  { id: 'pers1', name: 'Олег' },
-  { id: 'pers2', name: 'Аня' },
-  { id: 'pers3', name: 'Алиса' },
-  { id: 'pers4', name: 'Кирилл' },
-  { id: 'pers5', name: 'Саша' },
+  { id: 'pers1', name: 'Олег', color: '#4ecca3' },
+  { id: 'pers2', name: 'Аня', color: '#ffa726' },
+  { id: 'pers3', name: 'Алиса', color: '#9c27b0' },
+  { id: 'pers4', name: 'Кирилл', color: '#2196f3' },
+  { id: 'pers5', name: 'Саша', color: '#e94560' },
+  { id: 'kryska', name: 'Крыска', color: '#888888' },
 ];
 
 export default function AdminPanel({ onClose }: { onClose: () => void }) {
@@ -68,12 +69,16 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('Разработчик');
   const [newAvatar, setNewAvatar] = useState('');
+  const [newCharId, setNewCharId] = useState('pers1');
+  const [newColor, setNewColor] = useState('#4ecca3');
 
   // Edit user
   const [editUser, setEditUser] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editPass, setEditPass] = useState('');
+  const [editCharId, setEditCharId] = useState('pers1');
+  const [editColor, setEditColor] = useState('#4ecca3');
 
   // Money form
   const [moneyTarget, setMoneyTarget] = useState('');
@@ -105,21 +110,19 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
 
   const handleAddUser = async () => {
     if (!newLogin.trim() || !newPass || !newName.trim()) return showError('Заполни логин, пароль и имя');
-    const charId = 'custom_' + Date.now();
-    const color = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
     // Use socket to register
     const { authRegister } = await import('../game/multiplayer');
     authRegister({
       login: newLogin.trim(),
       password: newPass,
       name: newName.trim(),
-      charId,
-      color,
+      charId: newCharId,
+      color: newColor,
       role: newRole,
       avatar: newAvatar,
     });
     showSuccess(`Игрок "${newName}" создан`);
-    setNewLogin(''); setNewPass(''); setNewName(''); setNewRole('Разработчик'); setNewAvatar('');
+    setNewLogin(''); setNewPass(''); setNewName(''); setNewRole('Разработчик'); setNewAvatar(''); setNewCharId('pers1'); setNewColor('#4ecca3');
     setTimeout(() => authGetUsers(), 500);
   };
 
@@ -140,6 +143,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       login,
       name: editName || undefined,
       role: editRole || undefined,
+      charId: editCharId,
+      color: editColor,
       password: editPass.length > 0 ? editPass : undefined,
     });
     setEditUser(null);
@@ -211,6 +216,23 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <input className="px-input" placeholder="Name (имя в игре)" value={newName} onChange={e => { const v = e.target.value; setNewName(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ fontSize: 10 }} />
                   <input className="px-input" placeholder="Role (должность)" value={newRole} onChange={e => { const v = e.target.value; setNewRole(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ fontSize: 10 }} />
                 </div>
+                <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>СКИН</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                  {CHAR_OPTIONS.map(c => (
+                    <div key={c.id}
+                      onClick={() => { setNewCharId(c.id); setNewColor(c.color); }}
+                      className="px-panel"
+                      style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 9, display: 'flex', alignItems: 'center', gap: 4, borderColor: newCharId === c.id ? 'var(--px-accent)' : undefined }}>
+                      <div style={{ width: 12, height: 12, background: c.color, border: '1px solid var(--px-border-dark)' }} />
+                      {c.name}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ЦВЕТ</div>
+                  <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} style={{ width: 28, height: 22, border: '1px solid var(--px-border-dark)', cursor: 'pointer', padding: 0 }} />
+                  <input className="px-input" value={newColor} onChange={e => setNewColor(e.target.value)} style={{ width: 80, fontSize: 9 }} />
+                </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
                     📷 Аватар
@@ -240,7 +262,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.charId}</div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.role}</div>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-                      <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
+                      <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); setEditCharId(u.charId); setEditColor(u.color); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
                       <button onClick={() => handleDeleteUser(u.login)} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px' }}>DEL</button>
                     </div>
                   </div>
@@ -255,6 +277,23 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <input className="px-input" placeholder="Name" value={editName} onChange={e => { const v = e.target.value; setEditName(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
                     <input className="px-input" placeholder="Role" value={editRole} onChange={e => { const v = e.target.value; setEditRole(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
                     <input className="px-input" type="password" placeholder="New pass (optional)" value={editPass} onChange={e => setEditPass(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>СКИН</div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {CHAR_OPTIONS.map(c => (
+                      <div key={c.id}
+                        onClick={() => { setEditCharId(c.id); setEditColor(c.color); }}
+                        className="px-panel"
+                        style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 9, display: 'flex', alignItems: 'center', gap: 4, borderColor: editCharId === c.id ? 'var(--px-accent)' : undefined }}>
+                        <div style={{ width: 12, height: 12, background: c.color, border: '1px solid var(--px-border-dark)' }} />
+                        {c.name}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ЦВЕТ</div>
+                    <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)} style={{ width: 28, height: 22, border: '1px solid var(--px-border-dark)', cursor: 'pointer', padding: 0 }} />
+                    <input className="px-input" value={editColor} onChange={e => setEditColor(e.target.value)} style={{ width: 80, fontSize: 9 }} />
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => setEditUser(null)} className="px-btn small" style={{ fontSize: 9 }}>CANCEL</button>

@@ -23,6 +23,7 @@ import {
   onTileSync,
   sendTilePaint, sendTileRemove, sendTileReset,
   sendPlayerSave, onPlayerDataSync,
+  saveProfileSetup,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { loginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
@@ -46,6 +47,8 @@ export default function GameCanvas() {
   const [secretToast, setSecretToast] = useState('');
   // Onboarding state
   const [onboardingPhase, setOnboardingPhase] = useState<'none' | 'photo' | 'flash' | 'zoom'>('none');
+  const [onbName, setOnbName] = useState('');
+  const [onbRole, setOnbRole] = useState('');
 
   useEffect(() => {
     initAuth();
@@ -143,20 +146,32 @@ export default function GameCanvas() {
       <div style={{ minHeight: '100vh', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
         <div className="px-panel" style={{ padding: 0, width: 420 }}>
           <div className="px-panel-header">
-            <span>CAMERA</span>
+            <span>SECURITY CHECK</span>
           </div>
           <div style={{ padding: 24, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 16 }}>ДОБРО ПОЖАЛОВАТЬ</div>
             <div style={{ width: 120, height: 120, margin: '0 auto 16px', background: '#000', border: '3px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
             </div>
-            <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 16 }}>СДЕЛАЙТЕ ФОТО ДЛЯ ПРОПУСКА</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14, textAlign: 'left' }}>
+              <input className="px-input" placeholder="КАК ВАС ЗОВУТ?" value={onbName}
+                onChange={(e) => { const v = e.target.value; setOnbName(v.charAt(0).toUpperCase() + v.slice(1)); }} />
+              <input className="px-input" placeholder="ДОЛЖНОСТЬ" value={onbRole}
+                onChange={(e) => { const v = e.target.value; setOnbRole(v.charAt(0).toUpperCase() + v.slice(1)); }} />
+            </div>
             <button className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}
+              disabled={!onbName.trim()}
               onClick={() => {
-                setOnboardingPhase('flash');
-                // Start flash, then zoom after 400ms
-                setTimeout(() => {
-                  setOnboardingPhase('zoom');
-                }, 400);
+                if (onbName.trim()) {
+                  saveProfileSetup(onbName.trim(), onbRole.trim() || 'Разработчик');
+                  // Update local auth user
+                  if (authUser) {
+                    authUser.name = onbName.trim();
+                    if (onbRole.trim()) authUser.role = onbRole.trim();
+                  }
+                  setOnboardingPhase('flash');
+                  setTimeout(() => setOnboardingPhase('zoom'), 400);
+                }
               }}>
               📷 СДЕЛАТЬ ФОТО
             </button>

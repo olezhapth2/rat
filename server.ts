@@ -318,6 +318,7 @@ app.prepare().then(() => {
   }
 
   const onlinePlayers = new Map<string, ServerPlayer>();
+  const loggedInUsers = new Map<string, string>(); // socketId → login key
   const rpsGames = new Map<string, RpsGame>();
   let rpsCounter = 0;
 
@@ -790,6 +791,7 @@ app.prepare().then(() => {
       const user = usersDb[key];
       if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
       if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
+      loggedInUsers.set(socket.id, key);
       // Capitalize name on the fly
       const capName = user.name.charAt(0).toUpperCase() + user.name.slice(1);
       socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
@@ -811,7 +813,8 @@ app.prepare().then(() => {
         photoTaken: false,
       };
       saveUsers(usersDb);
-      socket.emit('auth:result', { ok: true, user: { login: key, name: data.name, charId: data.charId, color: data.color, role: data.role, avatar: data.avatar, photoTaken: false } });
+      loggedInUsers.set(socket.id, key);
+      socket.emit('auth:result', { ok: true, user: { login: key, name: capName, charId: data.charId, color: data.color, role: capRole, avatar: data.avatar, photoTaken: false } });
     });
 
     socket.on('auth:get-users', () => {
@@ -823,11 +826,22 @@ app.prepare().then(() => {
     });
 
     socket.on('auth:photo-taken', () => {
-      const session = onlinePlayers.get(socket.id);
-      if (!session) return;
-      const key = session.name.toLowerCase();
+      const key = loggedInUsers.get(socket.id);
+      if (!key) return;
       const user = usersDb[key];
       if (user) {
+        user.photoTaken = true;
+        saveUsers(usersDb);
+      }
+    });
+
+    socket.on('auth:profile-setup', (data: { name: string; role: string }) => {
+      const key = loggedInUsers.get(socket.id);
+      if (!key) return;
+      const user = usersDb[key];
+      if (user) {
+        if (data.name) user.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+        if (data.role) user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
         user.photoTaken = true;
         saveUsers(usersDb);
       }
@@ -870,6 +884,7 @@ app.prepare().then(() => {
     // Disconnect
     socket.on('disconnect', () => {
       console.log(`[-] Player disconnected: ${socket.id}`);
+      loggedInUsers.delete(socket.id);
       for (const [id, game] of rpsGames) {
         if (game.playerA === socket.id || game.playerB === socket.id) {
           const otherId = game.playerA === socket.id ? game.playerB : game.playerA;

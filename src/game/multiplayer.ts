@@ -442,6 +442,10 @@ export function markPhotoTaken(): void {
   socket?.emit('auth:photo-taken');
 }
 
+export function saveProfileSetup(name: string, role: string): void {
+  socket?.emit('auth:profile-setup', { name, role });
+}
+
 // Auth callbacks
 let onAuthResultCb: ((data: { ok: boolean; msg?: string; user?: any }) => void) | null = null;
 let onAuthUsersListCb: ((list: any[]) => void) | null = null;

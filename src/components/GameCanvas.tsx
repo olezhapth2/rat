@@ -69,7 +69,8 @@ export default function GameCanvas() {
         setAuthUser(res.user);
         setAuthError('');
         if (!res.user.photoTaken) {
-          setOnboardingPhase('photo');
+          setOnboardingPhase('flash');
+          setTimeout(() => setOnboardingPhase('zoom'), 400);
         }
       }
     } else {
@@ -85,7 +86,8 @@ export default function GameCanvas() {
     if (res.ok && res.user) {
       setFirstLogin(false);
       setAuthUser(res.user);
-      setOnboardingPhase('photo');
+      setOnboardingPhase('flash');
+      setTimeout(() => setOnboardingPhase('zoom'), 400);
     } else {
       setAuthError(res.msg || 'Ошибка');
     }
@@ -165,32 +167,7 @@ export default function GameCanvas() {
     );
   }
 
-  // Onboarding flow — photo + flash + zoom (name/role already set in first login)
-  if (onboardingPhase === 'photo') {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
-        <div className="px-panel" style={{ padding: 0, width: 420 }}>
-          <div className="px-panel-header">
-            <span>SECURITY CHECK</span>
-          </div>
-          <div style={{ padding: 24, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 16 }}>ДОБРО ПОЖАЛОВАТЬ, {authUser!.name}</div>
-            <div style={{ width: 120, height: 120, margin: '0 auto 16px', background: '#000', border: '3px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src={authUser!.avatar || `/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
-            </div>
-            <button className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}
-              onClick={() => {
-                setOnboardingPhase('flash');
-                setTimeout(() => setOnboardingPhase('zoom'), 400);
-              }}>
-              📷 СДЕЛАТЬ ФОТО
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Onboarding flow — flash + zoom after first login or photo
   if (onboardingPhase === 'flash' || onboardingPhase === 'zoom') {
     return (
       <div style={{ minHeight: '100vh', background: '#000', position: 'relative', overflow: 'hidden', fontFamily: "'Press Start 2P', monospace" }}>
@@ -3215,7 +3192,7 @@ function FirstLoginForm({ email, onSubmit, error, loading }: { email: string; on
         <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>{error}</div>
       )}
       <button onClick={handleSubmit} disabled={loading || !password || !name.trim()} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}>
-        {loading ? '...' : 'НАЧАТЬ'}
+        {loading ? '...' : 'СДЕЛАТЬ ФОТО'}
       </button>
     </div>
   );

@@ -85,9 +85,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     onAuthUserUpdated(() => showSuccess('User updated'));
     onAuthUserDeleted(() => showSuccess('User deleted'));
 
+    // Retry auth:get-users with delays in case reconnect hasn't propagated yet
     authGetUsers();
+    const t1 = setTimeout(() => authGetUsers(), 1000);
+    const t2 = setTimeout(() => authGetUsers(), 3000);
     adminGetPlayers();
     adminGetAchievements();
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +114,9 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     });
     showSuccess(`Игрок "${newLogin}" создан — ждём первый вход`);
     setNewLogin(''); setNewAvatar(''); setNewCharId('');
+    // Server will also send auth:users-list, but retry just in case
     setTimeout(() => authGetUsers(), 500);
+    setTimeout(() => authGetUsers(), 1500);
   };
 
   const handleDeleteUser = (login: string) => {

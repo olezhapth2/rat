@@ -821,6 +821,11 @@ app.prepare().then(() => {
       };
       saveUsers(usersDb);
       socket.emit('admin:user-added', { login: key });
+      // Send updated user list
+      const list = Object.entries(usersDb).map(([k, u]) => ({
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
+      }));
+      socket.emit('auth:users-list', list);
     });
 
     socket.on('auth:first-login', (data: { login: string; password: string; name: string; role: string }) => {

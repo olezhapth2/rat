@@ -32,7 +32,7 @@ import { GameIcon, ICONS, type IconKey } from '../game/icons';
 import { Icon } from '@iconify/react';
 import RetroEffects from './RetroEffects';
 import RetroPanel from './RetroPanel';
-import { loadRetroSettings, getColorFilter, type RetroSettings } from '../game/retro';
+import { loadRetroSettings, getColorFilter, getCrtIntensity, type RetroSettings } from '../game/retro';
 
 interface CtxItem {
   icon: IconKey;
@@ -1571,10 +1571,31 @@ function GameInner({ authUser }: { authUser: UserData }) {
     return () => { running = false; };
   }, []);
 
+  const crtI = getCrtIntensity(retroSettings);
+
   return (
     <>
-      <RetroEffects settings={retroSettings}>
+      {/* CRT Container */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          overflow: 'hidden',
+          borderRadius: crtI > 0 ? `${8 + crtI * 12}px` : 0,
+          transform: crtI > 0
+            ? `perspective(${800 - crtI * 200}px) rotateX(${crtI * 1.5}deg) scale(${1 + crtI * 0.02})`
+            : undefined,
+          boxShadow: crtI > 0
+            ? `inset 0 0 ${40 + crtI * 60}px rgba(0,0,0,${0.2 + crtI * 0.3})`
+            : undefined,
+        }}
+      >
         <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings) }} />
+      </div>
+
+      {/* Retro overlays (scanlines, noise, vignette) */}
+      <RetroEffects settings={retroSettings}>
+        <div />
       </RetroEffects>
 
       {/* Interaction buttons — pixel style */}

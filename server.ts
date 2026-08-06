@@ -799,6 +799,13 @@ app.prepare().then(() => {
       socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
     });
 
+    socket.on('auth:reconnect', (data: { login: string }) => {
+      const key = data.login.trim().toLowerCase();
+      if (usersDb[key]) {
+        loggedInUsers.set(socket.id, key);
+      }
+    });
+
     socket.on('auth:create-user', (data: { login: string; charId: string; avatar: string }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();

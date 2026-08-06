@@ -73,6 +73,16 @@ export function connectAuth(): void {
   socket.on('connect', () => {
     myId = socket!.id!;
     console.log('[MP] Auth socket connected:', myId);
+    // Re-auth from localStorage session
+    try {
+      const raw = localStorage.getItem('auth_session');
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session?.login) {
+          socket!.emit('auth:reconnect', { login: session.login });
+        }
+      }
+    } catch {}
   });
   socket.on('disconnect', () => {
     console.log('[MP] Auth socket disconnected');

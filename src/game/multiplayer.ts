@@ -462,7 +462,7 @@ export function authFirstLogin(login: string, password: string, name: string, ro
   socket?.emit('auth:first-login', { login, password, name, role });
 }
 
-export function authCreateUser(data: { login: string; charId: string; avatar: string }): void {
+export function authCreateUser(data: { login: string; charId: string; avatar: string; admin?: boolean }): void {
   socket?.emit('auth:create-user', data);
 }
 
@@ -470,7 +470,7 @@ export function authGetUsers(): void {
   socket?.emit('auth:get-users');
 }
 
-export function authUpdateUser(data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string }): void {
+export function authUpdateUser(data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string; admin?: boolean }): void {
   socket?.emit('auth:update-user', data);
 }
 

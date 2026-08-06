@@ -28,6 +28,7 @@ interface UserEntry {
   charId: string;
   role: string;
   avatar: string;
+  admin: boolean;
 }
 
 interface PlayerEntry {
@@ -57,12 +58,14 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [newLogin, setNewLogin] = useState('');
   const [newAvatar, setNewAvatar] = useState('');
   const [newCharId, setNewCharId] = useState('');
+  const [newAdmin, setNewAdmin] = useState(false);
 
   const [editUser, setEditUser] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editPass, setEditPass] = useState('');
   const [editCharId, setEditCharId] = useState('');
+  const [editAdmin, setEditAdmin] = useState(false);
 
   const [moneyTarget, setMoneyTarget] = useState('');
   const [moneyAmount, setMoneyAmount] = useState('');
@@ -111,9 +114,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       login: newLogin.trim(),
       charId: newCharId,
       avatar: newAvatar,
+      admin: newAdmin,
     });
     showSuccess(`Игрок "${newLogin}" создан — ждём первый вход`);
-    setNewLogin(''); setNewAvatar(''); setNewCharId('');
+    setNewLogin(''); setNewAvatar(''); setNewCharId(''); setNewAdmin(false);
     // Server will also send auth:users-list, but retry just in case
     setTimeout(() => authGetUsers(), 500);
     setTimeout(() => authGetUsers(), 1500);
@@ -131,6 +135,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       role: editRole || undefined,
       charId: editCharId || undefined,
       password: editPass.length > 0 ? editPass : undefined,
+      admin: editAdmin,
     });
     setEditUser(null);
   };
@@ -213,6 +218,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                   </label>
                   {newAvatar && <img src={newAvatar} alt="" style={{ width: 40, height: 80, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
+                  <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', marginLeft: 8 }}>
+                    <input type="checkbox" checked={newAdmin} onChange={e => setNewAdmin(e.target.checked)} />
+                    ⭐ ADMIN
+                  </label>
                   <div style={{ flex: 1 }} />
                   <button onClick={handleAddUser} className="px-btn accent small" style={{ fontSize: 10 }} disabled={!newLogin.trim() || !newCharId}>ADD PLAYER</button>
                 </div>
@@ -234,9 +243,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     </div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.charId}</div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.role || '—'}</div>
+                    {u.admin && <div style={{ fontSize: 8, color: 'var(--px-accent)', fontWeight: 'bold' }}>⭐ ADMIN</div>}
                     {!u.name && <div style={{ fontSize: 8, color: 'var(--px-accent)' }}>ожидает входа</div>}
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-                      <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); setEditCharId(u.charId); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
+                      <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); setEditCharId(u.charId); setEditAdmin(u.admin); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
                       <button onClick={() => handleDeleteUser(u.login)} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px' }}>DEL</button>
                     </div>
                   </div>
@@ -252,6 +262,12 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input className="px-input" type="password" placeholder="New pass (optional)" value={editPass} onChange={e => setEditPass(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={editAdmin} onChange={e => setEditAdmin(e.target.checked)} />
+                      ⭐ ADMIN
+                    </label>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>

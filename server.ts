@@ -58,6 +58,7 @@ interface UserAccount {
   role: string;
   avatar: string;
   photoTaken?: boolean;
+  admin?: boolean;
 }
 
 function ensureDataDir() {
@@ -150,7 +151,7 @@ function loadUsers(): Record<string, UserAccount> {
   }
   // Default: only admin
   return {
-    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '', name: '', charId: 'pers5', role: '', avatar: '', photoTaken: false },
+    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '', name: '', charId: 'pers5', role: '', avatar: '', photoTaken: false, admin: true },
   };
 }
 
@@ -664,14 +665,10 @@ app.prepare().then(() => {
     });
 
     // === ADMIN EVENTS ===
-    const ADMIN_LOGINS = ['olegdevyatow@gmail.com'];
     function isAdmin(): boolean {
-      // Check by login email
       const loginKey = loggedInUsers.get(socket.id);
-      if (loginKey && ADMIN_LOGINS.includes(loginKey)) return true;
-      // Check by charId (legacy pers5)
-      const player = onlinePlayers.get(socket.id);
-      return player?.charId === 'pers5';
+      if (loginKey && usersDb[loginKey]?.admin) return true;
+      return false;
     }
 
     // Get all players list
@@ -806,7 +803,7 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on('auth:create-user', (data: { login: string; charId: string; avatar: string }) => {
+    socket.on('auth:create-user', (data: { login: string; charId: string; avatar: string; admin?: boolean }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();
       if (usersDb[key]) return socket.emit('admin:error', 'Логин уже занят');
@@ -818,12 +815,13 @@ app.prepare().then(() => {
         role: '',
         avatar: data.avatar || '',
         photoTaken: false,
+        admin: data.admin || false,
       };
       saveUsers(usersDb);
       socket.emit('admin:user-added', { login: key });
       // Send updated user list
       const list = Object.entries(usersDb).map(([k, u]) => ({
-        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
       socket.emit('auth:users-list', list);
     });
@@ -844,7 +842,7 @@ app.prepare().then(() => {
     socket.on('auth:get-users', () => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const list = Object.entries(usersDb).map(([key, u]) => ({
-        login: key, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
+        login: key, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
       socket.emit('auth:users-list', list);
     });
@@ -871,7 +869,7 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string }) => {
+    socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string; admin?: boolean }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();
       const user = usersDb[key];
@@ -881,6 +879,7 @@ app.prepare().then(() => {
       if (data.role !== undefined) user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       if (data.avatar !== undefined) user.avatar = data.avatar;
       if (data.password !== undefined && data.password.length > 0) user.password = data.password;
+      if (data.admin !== undefined) user.admin = data.admin;
       saveUsers(usersDb);
       // Sync to online player if connected
       for (const [sid, sp] of onlinePlayers) {
@@ -895,11 +894,12 @@ app.prepare().then(() => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();
       if (!usersDb[key]) return socket.emit('admin:error', 'User not found');
+      if (usersDb[key].admin) return socket.emit('admin:error', 'Нельзя удалить админа');
       delete usersDb[key];
       saveUsers(usersDb);
       socket.emit('admin:user-deleted', { login: key });
       const list = Object.entries(usersDb).map(([k, u]) => ({
-        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
       socket.emit('auth:users-list', list);
     });

@@ -30,6 +30,9 @@ import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDI
 import AdminPanel from './AdminPanel';
 import { GameIcon, ICONS, type IconKey } from '../game/icons';
 import { Icon } from '@iconify/react';
+import RetroEffects from './RetroEffects';
+import RetroPanel from './RetroPanel';
+import { loadRetroSettings, getColorFilter, type RetroSettings } from '../game/retro';
 
 interface CtxItem {
   icon: IconKey;
@@ -282,6 +285,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
   // Context menu state
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
+
+  // Retro effects state
+  const [retroSettings, setRetroSettings] = useState<RetroSettings>(loadRetroSettings);
 
   // Minigame canvas state refs
   const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
@@ -1567,7 +1573,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
   return (
     <>
-      <canvas ref={canvasRef} />
+      <RetroEffects settings={retroSettings}>
+        <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings) }} />
+      </RetroEffects>
 
       {/* Interaction buttons — pixel style */}
       {nearInteraction && !smokingGame && !smokingResult && nearInteraction.id === 'smoke' && (
@@ -1966,6 +1974,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       {/* Confetti */}
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
+
+      {/* Retro Effects Panel */}
+      <RetroPanel settings={retroSettings} onChange={setRetroSettings} />
     </>
   );
 }

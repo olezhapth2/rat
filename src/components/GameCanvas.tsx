@@ -2520,8 +2520,6 @@ function DecorateView({ state, onToast }: { state: GameState; onToast: (m: strin
 // ===== PROFILE =====
 function ProfileView({ state }: { state: GameState }) {
   const p = state.player;
-  const petItems = (SHOP as any).pets as any[];
-  const ownedPets = petItems.filter((pet: any) => p.furniture.includes(pet.id) || p.petId === pet.id);
   const xpNeeded = p.level * 100;
   const xpPercent = (p.xp / xpNeeded) * 100;
   return (
@@ -2568,30 +2566,6 @@ function ProfileView({ state }: { state: GameState }) {
         onChange={(e) => { p.role = e.target.value; persistState(state); }}
         placeholder="ROLE"
       />
-      {/* Pet section */}
-      {ownedPets.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 6 }}>ПИТОМЕЦ</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
-            {ownedPets.map((pet: any) => (
-              <div
-                key={pet.id}
-                onClick={() => { p.petId = pet.id; persistState(state); }}
-                style={{
-                  width: 48, height: 48,
-                  background: p.petId === pet.id ? 'var(--px-accent)' : 'var(--px-bg)',
-                  border: `2px solid ${p.petId === pet.id ? 'var(--px-accent)' : 'var(--px-border)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', fontSize: 24,
-                }}
-                title={pet.n}
-              >
-                {pet.e}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {/* Office Customization */}
       <div style={{ marginTop: 16, textAlign: 'left' }}>
         <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 8 }}>ОФИС</div>

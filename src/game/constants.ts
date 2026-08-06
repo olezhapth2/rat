@@ -333,9 +333,6 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'wall_decor1', n: 'Картина', e: '🖼️', p: 120, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_decor1.webp' },
     { id: 'wall_rat', n: 'Крыса на стене', e: '🐀', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_rat.webp' },
     { id: 'wall_book1', n: 'Книжная полка', e: '📚', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_book1.webp' },
-    { id: 'wall_book2', n: 'Книжный шкаф', e: '📖', p: 100, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_book2.webp' },
-    { id: 'wall_book3', n: 'Библиотека', e: '📕', p: 110, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_book3.webp' },
-    { id: 'wall_shelf', n: 'Навесная полка', e: '🗄️', p: 80, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_shelf.webp' },
   ],
   pets: [
     { id: 'pet1', n: 'Кот', e: '🐱', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp' },

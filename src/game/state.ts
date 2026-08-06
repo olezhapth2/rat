@@ -281,6 +281,35 @@ export function dropItem(state: GameState, x: number, y: number): { ok: boolean;
     placedBy: 'player',
   });
   state._placedItemsVersion++;
+
+  // Push player out if they overlap with the placed item
+  if (def.surface !== 'wall') {
+    const itemLeft = finalX;
+    const itemTop = finalY;
+    const itemRight = finalX + def.w * TILE;
+    const itemBottom = finalY + def.h * TILE;
+    const px = state.player.x;
+    const py = state.player.y;
+    const playerR = TILE * 0.4;
+    if (px + playerR > itemLeft && px - playerR < itemRight && py + playerR > itemTop && py - playerR < itemBottom) {
+      // Push distances: how far to move player to exit the item
+      const pushLeft = (px + playerR) - itemLeft;
+      const pushRight = itemRight - (px - playerR);
+      const pushUp = (py + playerR) - itemTop;
+      const pushDown = itemBottom - (py - playerR);
+      // Pick the shortest push
+      const options = [
+        { dist: pushLeft, dx: -pushLeft, dy: 0 },
+        { dist: pushRight, dx: pushRight, dy: 0 },
+        { dist: pushUp, dx: 0, dy: -pushUp },
+        { dist: pushDown, dx: 0, dy: pushDown },
+      ];
+      options.sort((a, b) => a.dist - b.dist);
+      state.player.x += options[0].dx;
+      state.player.y += options[0].dy;
+    }
+  }
+
   state.player.carrying = null;
   addXP(state, 5);
   logActivity(state, '📦', `Поставил: ${def.e}`);

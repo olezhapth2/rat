@@ -1142,7 +1142,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       items.push({ icon: '👤', text: 'Профиль', fn: () => openModal('profile') });
       items.push({ icon: '🏆', text: 'Ачивки', fn: () => openModal('achievements') });
       items.push({ icon: '📋', text: 'Дейли квесты', fn: () => openModal('quests') });
-      items.push({ icon: '🎨', text: 'Оформить кабинет', fn: () => openModal('decorate') });
       items.push({ icon: '🛒', text: 'Магазин', fn: () => openModal('shop') });
       items.push({ icon: '📋', text: 'Инвентарь', fn: () => openModal('inventory') });
       items.push({ icon: '📐', text: 'Whiteboard', fn: () => openModal('whiteboard') });
@@ -1850,7 +1849,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
             <div style={{ padding: 16, maxHeight: '60vh', overflowY: 'auto' }}>
               {modalType === 'shop' && <ShopView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'inventory' && <InventoryView state={stateRef.current} onToast={toast} />}
-              {modalType === 'decorate' && <DecorateView state={stateRef.current} onToast={toast} />}
               {modalType === 'profile' && <ProfileView state={stateRef.current} />}
               {modalType === 'achievements' && <AchievementsView state={stateRef.current} />}
               {modalType === 'quests' && <QuestsView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
@@ -1904,7 +1902,6 @@ function getModalTitle(type: string): string {
   const t: Record<string, string> = {
     shop: 'SHOP',
     inventory: 'INVENTORY',
-    decorate: 'DECORATE',
     profile: 'PROFILE',
     achievements: 'ACHIEVEMENTS',
     quests: 'QUESTS',
@@ -2471,52 +2468,6 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 }
 
 // ===== DECORATE (grid-based placement) =====
-function DecorateView({ state, onToast }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void }) {
-  const placed = state.player.placedItems;
-
-  return (
-    <div>
-      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 10 }}>
-        RIGHT-CLICK → TAKE OR PLACE
-      </div>
-
-      {state.player.carrying && (
-        <div className="px-panel" style={{ padding: 10, marginBottom: 12, textAlign: 'center', borderColor: 'var(--px-title)' }}>
-          <div style={{ fontSize: 11, color: 'var(--px-title)' }}>📦 HOLDING: {getItemEmoji(state.player.carrying)} {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
-          <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 4 }}>GO → RIGHT-CLICK → PLACE</div>
-        </div>
-      )}
-
-      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 6 }}>PLACED ({placed.length})</div>
-      {placed.length === 0 && (
-        <div style={{ color: 'var(--px-text-dim)', fontSize: 11, textAlign: 'center', padding: 20 }}>NOTHING PLACED. BUY FROM SHOP!</div>
-      )}
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-        {placed.map((p, i) => {
-          const item = ALL_ITEMS.find((x) => x.id === p.id);
-          return (
-            <div
-              key={`${p.id}_${i}`}
-              className="px-panel"
-              style={{
-                padding: '7px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: 10,
-              }}
-            >
-              <span>{item?.e}</span>
-              <span style={{ color: 'var(--px-text-dim)' }}>{item?.n}</span>
-              <span style={{ color: 'var(--px-text-dim)', fontSize: 9 }}>{p.surface === 'wall' ? 'WALL' : 'FLOOR'}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ===== PROFILE =====
 function ProfileView({ state }: { state: GameState }) {
   const p = state.player;

@@ -58,6 +58,7 @@ interface UserAccount {
   color: string;
   role: string;
   avatar: string; // path to avatar sprite
+  photoTaken?: boolean;
 }
 
 function ensureDataDir() {
@@ -775,7 +776,7 @@ app.prepare().then(() => {
       const user = usersDb[key];
       if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
       if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
-      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar } });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
     });
 
     socket.on('auth:register', (data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }) => {
@@ -789,9 +790,10 @@ app.prepare().then(() => {
         color: data.color,
         role: data.role,
         avatar: data.avatar || '',
+        photoTaken: false,
       };
       saveUsers(usersDb);
-      socket.emit('auth:result', { ok: true, user: { login: key, name: data.name, charId: data.charId, color: data.color, role: data.role, avatar: data.avatar } });
+      socket.emit('auth:result', { ok: true, user: { login: key, name: data.name, charId: data.charId, color: data.color, role: data.role, avatar: data.avatar, photoTaken: false } });
     });
 
     socket.on('auth:get-users', () => {
@@ -800,6 +802,17 @@ app.prepare().then(() => {
         login: key, name: u.name, charId: u.charId, color: u.color, role: u.role, avatar: u.avatar,
       }));
       socket.emit('auth:users-list', list);
+    });
+
+    socket.on('auth:photo-taken', () => {
+      const session = onlinePlayers.get(socket.id);
+      if (!session) return;
+      const key = session.name.toLowerCase();
+      const user = usersDb[key];
+      if (user) {
+        user.photoTaken = true;
+        saveUsers(usersDb);
+      }
     });
 
     socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; color?: string; role?: string; avatar?: string; password?: string }) => {

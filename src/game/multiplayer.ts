@@ -438,6 +438,10 @@ export function authDeleteUser(login: string): void {
   socket?.emit('auth:delete-user', { login });
 }
 
+export function markPhotoTaken(): void {
+  socket?.emit('auth:photo-taken');
+}
+
 // Auth callbacks
 let onAuthResultCb: ((data: { ok: boolean; msg?: string; user?: any }) => void) | null = null;
 let onAuthUsersListCb: ((list: any[]) => void) | null = null;

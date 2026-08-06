@@ -335,3 +335,15 @@ select.px-input {
   0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
   100% { opacity: 0; transform: translateY(350px) rotate(720deg) scale(0.2); }
 }
+
+/* ===== ONBOARDING ===== */
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes zoomOut {
+  0% { transform: scale(3); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

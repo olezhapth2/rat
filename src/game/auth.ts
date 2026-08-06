@@ -5,6 +5,7 @@ export interface UserData {
   role: string;
   avatar: string;
   login: string;
+  photoTaken?: boolean;
 }
 
 const SESSION_KEY = 'auth_session';
@@ -30,6 +31,7 @@ export function initAuth(): void {
         if (data.color !== undefined) session.color = data.color;
         if (data.role !== undefined) session.role = data.role;
         if (data.avatar !== undefined) session.avatar = data.avatar;
+        if (data.photoTaken !== undefined) session.photoTaken = data.photoTaken;
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       }
     });
@@ -82,6 +84,7 @@ export function getCurrentUser(): UserData | null {
       role: session.role,
       avatar: session.avatar || '',
       login: session.login || session.name,
+      photoTaken: session.photoTaken || false,
     };
   } catch {
     return null;
@@ -101,4 +104,17 @@ export function uploadAvatar(file: File): Promise<string | null> {
       .then(data => resolve(data.url || null))
       .catch(() => resolve(null));
   });
+}
+
+export function markPhotoTaken(): void {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const session = JSON.parse(raw);
+      session.photoTaken = true;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    }
+  } catch {}
+  // Also notify server
+  import('./multiplayer').then(mp => mp.markPhotoTaken());
 }

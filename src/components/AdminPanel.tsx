@@ -208,8 +208,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                   <input className="px-input" placeholder="Login (для входа)" value={newLogin} onChange={e => setNewLogin(e.target.value)} style={{ fontSize: 10 }} />
                   <input className="px-input" type="password" placeholder="Password" value={newPass} onChange={e => setNewPass(e.target.value)} style={{ fontSize: 10 }} />
-                  <input className="px-input" placeholder="Name (имя в игре)" value={newName} onChange={e => setNewName(e.target.value)} style={{ fontSize: 10 }} />
-                  <input className="px-input" placeholder="Role (должность)" value={newRole} onChange={e => setNewRole(e.target.value)} style={{ fontSize: 10 }} />
+                  <input className="px-input" placeholder="Name (имя в игре)" value={newName} onChange={e => { const v = e.target.value; setNewName(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ fontSize: 10 }} />
+                  <input className="px-input" placeholder="Role (должность)" value={newRole} onChange={e => { const v = e.target.value; setNewRole(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ fontSize: 10 }} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
@@ -252,8 +252,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 <div className="px-panel" style={{ padding: 10, marginTop: 12, borderColor: 'var(--px-accent)' }}>
                   <div style={{ fontSize: 9, color: 'var(--px-accent)', marginBottom: 8 }}>EDIT: {editUser}</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <input className="px-input" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
-                    <input className="px-input" placeholder="Role" value={editRole} onChange={e => setEditRole(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
+                    <input className="px-input" placeholder="Name" value={editName} onChange={e => { const v = e.target.value; setEditName(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
+                    <input className="px-input" placeholder="Role" value={editRole} onChange={e => { const v = e.target.value; setEditRole(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
                     <input className="px-input" type="password" placeholder="New pass (optional)" value={editPass} onChange={e => setEditPass(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>

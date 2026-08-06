@@ -25,7 +25,7 @@ import {
   sendPlayerSave, onPlayerDataSync,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
-import { loginAsync, registerAsync, getCurrentUser, logout, uploadAvatar, initAuth, type UserData } from '../game/auth';
+import { loginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
 
@@ -44,7 +44,8 @@ export default function GameCanvas() {
   const [ready, setReady] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [secretToast, setSecretToast] = useState('');
-  const [showRegister, setShowRegister] = useState(false);
+  // Onboarding state
+  const [onboardingPhase, setOnboardingPhase] = useState<'none' | 'photo' | 'flash' | 'zoom'>('none');
 
   useEffect(() => {
     initAuth();
@@ -60,6 +61,9 @@ export default function GameCanvas() {
     if (res.ok && res.user) {
       setAuthUser(res.user);
       setAuthError('');
+      if (!res.user.photoTaken) {
+        setOnboardingPhase('photo');
+      }
     } else {
       setAuthError(res.msg || 'Ошибка');
     }
@@ -107,31 +111,20 @@ export default function GameCanvas() {
               </div>
             </div>
 
-            {!showRegister ? (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                  <input type="text" placeholder="LOGIN" className="px-input" value={authName}
-                    onChange={(e) => setAuthName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
-                  <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
-                    onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
-                </div>
-                {authError && (
-                  <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
-                    {authError}
-                  </div>
-                )}
-                <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
-                  {authLoading ? '...' : 'LOGIN'}
-                </button>
-                <div style={{ textAlign: 'center' }}>
-                  <span onClick={() => setShowRegister(true)} style={{ fontSize: 9, color: 'var(--px-accent)', cursor: 'pointer' }}>
-                    Нет аккаунта? Создать
-                  </span>
-                </div>
-              </>
-            ) : (
-              <RegisterForm onDone={(user) => { setAuthUser(user); setShowRegister(false); }} onBack={() => setShowRegister(false)} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              <input type="text" placeholder="LOGIN" className="px-input" value={authName}
+                onChange={(e) => { const v = e.target.value; setAuthName(v.charAt(0).toUpperCase() + v.slice(1)); }} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+              <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
+                onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+            </div>
+            {authError && (
+              <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
+                {authError}
+              </div>
             )}
+            <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
+              {authLoading ? '...' : 'LOGIN'}
+            </button>
 
             {secretToast && (
               <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--px-panel)', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
@@ -140,6 +133,67 @@ export default function GameCanvas() {
             )}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Onboarding flow
+  if (onboardingPhase === 'photo') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
+        <div className="px-panel" style={{ padding: 0, width: 420 }}>
+          <div className="px-panel-header">
+            <span>CAMERA</span>
+          </div>
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            <div style={{ width: 120, height: 120, margin: '0 auto 16px', background: '#000', border: '3px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 16 }}>СДЕЛАЙТЕ ФОТО ДЛЯ ПРОПУСКА</div>
+            <button className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}
+              onClick={() => {
+                setOnboardingPhase('flash');
+                // Start flash, then zoom after 400ms
+                setTimeout(() => {
+                  setOnboardingPhase('zoom');
+                }, 400);
+              }}>
+              📷 СДЕЛАТЬ ФОТО
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (onboardingPhase === 'flash' || onboardingPhase === 'zoom') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', position: 'relative', overflow: 'hidden', fontFamily: "'Press Start 2P', monospace" }}>
+        {/* Camera flash */}
+        {onboardingPhase === 'flash' && (
+          <div style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 100, animation: 'fadeOut 0.4s ease-out forwards' }} />
+        )}
+        {/* Zoom animation */}
+        {onboardingPhase === 'zoom' && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+              animation: 'zoomOut 2s ease-out forwards',
+              transformOrigin: 'center center',
+            }}>
+              <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 200, height: 200, imageRendering: 'pixelated' }} />
+            </div>
+            <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)' }}>
+              <div style={{ fontSize: 9, color: '#888', animation: 'pulse 1s infinite' }}>LOADING...</div>
+            </div>
+          </div>
+        )}
+        {/* After zoom completes, transition to game */}
+        {onboardingPhase === 'zoom' && (
+          <OnboardingLoader onComplete={() => {
+            markPhotoTaken();
+            setOnboardingPhase('none');
+          }} />
+        )}
       </div>
     );
   }
@@ -2507,14 +2561,14 @@ function ProfileView({ state }: { state: GameState }) {
         className="px-input"
         style={{ width: '100%', marginBottom: 6, fontSize: 10, textAlign: 'center' }}
         value={p.name}
-        onChange={(e) => { p.name = e.target.value; persistState(state); }}
+        onChange={(e) => { const v = e.target.value; p.name = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
         placeholder="NAME"
       />
       <input
         className="px-input"
         style={{ width: '100%', fontSize: 10, textAlign: 'center' }}
         value={p.role}
-        onChange={(e) => { p.role = e.target.value; persistState(state); }}
+        onChange={(e) => { const v = e.target.value; p.role = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
         placeholder="ROLE"
       />
       {/* Office Customization */}
@@ -3114,82 +3168,29 @@ function ConfettiEffect({ trigger }: { trigger: number }) {
   );
 }
 
-// ===== REGISTER FORM =====
-function RegisterForm({ onDone, onBack }: { onDone: (user: UserData) => void; onBack: () => void }) {
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
-  const [avatar, setAvatar] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const charId = 'custom_' + Date.now();
-  const color = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadAvatar(file);
-    if (url) setAvatar(url);
-  };
-
-  const handleRegister = async () => {
-    if (!login.trim() || !password || !name.trim()) {
-      setError('Заполни логин, пароль и имя');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    const res = await registerAsync({
-      login: login.trim(),
-      password,
-      name: name.trim(),
-      charId,
-      color,
-      role: role || 'Разработчик',
-      avatar,
+// ===== ONBOARDING LOADER (preloads assets during zoom animation) =====
+function OnboardingLoader({ onComplete }: { onComplete: () => void }) {
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    Promise.all([
+      preloadCharacterSprites(),
+      preloadPetSprites(),
+      preloadTileTextures(),
+      ...ALL_ITEMS.filter(i => i.sprite).map(i =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = i.sprite!;
+        })
+      ),
+    ]).then(() => {
+      setTimeout(onComplete, 800);
     });
-    setLoading(false);
-    if (res.ok && res.user) {
-      onDone(res.user);
-    } else {
-      setError(res.msg || 'Ошибка');
-    }
-  };
-
-  return (
-    <div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>НОВЫЙ ИГРОК</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-        <input className="px-input" placeholder="LOGIN (для входа)" value={login} onChange={e => setLogin(e.target.value)} />
-        <input className="px-input" type="password" placeholder="PASSWORD" value={password} onChange={e => setPassword(e.target.value)} />
-        <input className="px-input" placeholder="NAME (имя в игре)" value={name} onChange={e => setName(e.target.value)} />
-        <input className="px-input" placeholder="ROLE (Должность)" value={role} onChange={e => setRole(e.target.value)} />
-        <div>
-          <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'inline-block' }}>
-            📷 АВАТАР
-            <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
-          </label>
-          {avatar && (
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src={avatar} alt="" style={{ width: 40, height: 40, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
-              <span style={{ fontSize: 8, color: 'var(--px-accent)' }}>OK</span>
-            </div>
-          )}
-        </div>
-      </div>
-      {error && (
-        <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
-          {error}
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onBack} className="px-btn" style={{ flex: 1, fontSize: 10 }}>НАЗАД</button>
-        <button onClick={handleRegister} disabled={loading} className="px-btn accent" style={{ flex: 1, fontSize: 10 }}>
-          {loading ? '...' : 'СОЗДАТЬ'}
-        </button>
-      </div>
-    </div>
-  );
+  }, [onComplete]);
+  return null;
 }
+
+

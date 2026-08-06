@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { RetroSettings } from '../game/retro';
 import {
   getNoiseOpacity, getNoiseType, isVhsNoise,
@@ -10,7 +10,6 @@ import {
 
 export default function RetroEffects({ settings, children }: { settings: RetroSettings; children: React.ReactNode }) {
   const noiseCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [tick, setTick] = useState(0);
 
   const noiseOpacity = getNoiseOpacity(settings);
   const noiseType = getNoiseType(settings);
@@ -20,23 +19,7 @@ export default function RetroEffects({ settings, children }: { settings: RetroSe
   const vignetteOpacity = getVignetteOpacity(settings);
   const vignetteType = getVignetteType(settings);
 
-  // Noise animation loop
-  useEffect(() => {
-    if (noiseOpacity <= 0 && !vhs) return;
-    let frame = 0;
-    let raf: number;
-    const loop = () => {
-      frame++;
-      if (frame % 4 === 0) {
-        setTick(frame);
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [noiseOpacity, vhs]);
-
-  // Generate noise texture on tick
+  // Generate noise texture once when settings change
   useEffect(() => {
     if (noiseOpacity <= 0 || vhs) return;
     const canvas = noiseCanvasRef.current;
@@ -47,7 +30,6 @@ export default function RetroEffects({ settings, children }: { settings: RetroSe
     const h = canvas.height;
     const imageData = ctx.createImageData(w, h);
     const data = imageData.data;
-
     if (noiseType === 'static') {
       for (let y = 0; y < h; y += 4) {
         for (let x = 0; x < w; x += 4) {
@@ -67,10 +49,7 @@ export default function RetroEffects({ settings, children }: { settings: RetroSe
       }
     }
     ctx.putImageData(imageData, 0, 0);
-  }, [tick, noiseOpacity, noiseType, vhs]);
-
-  const showNoise = noiseOpacity > 0 && !vhs;
-  const showVhs = vhs;
+  }, [noiseOpacity, noiseType, vhs]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
@@ -100,7 +79,7 @@ export default function RetroEffects({ settings, children }: { settings: RetroSe
       )}
 
       {/* NOISE — grain / static */}
-      {showNoise && (
+      {noiseOpacity > 0 && !vhs && (
         <canvas
           ref={noiseCanvasRef}
           width={noiseType === 'static' ? 64 : 128}
@@ -115,26 +94,22 @@ export default function RetroEffects({ settings, children }: { settings: RetroSe
         />
       )}
 
-      {/* NOISE — VHS tracking */}
-      {showVhs && (
+      {/* NOISE — VHS tracking (CSS animated, no state) */}
+      {vhs && (
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 11 }}>
-          <div style={{
-            position: 'absolute', left: 0, right: 0,
-            top: `${(tick * 2) % 120 - 10}%`,
-            height: '4px',
+          <div className="vhs-line-1" style={{
+            position: 'absolute', left: 0, right: 0, height: '4px',
             background: `rgba(255,255,255,${noiseOpacity * 2})`,
             filter: 'blur(1px)',
           }} />
-          <div style={{
-            position: 'absolute', left: 0, right: 0,
-            top: `${((tick * 3) + 40) % 130 - 10}%`,
-            height: '2px',
+          <div className="vhs-line-2" style={{
+            position: 'absolute', left: 0, right: 0, height: '2px',
             background: `rgba(255,255,255,${noiseOpacity * 1.2})`,
             filter: 'blur(0.5px)',
           }} />
-          <div style={{
+          <div className="vhs-color" style={{
             position: 'absolute', inset: 0,
-            background: `linear-gradient(0deg, transparent 0%, rgba(255,0,0,${noiseOpacity * 0.3}) ${30 + (tick % 20)}%, transparent ${40 + (tick % 20)}%, rgba(0,0,255,${noiseOpacity * 0.3}) ${60 + (tick % 15)}%, transparent ${70 + (tick % 15)}%, transparent 100%)`,
+            background: `linear-gradient(0deg, transparent 0%, rgba(255,0,0,${noiseOpacity * 0.3}) 35%, transparent 45%, rgba(0,0,255,${noiseOpacity * 0.3}) 65%, transparent 75%, transparent 100%)`,
           }} />
         </div>
       )}

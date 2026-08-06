@@ -350,3 +350,27 @@ select.px-input {
   20% { opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ===== VHS FX ===== */
+@keyframes vhsSweep1 {
+  0%   { top: -4px; }
+  100% { top: 100vh; }
+}
+@keyframes vhsSweep2 {
+  0%   { top: 100vh; }
+  100% { top: -2px; }
+}
+@keyframes vhsColorDrift {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(8px); }
+  100% { transform: translateY(0); }
+}
+.vhs-line-1 {
+  animation: vhsSweep1 3s linear infinite;
+}
+.vhs-line-2 {
+  animation: vhsSweep2 4.7s linear infinite;
+}
+.vhs-color {
+  animation: vhsColorDrift 2.3s ease-in-out infinite;
+}

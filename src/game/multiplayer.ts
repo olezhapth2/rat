@@ -114,7 +114,7 @@ export function connectAuth(): void {
   });
 
   // Auth events — needed before login
-  socket.on('auth:result', (data: { ok: boolean; msg?: string; user?: any }) => {
+  socket.on('auth:result', (data: { ok: boolean; msg?: string; user?: any; firstLogin?: boolean }) => {
     onAuthResultCb?.(data);
   });
   socket.on('auth:users-list', (list: any[]) => {
@@ -512,13 +512,13 @@ export function saveProfileSetup(name: string, role: string): void {
 }
 
 // Auth callbacks
-let onAuthResultCb: ((data: { ok: boolean; msg?: string; user?: any }) => void) | null = null;
+let onAuthResultCb: ((data: { ok: boolean; msg?: string; user?: any; firstLogin?: boolean }) => void) | null = null;
 let onAuthUsersListCb: ((list: any[]) => void) | null = null;
 let onAuthUserUpdatedCb: ((data: any) => void) | null = null;
 let onAuthUserDeletedCb: ((data: any) => void) | null = null;
 let onAuthUserSyncCb: ((data: any) => void) | null = null;
 
-export function onAuthResult(cb: (data: { ok: boolean; msg?: string; user?: any }) => void): void { onAuthResultCb = cb; }
+export function onAuthResult(cb: (data: { ok: boolean; msg?: string; user?: any; firstLogin?: boolean }) => void): void { onAuthResultCb = cb; }
 export function onAuthUsersList(cb: (list: any[]) => void): void { onAuthUsersListCb = cb; }
 export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpdatedCb = cb; }
 export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }

@@ -18,7 +18,7 @@ export function initAuth(): void {
   import('./multiplayer').then(mp => {
     mp.connectAuth();
     mp.onAuthResult((data) => {
-      if (data.ok && data.user) {
+      if (data.ok && data.user && !data.firstLogin) {
         data.user.name = capitalize(data.user.name);
         localStorage.setItem(SESSION_KEY, JSON.stringify({ ...data.user, ts: Date.now() }));
       }

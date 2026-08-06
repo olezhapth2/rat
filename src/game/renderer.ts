@@ -185,7 +185,7 @@ export function render(
         const nameY = bobY - CHAR_H / 2;
         // Background pill
         const nameWidth = ctx.measureText(c.name).width;
-        ctx.fillStyle = c.isPlayer ? '#4ecca3cc' : '#1c1c2ccc';
+        ctx.fillStyle = c.isPlayer ? '#4ecca3cc' : '#ffffffcc';
         drawRoundRect(ctx, c.x - nameWidth / 2 - 5, nameY - 12, nameWidth + 10, 14, 4);
         ctx.fill();
         ctx.fillStyle = c.isPlayer ? '#1c1c2c' : '#d4c896';

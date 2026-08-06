@@ -175,10 +175,6 @@ export interface Bot {
 export function createBots(): Bot[] {
   return [
     { id: 'pers1',  name: 'Олег',    color: '#4ecca3', x: 5 * TILE,  y: 7 * TILE,  radius: 8, role: 'Разработчик', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers2',  name: 'Аня',     color: '#ffa726', x: 13 * TILE, y: 7 * TILE,  radius: 8, role: 'Дизайнер',   wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers3',  name: 'Алиса',   color: '#9c27b0', x: 27 * TILE, y: 7 * TILE,  radius: 8, role: 'HR',         wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers4',  name: 'Кирилл',  color: '#2196f3', x: 29 * TILE, y: 15 * TILE, radius: 8, role: 'QA',         wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'pers5',  name: 'Саша',    color: '#e94560', x: 28 * TILE, y: 25 * TILE, radius: 8, role: 'PM',         wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
     { id: 'kryska', name: 'Крыска',  color: '#888',     x: 8 * TILE,  y: 36 * TILE, radius: 6, role: 'крыса',      wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
   ];
 }
@@ -187,44 +183,26 @@ export const EMOJI_CHAT = ['👋', '😂', '👍', '❤️', '🔥', '💀', '�
 
 export const BOT_PHRASES: Record<string, string[]> = {
   pers1: [
-    'Код скомпилировался с первого раза',
-    'Пулл реквест готов к ревью',
-    'Баг в продакшене, пофиксил',
-    'Рефакторю этот модуль',
-    'Деплой прошёл успешно',
-    'Тесты зелёные',
-  ],
-  pers2: [
-    'Нарисовала новые макеты',
-    'Обновила UI-kit',
-    'Компоненты в Figma готовы',
-    'Прототип кликабельный',
-    'Иконки дорисовала',
-    'Тени добавила на карточки',
-  ],
-  pers3: [
-    'Брендбук обновила',
-    'Нужны новые баннеры',
-    'Презентация для клиента',
-    'Мокапы 준비ила',
-    'Палитра расширилась',
-    'Дизайн-система растёт',
-  ],
-  pers4: [
-    'Баг в.edge case нашла',
-    'Регрессионный тест написала',
-    'Сценарий протестировала',
-    'Нашла баг в форме',
-    'Откатываем на прошлую версию',
-    'Всё работает, закрываю тикет',
-  ],
-  pers5: [
-    'Спринт завершён',
-    'Дедлайн через неделю',
-    'Оценки от команды собраны',
-    'Статус проекта обновлён',
-    'Ретроспектива в 17:00',
-    'Новый тикет в бэклоге',
+    'разъ*б чуваки',
+    'газ!',
+    'hola amigos',
+    'опять нашу идею сп*здили',
+    'это олеся или алиса...',
+    'я не lady gaga',
+    'sorry за мой английский',
+    'щас бы пуэрчику',
+    'в переславле, не беспокоить',
+    'где пинг-понг шоу?',
+    'джизус никоненко',
+    'фристайло ракамакафо',
+    '(не)зацени мои стрипы',
+    'я из минска',
+    'фанат яблок',
+    'не жги токены...',
+    'ща подлечу на вертолете',
+    'пора в монастырь',
+    'отдых не мой конек',
+    'пу пу пу',
   ],
   kryska: [
     '*пии-пии*',
@@ -235,22 +213,11 @@ export const BOT_PHRASES: Record<string, string[]> = {
 
 export const BOT_REACTIONS: Record<string, string[]> = {
   pers1: ['👋', '💻', '🔧', '🚀'],
-  pers2: ['👋', '🎨', '✨', '😊'],
-  pers3: ['👋', '💼', '🤝', '📋'],
-  pers4: ['👋', '🐛', '😤', '🔍'],
-  pers5: ['👋', '📋', '📊', '🗓️'],
   kryska: ['🐀', '🧀', '👀', '💀'],
 };
 
 export const BOT_CONVERSATIONS: string[][] = [
-  ['Олег', 'Кирилл', 'Тесты прошли?', 'Почти...'],
-  ['Аня', 'Олег', 'Макет готов', 'Ок смотрю'],
-  ['Аня', 'Кирилл', 'Дизайн ок?', 'Нужны правки'],
-  ['Олег', 'Аня', 'Сколько осталось?', 'День-два'],
-  ['Кирилл', 'Олег', 'Кто деплоил?', 'Не я!'],
-  ['Аня', 'Кирилл', 'Дизайн пройден?', 'Есть замечания'],
-  ['Саша', 'Олег', 'Спринт готов?', 'Почти'],
-  ['Саша', 'Аня', 'Макет для клиента?', 'Завтра будет'],
+  ['Олег', 'Олег', 'Код готов', 'Проверяю'],
 ];
 
 export interface ShopItem {

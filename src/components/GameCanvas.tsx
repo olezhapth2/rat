@@ -1045,6 +1045,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const dx = worldX - rp.x;
         const dy = worldY - rp.y;
         if (Math.sqrt(dx * dx + dy * dy) < TILE * 1.5) {
+          items.push({ icon: '👤', text: `Профиль ${rp.name}`, fn: () => openModal('profile', { remotePlayer: rp }) });
           items.push({ icon: '🎮', text: `КНБ с ${rp.name}`, fn: () => { sendRpsInvite(rp.id); toast(`Приглашение отправлено ${rp.name}`, 'info'); } });
           break;
         }
@@ -1196,7 +1197,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       }
 
       items.push({ icon: '👤', text: 'Профиль', fn: () => openModal('profile') });
-      items.push({ icon: '🏆', text: 'Ачивки', fn: () => openModal('achievements') });
       items.push({ icon: '📋', text: 'Дейли квесты', fn: () => openModal('quests') });
       items.push({ icon: '🛒', text: 'Магазин', fn: () => openModal('shop') });
       items.push({ icon: '📋', text: 'Инвентарь', fn: () => openModal('inventory') });
@@ -1897,7 +1897,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         >
           <div className="px-panel" style={{ width: 560, maxHeight: '80vh', overflow: 'hidden' }}>
             <div className="px-panel-header">
-              <span>{getModalTitle(modalType)}</span>
+              <span>{getModalTitle(modalType, modalData)}</span>
               <div style={{ display: 'flex', gap: 2 }}>
                 <button onClick={closeModal} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
               </div>
@@ -1905,8 +1905,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             <div style={{ padding: 16, maxHeight: '60vh', overflowY: 'auto' }}>
               {modalType === 'shop' && <ShopView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'inventory' && <InventoryView state={stateRef.current} onToast={toast} />}
-              {modalType === 'profile' && <ProfileView state={stateRef.current} />}
-              {modalType === 'achievements' && <AchievementsView state={stateRef.current} />}
+              {modalType === 'profile' && <ProfileView state={stateRef.current} profilePlayer={modalData.remotePlayer as { name: string; charId: string; role?: string; avatar?: string; coins?: number; level?: number; achievements?: string[] } | undefined} />}
               {modalType === 'quests' && <QuestsView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'talk' && <TalkView data={modalData} state={stateRef.current} onToast={toast} />}
               {modalType === 'rps' && <RpsView data={modalData} state={stateRef.current} onToast={toast} onConfetti={confetti} />}
@@ -1954,12 +1953,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
   );
 }
 
-function getModalTitle(type: string): string {
+function getModalTitle(type: string, data?: Record<string, unknown>): string {
   const t: Record<string, string> = {
     shop: 'SHOP',
     inventory: 'INVENTORY',
     profile: 'PROFILE',
-    achievements: 'ACHIEVEMENTS',
     quests: 'QUESTS',
     talk: 'TALK',
     rps: 'ROCK-PAPER-SCISSORS',
@@ -1967,6 +1965,9 @@ function getModalTitle(type: string): string {
     mp_rps: 'RPS VS PLAYER',
     book_prediction: '📖 BOOK OF FATE',
   };
+  if (type === 'profile' && data?.remotePlayer) {
+    return `PROFILE — ${(data.remotePlayer as { name: string }).name}`;
+  }
   return t[type] || '';
 }
 
@@ -2525,59 +2526,95 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
 
 // ===== DECORATE (grid-based placement) =====
 // ===== PROFILE =====
-function ProfileView({ state }: { state: GameState }) {
-  const p = state.player;
-  const xpNeeded = p.level * 100;
-  const xpPercent = (p.xp / xpNeeded) * 100;
+function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer?: { name: string; charId: string; role?: string; avatar?: string; coins?: number; level?: number; achievements?: string[] } }) {
+  const isOwn = !profilePlayer;
+  const p = isOwn ? state.player : null;
+  const rp = profilePlayer;
+
+  const name = rp?.name || p?.name || '';
+  const charId = rp?.charId || p?.charId || '';
+  const role = rp?.role || p?.role || '';
+  const avatar = rp?.avatar || p?.avatar || '';
+  const coins = rp?.coins ?? p?.coins ?? 0;
+  const level = rp?.level ?? p?.level ?? 1;
+  const achievements = rp?.achievements ?? p?.achievements ?? [];
+
+  const xpNeeded = level * 100;
+  const xpPercent = isOwn && p ? (p.xp / xpNeeded) * 100 : 0;
+
+  const allAchs = ACHIEVEMENTS;
+
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
       <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
-        <img src={p.avatar || `/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <img src={avatar || `/sprites/pers/${charId}.png`} alt={charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
-        <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{p.name}</div>
-        <div style={{ fontSize: 11, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{p.level}</div>
+        <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{name}</div>
+        <div style={{ fontSize: 11, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{level}</div>
       </div>
-      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>{p.role}</div>
-      
-      {/* XP Bar */}
-      <div className="px-panel" style={{ padding: '10px 16px', marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>EXPERIENCE</div>
-        <div style={{ width: '100%', height: 8, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden', marginBottom: 4 }}>
-          <div style={{
-            width: `${xpPercent}%`,
-            height: '100%',
-            background: 'var(--px-accent)',
-            transition: 'width 0.3s',
-          }} />
+      <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>{role}</div>
+
+      {/* XP Bar — own profile only */}
+      {isOwn && p && (
+        <div className="px-panel" style={{ padding: '10px 16px', marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>EXPERIENCE</div>
+          <div style={{ width: '100%', height: 8, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden', marginBottom: 4 }}>
+            <div style={{
+              width: `${xpPercent}%`,
+              height: '100%',
+              background: 'var(--px-accent)',
+              transition: 'width 0.3s',
+            }} />
+          </div>
+          <div style={{ fontSize: 9, color: 'var(--px-title)' }}>{p.xp} / {xpNeeded} XP</div>
         </div>
-        <div style={{ fontSize: 9, color: 'var(--px-title)' }}>{p.xp} / {xpNeeded} XP</div>
-      </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.coins}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>COINS</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.furniture.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ITEMS</div></div>
-        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{p.achievements.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ACHIEV</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{coins}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>COINS</div></div>
+        <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, color: 'var(--px-accent)' }}>{achievements.length}</div><div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>ACHIEV</div></div>
       </div>
-      <input
-        className="px-input"
-        style={{ width: '100%', marginBottom: 6, fontSize: 10, textAlign: 'center' }}
-        value={p.name}
-        onChange={(e) => { const v = e.target.value; p.name = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
-        placeholder="NAME"
-      />
-      <input
-        className="px-input"
-        style={{ width: '100%', fontSize: 10, textAlign: 'center' }}
-        value={p.role}
-        onChange={(e) => { const v = e.target.value; p.role = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
-        placeholder="ROLE"
-      />
-      <button
-        onClick={() => { logout(); window.location.reload(); }}
-        className="px-btn danger"
-        style={{ marginTop: 14, fontSize: 10 }}
-      >LOGOUT</button>
+
+      {/* Editable fields — own profile only */}
+      {isOwn && p && (
+        <>
+          <input
+            className="px-input"
+            style={{ width: '100%', marginBottom: 6, fontSize: 10, textAlign: 'center' }}
+            value={p.name}
+            onChange={(e) => { const v = e.target.value; p.name = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
+            placeholder="NAME"
+          />
+          <input
+            className="px-input"
+            style={{ width: '100%', fontSize: 10, textAlign: 'center' }}
+            value={p.role}
+            onChange={(e) => { const v = e.target.value; p.role = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
+            placeholder="ROLE"
+          />
+          <button
+            onClick={() => { logout(); window.location.reload(); }}
+            className="px-btn danger"
+            style={{ marginTop: 14, fontSize: 10 }}
+          >LOGOUT</button>
+        </>
+      )}
+
+      {/* Achievements */}
+      {achievements.length > 0 && (
+        <div style={{ marginTop: 14, textAlign: 'left' }}>
+          <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>ACHIEVEMENTS ({achievements.length})</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {allAchs.filter(a => achievements.includes(a.id)).map(a => (
+              <div key={a.id} className="px-panel" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 9, borderColor: 'var(--px-accent)' }} title={a.desc}>
+                <span>{a.icon}</span>
+                <span style={{ color: 'var(--px-accent)' }}>{a.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

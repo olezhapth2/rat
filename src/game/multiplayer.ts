@@ -8,6 +8,11 @@ export interface RemotePlayer {
   hatId: string;
   x: number;
   y: number;
+  coins?: number;
+  level?: number;
+  achievements?: string[];
+  role?: string;
+  avatar?: string;
 }
 
 export interface RpsInvite {
@@ -121,11 +126,17 @@ export function connectAuth(): void {
     onAuthUsersListCb?.(list);
   });
   socket.on('auth:user-updated', (data: any) => {
-    onAuthUserUpdatedCb?.(data);
     onAuthUserSyncCb?.(data);
+  });
+  socket.on('admin:user-updated', (data: any) => {
+    onAuthUserUpdatedCb?.(data);
   });
   socket.on('admin:user-deleted', (data: any) => {
     onAuthUserDeletedCb?.(data);
+  });
+  socket.on('auth:force-kick', (data: { reason: string }) => {
+    localStorage.removeItem('auth_session');
+    window.location.reload();
   });
 }
 

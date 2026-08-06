@@ -151,7 +151,7 @@ function loadUsers(): Record<string, UserAccount> {
   }
   // Default: only admin
   return {
-    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '', name: '', charId: 'pers5', role: '', avatar: '', photoTaken: false, admin: true },
+    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '123456', name: 'Олег', charId: 'pers1', role: 'Дизайнер', avatar: '', photoTaken: true, admin: true },
   };
 }
 
@@ -299,6 +299,11 @@ app.prepare().then(() => {
     hatId: string;
     x: number;
     y: number;
+    coins?: number;
+    level?: number;
+    achievements?: string[];
+    role?: string;
+    avatar?: string;
   }
 
   interface RpsGame {
@@ -329,7 +334,18 @@ app.prepare().then(() => {
   console.log(`[Data] Loaded: ${Object.keys(tileOverrides).length} tile overrides, ${sharedItems.length} items`);
 
   function broadcastPlayers() {
-    const list = Array.from(onlinePlayers.values());
+    const list = Array.from(onlinePlayers.values()).map(p => {
+      const playerData = playersDb[p.name.toLowerCase()];
+      const userData = Object.values(usersDb).find(u => u.name.toLowerCase() === p.name.toLowerCase());
+      return {
+        ...p,
+        coins: playerData?.coins,
+        level: playerData?.level,
+        achievements: playerData?.achievements,
+        role: userData?.role,
+        avatar: userData?.avatar,
+      };
+    });
     io.emit('players:list', list);
   }
 
@@ -345,6 +361,12 @@ app.prepare().then(() => {
 
     // Player registers
     socket.on('player:register', (data: { name: string; charId: string; hatId: string }) => {
+      // Remove any existing entry with the same name (e.g. reconnect from another tab)
+      for (const [sid, sp] of onlinePlayers) {
+        if (sp.name.toLowerCase() === data.name.toLowerCase() && sid !== socket.id) {
+          onlinePlayers.delete(sid);
+        }
+      }
       const player: ServerPlayer = {
         id: socket.id,
         name: data.name,
@@ -881,13 +903,19 @@ app.prepare().then(() => {
       if (data.password !== undefined && data.password.length > 0) user.password = data.password;
       if (data.admin !== undefined) user.admin = data.admin;
       saveUsers(usersDb);
-      // Sync to online player if connected
-      for (const [sid, sp] of onlinePlayers) {
-        if (sp.name.toLowerCase() === key) {
+      // Sync to online player by login email via loggedInUsers
+      for (const [sid, loginEmail] of loggedInUsers) {
+        if (loginEmail === key) {
           io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, role: user.role, avatar: user.avatar });
         }
       }
+      // Confirm to admin panel
       socket.emit('admin:user-updated', { login: key });
+      // Refresh user list for admin
+      const list = Object.entries(usersDb).map(([k, u]) => ({
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
+      }));
+      socket.emit('auth:users-list', list);
     });
 
     socket.on('auth:delete-user', (data: { login: string }) => {
@@ -897,6 +925,13 @@ app.prepare().then(() => {
       if (usersDb[key].admin) return socket.emit('admin:error', 'Нельзя удалить админа');
       delete usersDb[key];
       saveUsers(usersDb);
+      // Kick online player if connected
+      for (const [sid, loginEmail] of loggedInUsers) {
+        if (loginEmail === key) {
+          io.to(sid).emit('auth:force-kick', { reason: 'Account deleted' });
+          loggedInUsers.delete(sid);
+        }
+      }
       socket.emit('admin:user-deleted', { login: key });
       const list = Object.entries(usersDb).map(([k, u]) => ({
         login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,

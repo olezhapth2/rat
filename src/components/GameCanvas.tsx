@@ -2571,36 +2571,6 @@ function ProfileView({ state }: { state: GameState }) {
         onChange={(e) => { const v = e.target.value; p.role = v.charAt(0).toUpperCase() + v.slice(1); persistState(state); }}
         placeholder="ROLE"
       />
-      {/* Office Customization */}
-      <div style={{ marginTop: 16, textAlign: 'left' }}>
-        <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 8 }}>ОФИС</div>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>ЦВЕТ СТЕН</div>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {['#2a2a4a', '#1a3a2a', '#3a1a2a', '#2a2a1a', '#1a2a3a', '#3a2a3a'].map(c => (
-              <div
-                key={c}
-                onClick={() => { p.wallColor = c; persistState(state); }}
-                style={{
-                  width: 28, height: 28, background: c, cursor: 'pointer',
-                  border: `2px solid ${p.wallColor === c ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>ИМЯ НА ДВЕРИ</div>
-          <input
-            className="px-input"
-            style={{ width: '100%', fontSize: 8 }}
-            value={p.doorName}
-            onChange={(e) => { p.doorName = e.target.value; persistState(state); }}
-            placeholder="ВАШЕ ИМЯ"
-            maxLength={20}
-          />
-        </div>
-      </div>
       <button
         onClick={() => { logout(); window.location.reload(); }}
         className="px-btn danger"

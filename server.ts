@@ -174,6 +174,20 @@ const playersDb = loadPlayers();
 const customAchievements = loadCustomAchievements();
 const usersDb = loadUsers();
 
+// One-time migration: capitalize all names in DB
+let namesFixed = false;
+for (const [key, u] of Object.entries(usersDb)) {
+  if (u.name && u.name !== u.name.charAt(0).toUpperCase() + u.name.slice(1)) {
+    u.name = u.name.charAt(0).toUpperCase() + u.name.slice(1);
+    namesFixed = true;
+  }
+  if (u.role && u.role !== u.role.charAt(0).toUpperCase() + u.role.slice(1)) {
+    u.role = u.role.charAt(0).toUpperCase() + u.role.slice(1);
+    namesFixed = true;
+  }
+}
+if (namesFixed) saveUsers(usersDb);
+
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleSave() {
   if (saveTimer) return;
@@ -776,19 +790,23 @@ app.prepare().then(() => {
       const user = usersDb[key];
       if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
       if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
-      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
+      // Capitalize name on the fly
+      const capName = user.name.charAt(0).toUpperCase() + user.name.slice(1);
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
     });
 
     socket.on('auth:register', (data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }) => {
       const key = data.login.trim().toLowerCase();
+      const capName = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+      const capRole = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       if (usersDb[key]) return socket.emit('auth:result', { ok: false, msg: 'Логин уже занят' });
       usersDb[key] = {
         login: key,
         password: data.password,
-        name: data.name,
+        name: capName,
         charId: data.charId,
         color: data.color,
-        role: data.role,
+        role: capRole,
         avatar: data.avatar || '',
         photoTaken: false,
       };
@@ -820,10 +838,10 @@ app.prepare().then(() => {
       const key = data.login.trim().toLowerCase();
       const user = usersDb[key];
       if (!user) return socket.emit('admin:error', 'User not found');
-      if (data.name !== undefined) user.name = data.name;
+      if (data.name !== undefined) user.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
       if (data.charId !== undefined) user.charId = data.charId;
       if (data.color !== undefined) user.color = data.color;
-      if (data.role !== undefined) user.role = data.role;
+      if (data.role !== undefined) user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       if (data.avatar !== undefined) user.avatar = data.avatar;
       if (data.password !== undefined && data.password.length > 0) user.password = data.password;
       saveUsers(usersDb);

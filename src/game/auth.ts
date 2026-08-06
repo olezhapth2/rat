@@ -11,11 +11,16 @@ export interface UserData {
 const SESSION_KEY = 'auth_session';
 let pendingLogin: ((data: { ok: boolean; msg?: string; user?: UserData }) => void) | null = null;
 
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export function initAuth(): void {
   // Dynamic import to avoid circular deps
   import('./multiplayer').then(mp => {
     mp.onAuthResult((data) => {
       if (data.ok && data.user) {
+        data.user.name = capitalize(data.user.name);
         localStorage.setItem(SESSION_KEY, JSON.stringify({ ...data.user, ts: Date.now() }));
       }
       pendingLogin?.(data);
@@ -26,7 +31,7 @@ export function initAuth(): void {
       const raw = localStorage.getItem(SESSION_KEY);
       if (raw) {
         const session = JSON.parse(raw);
-        if (data.name !== undefined) session.name = data.name;
+        if (data.name !== undefined) session.name = capitalize(data.name);
         if (data.charId !== undefined) session.charId = data.charId;
         if (data.color !== undefined) session.color = data.color;
         if (data.role !== undefined) session.role = data.role;
@@ -78,10 +83,10 @@ export function getCurrentUser(): UserData | null {
     const session = JSON.parse(raw);
     if (!session?.name) return null;
     return {
-      name: session.name,
+      name: capitalize(session.name),
       charId: session.charId,
       color: session.color,
-      role: session.role,
+      role: capitalize(session.role),
       avatar: session.avatar || '',
       login: session.login || session.name,
       photoTaken: session.photoTaken || false,

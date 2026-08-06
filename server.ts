@@ -55,9 +55,8 @@ interface UserAccount {
   password: string;
   name: string;
   charId: string;
-  color: string;
   role: string;
-  avatar: string; // path to avatar sprite
+  avatar: string;
   photoTaken?: boolean;
 }
 
@@ -149,13 +148,9 @@ function loadUsers(): Record<string, UserAccount> {
   } catch (e) {
     console.error('[Data] Failed to load users:', e);
   }
-  // Default users
+  // Default: only admin
   return {
-    'олег':   { login: 'олег',   password: '123456', name: 'Олег',   charId: 'pers1', color: '#4ecca3', role: 'Разработчик', avatar: '' },
-    'аня':    { login: 'аня',    password: '123456', name: 'Аня',    charId: 'pers2', color: '#ffa726', role: 'Дизайнер',   avatar: '' },
-    'алиса':  { login: 'алиса',  password: '123456', name: 'Алиса',  charId: 'pers3', color: '#9c27b0', role: 'HR',         avatar: '' },
-    'кирилл': { login: 'кирилл', password: '123456', name: 'Кирилл', charId: 'pers4', color: '#2196f3', role: 'QA',         avatar: '' },
-    'саша':   { login: 'саша',   password: '123456', name: 'Саша',   charId: 'pers5', color: '#e94560', role: 'PM',         avatar: '' },
+    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '', name: '', charId: 'pers5', role: '', avatar: '', photoTaken: false },
   };
 }
 
@@ -303,7 +298,6 @@ app.prepare().then(() => {
     hatId: string;
     x: number;
     y: number;
-    color: string;
   }
 
   interface RpsGame {
@@ -349,7 +343,7 @@ app.prepare().then(() => {
     socket.emit('tile:sync', tileOverrides);
 
     // Player registers
-    socket.on('player:register', (data: { name: string; charId: string; hatId: string; color: string }) => {
+    socket.on('player:register', (data: { name: string; charId: string; hatId: string }) => {
       const player: ServerPlayer = {
         id: socket.id,
         name: data.name,
@@ -357,7 +351,6 @@ app.prepare().then(() => {
         hatId: data.hatId,
         x: 16 * 40 + 20,
         y: 13 * 40 + 20,
-        color: data.color,
       };
       onlinePlayers.set(socket.id, player);
       broadcastPlayers();
@@ -795,37 +788,51 @@ app.prepare().then(() => {
       const key = data.login.trim().toLowerCase();
       const user = usersDb[key];
       if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
+      // First login: user has no password yet
+      if (!user.password) {
+        loggedInUsers.set(socket.id, key);
+        return socket.emit('auth:result', { ok: true, firstLogin: true, user: { login: user.login, name: '', charId: user.charId, role: '', avatar: user.avatar, photoTaken: false } });
+      }
       if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
       loggedInUsers.set(socket.id, key);
-      // Capitalize name on the fly
       const capName = user.name.charAt(0).toUpperCase() + user.name.slice(1);
-      socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
     });
 
-    socket.on('auth:register', (data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }) => {
+    socket.on('auth:create-user', (data: { login: string; charId: string; avatar: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();
-      const capName = data.name.charAt(0).toUpperCase() + data.name.slice(1);
-      const capRole = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-      if (usersDb[key]) return socket.emit('auth:result', { ok: false, msg: 'Логин уже занят' });
+      if (usersDb[key]) return socket.emit('admin:error', 'Логин уже занят');
       usersDb[key] = {
         login: key,
-        password: data.password,
-        name: capName,
+        password: '',
+        name: '',
         charId: data.charId,
-        color: data.color,
-        role: capRole,
+        role: '',
         avatar: data.avatar || '',
         photoTaken: false,
       };
       saveUsers(usersDb);
+      socket.emit('admin:user-added', { login: key });
+    });
+
+    socket.on('auth:first-login', (data: { login: string; password: string; name: string; role: string }) => {
+      const key = data.login.trim().toLowerCase();
+      const user = usersDb[key];
+      if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
+      if (user.password) return socket.emit('auth:result', { ok: false, msg: 'Пароль уже установлен' });
+      user.password = data.password;
+      user.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+      user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+      saveUsers(usersDb);
       loggedInUsers.set(socket.id, key);
-      socket.emit('auth:result', { ok: true, user: { login: key, name: capName, charId: data.charId, color: data.color, role: capRole, avatar: data.avatar, photoTaken: false } });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: false } });
     });
 
     socket.on('auth:get-users', () => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const list = Object.entries(usersDb).map(([key, u]) => ({
-        login: key, name: u.name, charId: u.charId, color: u.color, role: u.role, avatar: u.avatar,
+        login: key, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
       }));
       socket.emit('auth:users-list', list);
     });
@@ -852,14 +859,13 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; color?: string; role?: string; avatar?: string; password?: string }) => {
+    socket.on('auth:update-user', (data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const key = data.login.trim().toLowerCase();
       const user = usersDb[key];
       if (!user) return socket.emit('admin:error', 'User not found');
       if (data.name !== undefined) user.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
       if (data.charId !== undefined) user.charId = data.charId;
-      if (data.color !== undefined) user.color = data.color;
       if (data.role !== undefined) user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       if (data.avatar !== undefined) user.avatar = data.avatar;
       if (data.password !== undefined && data.password.length > 0) user.password = data.password;
@@ -867,7 +873,7 @@ app.prepare().then(() => {
       // Sync to online player if connected
       for (const [sid, sp] of onlinePlayers) {
         if (sp.name.toLowerCase() === key) {
-          io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, color: user.color, role: user.role, avatar: user.avatar });
+          io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, role: user.role, avatar: user.avatar });
         }
       }
       socket.emit('admin:user-updated', { login: key });
@@ -881,7 +887,7 @@ app.prepare().then(() => {
       saveUsers(usersDb);
       socket.emit('admin:user-deleted', { login: key });
       const list = Object.entries(usersDb).map(([k, u]) => ({
-        login: k, name: u.name, charId: u.charId, color: u.color, role: u.role, avatar: u.avatar,
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar,
       }));
       socket.emit('auth:users-list', list);
     });

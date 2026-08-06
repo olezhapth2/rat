@@ -8,7 +8,6 @@ export interface RemotePlayer {
   hatId: string;
   x: number;
   y: number;
-  color: string;
 }
 
 export interface RpsInvite {
@@ -188,11 +187,11 @@ function registerGameListeners(): void {
     });
   }
 
-export function connectMultiplayer(name: string, charId: string, hatId: string, color: string): void {
+export function connectMultiplayer(name: string, charId: string, hatId: string): void {
   if (socket?.connected) {
     myId = socket.id!;
     registerGameListeners();
-    socket.emit('player:register', { name, charId, hatId, color });
+    socket.emit('player:register', { name, charId, hatId });
     registered = true;
     onConnect?.();
     return;
@@ -206,7 +205,7 @@ export function connectMultiplayer(name: string, charId: string, hatId: string, 
     myId = socket!.id!;
     console.log('[MP] Connected:', myId);
     registerGameListeners();
-    socket!.emit('player:register', { name, charId, hatId, color });
+    socket!.emit('player:register', { name, charId, hatId });
     registered = true;
     onConnect?.();
   });
@@ -449,15 +448,19 @@ export function authLogin(login: string, password: string): void {
   socket?.emit('auth:login', { login, password });
 }
 
-export function authRegister(data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }): void {
-  socket?.emit('auth:register', data);
+export function authFirstLogin(login: string, password: string, name: string, role: string): void {
+  socket?.emit('auth:first-login', { login, password, name, role });
+}
+
+export function authCreateUser(data: { login: string; charId: string; avatar: string }): void {
+  socket?.emit('auth:create-user', data);
 }
 
 export function authGetUsers(): void {
   socket?.emit('auth:get-users');
 }
 
-export function authUpdateUser(data: { login: string; name?: string; charId?: string; color?: string; role?: string; avatar?: string; password?: string }): void {
+export function authUpdateUser(data: { login: string; name?: string; charId?: string; role?: string; avatar?: string; password?: string }): void {
   socket?.emit('auth:update-user', data);
 }
 

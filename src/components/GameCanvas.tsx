@@ -23,10 +23,9 @@ import {
   onTileSync,
   sendTilePaint, sendTileRemove, sendTileReset,
   sendPlayerSave, onPlayerDataSync,
-  saveProfileSetup,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
-import { loginAsync, registerAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
+import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
 
@@ -38,18 +37,17 @@ interface CtxItem {
 
 export default function GameCanvas() {
   const [authUser, setAuthUser] = useState<UserData | null>(null);
-  const [authName, setAuthName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
   const [authPass, setAuthPass] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [secretToast, setSecretToast] = useState('');
-  const [showRegister, setShowRegister] = useState(false);
+  const [firstLogin, setFirstLogin] = useState(false);
+  const [firstLoginEmail, setFirstLoginEmail] = useState('');
   // Onboarding state
   const [onboardingPhase, setOnboardingPhase] = useState<'none' | 'photo' | 'flash' | 'zoom'>('none');
-  const [onbName, setOnbName] = useState('');
-  const [onbRole, setOnbRole] = useState('');
 
   useEffect(() => {
     initAuth();
@@ -60,14 +58,31 @@ export default function GameCanvas() {
   const handleAuth = async () => {
     setAuthLoading(true);
     setAuthError('');
-    const res = await loginAsync(authName, authPass);
+    const res = await loginAsync(authEmail, authPass);
     setAuthLoading(false);
     if (res.ok && res.user) {
       setAuthUser(res.user);
       setAuthError('');
-      if (!res.user.photoTaken) {
+      if (res.firstLogin) {
+        setFirstLogin(true);
+        setFirstLoginEmail(authEmail);
+      } else if (!res.user.photoTaken) {
         setOnboardingPhase('photo');
       }
+    } else {
+      setAuthError(res.msg || 'Ошибка');
+    }
+  };
+
+  const handleFirstLogin = async (password: string, name: string, role: string) => {
+    setAuthLoading(true);
+    setAuthError('');
+    const res = await firstLoginAsync(firstLoginEmail, password, name, role);
+    setAuthLoading(false);
+    if (res.ok && res.user) {
+      setAuthUser(res.user);
+      setFirstLogin(false);
+      setOnboardingPhase('photo');
     } else {
       setAuthError(res.msg || 'Ошибка');
     }
@@ -115,11 +130,11 @@ export default function GameCanvas() {
               </div>
             </div>
 
-            {!showRegister ? (
+            {!firstLogin ? (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                  <input type="email" placeholder="EMAIL" className="px-input" value={authName}
-                    onChange={(e) => setAuthName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                  <input type="email" placeholder="EMAIL" className="px-input" value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                   <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
                     onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                 </div>
@@ -128,17 +143,12 @@ export default function GameCanvas() {
                     {authError}
                   </div>
                 )}
-                <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
+                <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12 }}>
                   {authLoading ? '...' : 'LOGIN'}
                 </button>
-                <div style={{ textAlign: 'center' }}>
-                  <span onClick={() => { setShowRegister(true); setAuthError(''); }} style={{ fontSize: 9, color: 'var(--px-accent)', cursor: 'pointer' }}>
-                    Нет аккаунта? Создать
-                  </span>
-                </div>
               </>
             ) : (
-              <RegisterForm onDone={(user) => { setAuthUser(user); setShowRegister(false); }} onBack={() => { setShowRegister(false); setAuthError(''); }} />
+              <FirstLoginForm email={firstLoginEmail} onSubmit={handleFirstLogin} error={authError} loading={authLoading} />
             )}
 
             {secretToast && (
@@ -152,7 +162,7 @@ export default function GameCanvas() {
     );
   }
 
-  // Onboarding flow
+  // Onboarding flow — photo + flash + zoom (name/role already set in first login)
   if (onboardingPhase === 'photo') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
@@ -161,29 +171,14 @@ export default function GameCanvas() {
             <span>SECURITY CHECK</span>
           </div>
           <div style={{ padding: 24, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 16 }}>ДОБРО ПОЖАЛОВАТЬ</div>
+            <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 16 }}>ДОБРО ПОЖАЛОВАТЬ, {authUser!.name}</div>
             <div style={{ width: 120, height: 120, margin: '0 auto 16px', background: '#000', border: '3px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14, textAlign: 'left' }}>
-              <input className="px-input" placeholder="КАК ВАС ЗОВУТ?" value={onbName}
-                onChange={(e) => { const v = e.target.value; setOnbName(v.charAt(0).toUpperCase() + v.slice(1)); }} />
-              <input className="px-input" placeholder="ДОЛЖНОСТЬ" value={onbRole}
-                onChange={(e) => { const v = e.target.value; setOnbRole(v.charAt(0).toUpperCase() + v.slice(1)); }} />
-            </div>
             <button className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}
-              disabled={!onbName.trim()}
               onClick={() => {
-                if (onbName.trim()) {
-                  saveProfileSetup(onbName.trim(), onbRole.trim() || 'Разработчик');
-                  // Update local auth user
-                  if (authUser) {
-                    authUser.name = onbName.trim();
-                    if (onbRole.trim()) authUser.role = onbRole.trim();
-                  }
-                  setOnboardingPhase('flash');
-                  setTimeout(() => setOnboardingPhase('zoom'), 400);
-                }
+                setOnboardingPhase('flash');
+                setTimeout(() => setOnboardingPhase('zoom'), 400);
               }}>
               📷 СДЕЛАТЬ ФОТО
             </button>
@@ -859,7 +854,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Multiplayer connection
   useEffect(() => {
     const s = stateRef.current;
-    connectMultiplayer(s.player.name, s.player.charId, s.player.hatId, s.player.color);
+    connectMultiplayer(s.player.name, s.player.charId, s.player.hatId);
 
     onConnected(() => {
       setMpConnected(true);
@@ -3190,89 +3185,35 @@ function OnboardingLoader({ onComplete }: { onComplete: () => void }) {
   return null;
 }
 
-// ===== REGISTER FORM =====
-function RegisterForm({ onDone, onBack }: { onDone: (user: UserData) => void; onBack: () => void }) {
-  const [email, setEmail] = useState('');
+// ===== FIRST LOGIN FORM =====
+function FirstLoginForm({ email, onSubmit, error, loading }: { email: string; onSubmit: (password: string, name: string, role: string) => void; error: string; loading: boolean }) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'credentials' | 'profile'>('credentials');
-  const [pendingUser, setPendingUser] = useState<UserData | null>(null);
 
-  const handleRegister = async () => {
-    if (!email.trim() || !password) { setError('Заполните email и пароль'); return; }
-    setLoading(true);
-    setError('');
-    const charId = 'custom_' + Date.now();
-    const color = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-    const res = await registerAsync({
-      login: email.trim(),
-      password,
-      name: name.trim() || email.split('@')[0],
-      charId,
-      color,
-      role: role || 'Разработчик',
-      avatar: '',
-    });
-    setLoading(false);
-    if (res.ok && res.user) {
-      setPendingUser(res.user);
-      setStep('profile');
-    } else {
-      setError(res.msg || 'Ошибка');
-    }
+  const handleSubmit = () => {
+    if (!password || !name.trim()) return;
+    onSubmit(password, name.trim(), role.trim() || 'Разработчик');
   };
-
-  const handleProfile = () => {
-    if (!name.trim()) { setError('Введите имя'); return; }
-    if (pendingUser) {
-      pendingUser.name = name.trim();
-      if (role.trim()) pendingUser.role = role.trim();
-      pendingUser.photoTaken = true;
-      saveProfileSetup(name.trim(), role.trim() || 'Разработчик');
-      markPhotoTaken();
-      onDone(pendingUser);
-    }
-  };
-
-  if (step === 'profile') {
-    return (
-      <div>
-        <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>КАК ВАС ЗОВУТ?</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-          <input className="px-input" placeholder="ИМЯ" value={name}
-            onChange={(e) => { const v = e.target.value; setName(v.charAt(0).toUpperCase() + v.slice(1)); }} />
-          <input className="px-input" placeholder="ДОЛЖНОСТЬ" value={role}
-            onChange={(e) => { const v = e.target.value; setRole(v.charAt(0).toUpperCase() + v.slice(1)); }} />
-        </div>
-        {error && (
-          <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>{error}</div>
-        )}
-        <button onClick={handleProfile} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}>
-          ДАЛЕЕ
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>НОВЫЙ ИГРОК</div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 8, textAlign: 'center' }}>ПЕРВЫЙ ВХОД</div>
+      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 12, textAlign: 'center' }}>{email}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-        <input className="px-input" type="email" placeholder="EMAIL" value={email} onChange={e => setEmail(e.target.value)} />
-        <input className="px-input" type="password" placeholder="PASSWORD" value={password} onChange={e => setPassword(e.target.value)} />
+        <input className="px-input" type="password" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ" value={password}
+          onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSubmit()} />
+        <input className="px-input" placeholder="КАК ВАС ЗОВУТ?" value={name}
+          onChange={(e) => { const v = e.target.value; setName(v.charAt(0).toUpperCase() + v.slice(1)); }} />
+        <input className="px-input" placeholder="ДОЛЖНОСТЬ" value={role}
+          onChange={(e) => { const v = e.target.value; setRole(v.charAt(0).toUpperCase() + v.slice(1)); }} />
       </div>
       {error && (
         <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>{error}</div>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onBack} className="px-btn" style={{ flex: 1, fontSize: 10 }}>НАЗАД</button>
-        <button onClick={handleRegister} disabled={loading} className="px-btn accent" style={{ flex: 1, fontSize: 10 }}>
-          {loading ? '...' : 'СОЗДАТЬ'}
-        </button>
-      </div>
+      <button onClick={handleSubmit} disabled={loading || !password || !name.trim()} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}>
+        {loading ? '...' : 'НАЧАТЬ'}
+      </button>
     </div>
   );
 }

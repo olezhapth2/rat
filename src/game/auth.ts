@@ -1,7 +1,6 @@
 export interface UserData {
   name: string;
   charId: string;
-  color: string;
   role: string;
   avatar: string;
   login: string;
@@ -9,16 +8,15 @@ export interface UserData {
 }
 
 const SESSION_KEY = 'auth_session';
-let pendingLogin: ((data: { ok: boolean; msg?: string; user?: UserData }) => void) | null = null;
+let pendingLogin: ((data: { ok: boolean; msg?: string; user?: UserData; firstLogin?: boolean }) => void) | null = null;
 
 function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
 export function initAuth(): void {
-  // Dynamic import to avoid circular deps
   import('./multiplayer').then(mp => {
-    mp.connectAuth(); // Connect socket for auth events
+    mp.connectAuth();
     mp.onAuthResult((data) => {
       if (data.ok && data.user) {
         data.user.name = capitalize(data.user.name);
@@ -28,13 +26,11 @@ export function initAuth(): void {
       pendingLogin = null;
     });
     mp.onAuthUserSync((data) => {
-      // Update local session when admin changes user data
       const raw = localStorage.getItem(SESSION_KEY);
       if (raw) {
         const session = JSON.parse(raw);
         if (data.name !== undefined) session.name = capitalize(data.name);
         if (data.charId !== undefined) session.charId = data.charId;
-        if (data.color !== undefined) session.color = data.color;
         if (data.role !== undefined) session.role = data.role;
         if (data.avatar !== undefined) session.avatar = data.avatar;
         if (data.photoTaken !== undefined) session.photoTaken = data.photoTaken;
@@ -44,17 +40,10 @@ export function initAuth(): void {
   });
 }
 
-export function login(name: string, password: string): { ok: boolean; msg: string } {
-  // Offline fallback — try local session
-  // Real auth goes through multiplayer
-  return { ok: false, msg: 'Подключение к серверу...' };
-}
-
-export function loginAsync(name: string, password: string): Promise<{ ok: boolean; msg?: string; user?: UserData }> {
+export function loginAsync(login: string, password: string): Promise<{ ok: boolean; msg?: string; user?: UserData; firstLogin?: boolean }> {
   return new Promise((resolve) => {
     pendingLogin = resolve;
-    import('./multiplayer').then(mp => mp.authLogin(name, password));
-    // Timeout
+    import('./multiplayer').then(mp => mp.authLogin(login, password));
     setTimeout(() => {
       if (pendingLogin === resolve) {
         pendingLogin = null;
@@ -64,10 +53,10 @@ export function loginAsync(name: string, password: string): Promise<{ ok: boolea
   });
 }
 
-export function registerAsync(data: { login: string; password: string; name: string; charId: string; color: string; role: string; avatar: string }): Promise<{ ok: boolean; msg?: string; user?: UserData }> {
+export function firstLoginAsync(login: string, password: string, name: string, role: string): Promise<{ ok: boolean; msg?: string; user?: UserData }> {
   return new Promise((resolve) => {
     pendingLogin = resolve;
-    import('./multiplayer').then(mp => mp.authRegister(data));
+    import('./multiplayer').then(mp => mp.authFirstLogin(login, password, name, role));
     setTimeout(() => {
       if (pendingLogin === resolve) {
         pendingLogin = null;
@@ -82,14 +71,13 @@ export function getCurrentUser(): UserData | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw);
-    if (!session?.name) return null;
+    if (!session?.login) return null;
     return {
       name: capitalize(session.name),
       charId: session.charId,
-      color: session.color,
       role: capitalize(session.role),
       avatar: session.avatar || '',
-      login: session.login || session.name,
+      login: session.login || '',
       photoTaken: session.photoTaken || false,
     };
   } catch {
@@ -121,6 +109,5 @@ export function markPhotoTaken(): void {
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     }
   } catch {}
-  // Also notify server
   import('./multiplayer').then(mp => mp.markPhotoTaken());
 }

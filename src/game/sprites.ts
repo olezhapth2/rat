@@ -169,8 +169,7 @@ export function drawCharacterSprite(
   charId: string,
   hatId: string,
   anim: AnimState,
-  name?: string,
-  color?: string
+  name?: string
 ): void {
   const sprite = getSprite(charId, hatId, anim.dir, anim.isMoving ? 'run' : 'idle');
   const state: 'idle' | 'run' = anim.isMoving ? 'run' : 'idle';

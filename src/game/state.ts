@@ -22,7 +22,6 @@ export interface GameState {
   player: Player & {
     name: string;
     av: string;
-    color: string;
     role: string;
     coins: number;
     xp: number;
@@ -119,20 +118,18 @@ function savePartial(state: GameState) {
   );
 }
 
-export function createInitialState(authUser?: { charId: string; name: string; color?: string; role?: string } | null): GameState {
+export function createInitialState(authUser?: { charId: string; name: string; role?: string } | null): GameState {
   const saved = loadState();
   const today = new Date().toISOString().slice(0, 10);
 
   const charId = authUser?.charId || (saved?.charId as string) || 'pers4';
   const name = authUser?.name || (saved?.name as string) || 'Ты';
-  const authColor = authUser?.color || '#4ecca3';
   const authRole = authUser?.role || 'Разработчик';
 
   const player = {
     ...createPlayer(),
     name,
     av: (saved?.av as string) || '🧑‍🚀',
-    color: authColor,
     role: (saved?.role as string) || authRole,
     coins: (saved?.coins as number) ?? 100,
     xp: (saved?.xp as number) ?? 0,

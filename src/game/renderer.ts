@@ -156,9 +156,9 @@ export function render(
   // Characters
   const playerName = (player as any).name || 'Ты';
   const allChars = [
-    { x: player.x, y: player.y, color: '#4ecca3', name: playerName, isPlayer: true, bot: null as any, charId: (player as any).charId || 'pers4', hatId: (player as any).hatId || 'none' },
-    ...bots.map((b) => ({ x: b.x, y: b.y, color: b.color, name: b.name, isPlayer: false, bot: b, charId: b.id, hatId: 'none' })),
-    ...remotePlayers.map((rp) => ({ x: rp.x, y: rp.y, color: rp.color, name: rp.name, isPlayer: false, bot: null as any, charId: rp.charId, hatId: rp.hatId })),
+    { x: player.x, y: player.y, name: playerName, isPlayer: true, bot: null as any, charId: (player as any).charId || 'pers4', hatId: (player as any).hatId || 'none' },
+    ...bots.map((b) => ({ x: b.x, y: b.y, name: b.name, isPlayer: false, bot: b, charId: b.id, hatId: 'none' })),
+    ...remotePlayers.map((rp) => ({ x: rp.x, y: rp.y, name: rp.name, isPlayer: false, bot: null as any, charId: rp.charId, hatId: rp.hatId })),
   ];
 
   // Pet
@@ -177,7 +177,7 @@ export function render(
         const anim: AnimState = c.isPlayer
           ? (playerAnim ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 })
           : (botAnims?.[c.bot?.id] ?? { dir: 'front' as const, isMoving: false, frame: 0, tick: 0 });
-        drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name, c.color);
+        drawCharacterSprite(ctx, c.x, bobY, c.charId, c.hatId, anim, c.name);
 
         // Name label above character — exactly at top edge of sprite
         ctx.font = 'bold 9px "Press Start 2P", monospace';

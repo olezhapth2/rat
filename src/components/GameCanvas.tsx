@@ -26,7 +26,7 @@ import {
   saveProfileSetup,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
-import { loginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
+import { loginAsync, registerAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
 
@@ -45,6 +45,7 @@ export default function GameCanvas() {
   const [ready, setReady] = useState(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [secretToast, setSecretToast] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
   // Onboarding state
   const [onboardingPhase, setOnboardingPhase] = useState<'none' | 'photo' | 'flash' | 'zoom'>('none');
   const [onbName, setOnbName] = useState('');
@@ -114,20 +115,31 @@ export default function GameCanvas() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              <input type="text" placeholder="LOGIN" className="px-input" value={authName}
-                onChange={(e) => { const v = e.target.value; setAuthName(v.charAt(0).toUpperCase() + v.slice(1)); }} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
-              <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
-                onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
-            </div>
-            {authError && (
-              <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
-                {authError}
-              </div>
+            {!showRegister ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                  <input type="email" placeholder="EMAIL" className="px-input" value={authName}
+                    onChange={(e) => setAuthName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                  <input type="password" placeholder="PASSWORD" className="px-input" value={authPass}
+                    onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                </div>
+                {authError && (
+                  <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
+                    {authError}
+                  </div>
+                )}
+                <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
+                  {authLoading ? '...' : 'LOGIN'}
+                </button>
+                <div style={{ textAlign: 'center' }}>
+                  <span onClick={() => { setShowRegister(true); setAuthError(''); }} style={{ fontSize: 9, color: 'var(--px-accent)', cursor: 'pointer' }}>
+                    Нет аккаунта? Создать
+                  </span>
+                </div>
+              </>
+            ) : (
+              <RegisterForm onDone={(user) => { setAuthUser(user); setShowRegister(false); }} onBack={() => { setShowRegister(false); setAuthError(''); }} />
             )}
-            <button onClick={handleAuth} disabled={authLoading} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 12, marginBottom: 10 }}>
-              {authLoading ? '...' : 'LOGIN'}
-            </button>
 
             {secretToast && (
               <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--px-panel)', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
@@ -3176,6 +3188,93 @@ function OnboardingLoader({ onComplete }: { onComplete: () => void }) {
     });
   }, [onComplete]);
   return null;
+}
+
+// ===== REGISTER FORM =====
+function RegisterForm({ onDone, onBack }: { onDone: (user: UserData) => void; onBack: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'credentials' | 'profile'>('credentials');
+  const [pendingUser, setPendingUser] = useState<UserData | null>(null);
+
+  const handleRegister = async () => {
+    if (!email.trim() || !password) { setError('Заполните email и пароль'); return; }
+    setLoading(true);
+    setError('');
+    const charId = 'custom_' + Date.now();
+    const color = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+    const res = await registerAsync({
+      login: email.trim(),
+      password,
+      name: name.trim() || email.split('@')[0],
+      charId,
+      color,
+      role: role || 'Разработчик',
+      avatar: '',
+    });
+    setLoading(false);
+    if (res.ok && res.user) {
+      setPendingUser(res.user);
+      setStep('profile');
+    } else {
+      setError(res.msg || 'Ошибка');
+    }
+  };
+
+  const handleProfile = () => {
+    if (!name.trim()) { setError('Введите имя'); return; }
+    if (pendingUser) {
+      pendingUser.name = name.trim();
+      if (role.trim()) pendingUser.role = role.trim();
+      pendingUser.photoTaken = true;
+      saveProfileSetup(name.trim(), role.trim() || 'Разработчик');
+      markPhotoTaken();
+      onDone(pendingUser);
+    }
+  };
+
+  if (step === 'profile') {
+    return (
+      <div>
+        <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>КАК ВАС ЗОВУТ?</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          <input className="px-input" placeholder="ИМЯ" value={name}
+            onChange={(e) => { const v = e.target.value; setName(v.charAt(0).toUpperCase() + v.slice(1)); }} />
+          <input className="px-input" placeholder="ДОЛЖНОСТЬ" value={role}
+            onChange={(e) => { const v = e.target.value; setRole(v.charAt(0).toUpperCase() + v.slice(1)); }} />
+        </div>
+        {error && (
+          <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>{error}</div>
+        )}
+        <button onClick={handleProfile} className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}>
+          ДАЛЕЕ
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 12, textAlign: 'center' }}>НОВЫЙ ИГРОК</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+        <input className="px-input" type="email" placeholder="EMAIL" value={email} onChange={e => setEmail(e.target.value)} />
+        <input className="px-input" type="password" placeholder="PASSWORD" value={password} onChange={e => setPassword(e.target.value)} />
+      </div>
+      {error && (
+        <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>{error}</div>
+      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={onBack} className="px-btn" style={{ flex: 1, fontSize: 10 }}>НАЗАД</button>
+        <button onClick={handleRegister} disabled={loading} className="px-btn accent" style={{ flex: 1, fontSize: 10 }}>
+          {loading ? '...' : 'СОЗДАТЬ'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 

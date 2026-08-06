@@ -133,11 +133,27 @@ export async function preloadPetSprites(): Promise<void> {
 
 // Get cached sprite (always returns the single character image)
 export function getSprite(charId: string, _hatId: string, _dir: Direction, _state: 'idle' | 'run'): HTMLImageElement | null {
-  return spriteCache.get(charId) || null;
+  // Check cache first
+  const cached = spriteCache.get(charId);
+  if (cached) return cached;
+  // Dynamic load for custom sprites
+  if (!customLoadAttempted.has(charId)) {
+    customLoadAttempted.add(charId);
+    const url = `/custom-sprites/${charId}.webp`;
+    loadImage(url).then(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        spriteCache.set(charId, img);
+      }
+    });
+  }
+  return null;
 }
 
+// Track which custom sprites we've tried to load
+const customLoadAttempted = new Set<string>();
+
 export function hasSprite(charId: string, _hatId: string, _dir: Direction, _state: 'idle' | 'run'): boolean {
-  return spriteCache.has(charId);
+  return spriteCache.has(charId) || !customLoadAttempted.has(charId);
 }
 
 // === Update AnimState ===

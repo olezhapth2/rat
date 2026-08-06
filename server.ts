@@ -267,13 +267,13 @@ app.prepare().then(() => {
             res.end(JSON.stringify({ error: 'No file' }));
             return;
           }
-          // Save as webp
-          const outName = `avatar_${Date.now()}.webp`;
+          // Save as character sprite
+          const outName = `sprite_${Date.now()}.webp`;
           const outPath = join(DATA_DIR, 'custom-sprites', outName);
           const sharp = require('sharp');
-          await sharp(fileData).resize(120, 120).webp({ quality: 90 }).toFile(outPath);
+          await sharp(fileData).resize(80, 160).webp({ quality: 90 }).toFile(outPath);
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ url: `/custom-sprites/${outName}` }));
+          res.end(JSON.stringify({ url: `/custom-sprites/${outName}`, charId: outName.replace('.webp', '') }));
         } catch (e) {
           console.error('[Upload] Error:', e);
           res.statusCode = 500;

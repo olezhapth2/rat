@@ -89,13 +89,13 @@ export function logout() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function uploadAvatar(file: File): Promise<string | null> {
+export function uploadAvatar(file: File): Promise<{ url: string; charId: string } | null> {
   return new Promise((resolve) => {
     const formData = new FormData();
     formData.append('file', file);
     fetch('/api/upload-avatar', { method: 'POST', body: formData })
       .then(r => r.json())
-      .then(data => resolve(data.url || null))
+      .then(data => resolve(data.url && data.charId ? { url: data.url, charId: data.charId } : null))
       .catch(() => resolve(null));
   });
 }

@@ -173,7 +173,7 @@ export default function GameCanvas() {
           <div style={{ padding: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 16 }}>ДОБРО ПОЖАЛОВАТЬ, {authUser!.name}</div>
             <div style={{ width: 120, height: 120, margin: '0 auto 16px', background: '#000', border: '3px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
+              <img src={authUser!.avatar || `/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 80, height: 80, imageRendering: 'pixelated' }} />
             </div>
             <button className="px-btn accent" style={{ width: '100%', justifyContent: 'center', padding: '12px 0', fontSize: 11 }}
               onClick={() => {
@@ -202,7 +202,7 @@ export default function GameCanvas() {
               animation: 'zoomOut 2s ease-out forwards',
               transformOrigin: 'center center',
             }}>
-              <img src={`/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 200, height: 200, imageRendering: 'pixelated' }} />
+              <img src={authUser!.avatar || `/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 200, height: 200, imageRendering: 'pixelated' }} />
             </div>
             <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)' }}>
               <div style={{ fontSize: 9, color: '#888', animation: 'pulse 1s infinite' }}>LOADING...</div>
@@ -2552,7 +2552,7 @@ function ProfileView({ state }: { state: GameState }) {
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
       <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
-        <img src={`/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <img src={p.avatar || `/sprites/pers/${p.charId}.png`} alt={p.charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
         <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{p.name}</div>

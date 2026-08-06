@@ -46,15 +46,6 @@ interface CustomAchievement {
   desc: string;
 }
 
-const CHAR_OPTIONS = [
-  { id: 'pers1', name: 'Олег' },
-  { id: 'pers2', name: 'Аня' },
-  { id: 'pers3', name: 'Алиса' },
-  { id: 'pers4', name: 'Кирилл' },
-  { id: 'pers5', name: 'Саша' },
-  { id: 'kryska', name: 'Крыска' },
-];
-
 export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<'users' | 'players' | 'money' | 'achievements'>('users');
   const [users, setUsers] = useState<UserEntry[]>([]);
@@ -64,14 +55,14 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [success, setSuccess] = useState('');
 
   const [newLogin, setNewLogin] = useState('');
-  const [newCharId, setNewCharId] = useState('pers1');
   const [newAvatar, setNewAvatar] = useState('');
+  const [newCharId, setNewCharId] = useState('');
 
   const [editUser, setEditUser] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editPass, setEditPass] = useState('');
-  const [editCharId, setEditCharId] = useState('pers1');
+  const [editCharId, setEditCharId] = useState('');
 
   const [moneyTarget, setMoneyTarget] = useState('');
   const [moneyAmount, setMoneyAmount] = useState('');
@@ -99,23 +90,27 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     adminGetAchievements();
   }, []);
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const result = await uploadAvatar(file);
+    if (result) {
+      setNewAvatar(result.url);
+      setNewCharId(result.charId);
+    }
+  };
+
   const handleAddUser = () => {
     if (!newLogin.trim()) return showError('Введите email');
+    if (!newCharId) return showError('Загрузите спрайт');
     authCreateUser({
       login: newLogin.trim(),
       charId: newCharId,
       avatar: newAvatar,
     });
     showSuccess(`Игрок "${newLogin}" создан — ждём первый вход`);
-    setNewLogin(''); setNewAvatar(''); setNewCharId('pers1');
+    setNewLogin(''); setNewAvatar(''); setNewCharId('');
     setTimeout(() => authGetUsers(), 500);
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadAvatar(file);
-    if (url) setNewAvatar(url);
   };
 
   const handleDeleteUser = (login: string) => {
@@ -128,10 +123,20 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       login,
       name: editName || undefined,
       role: editRole || undefined,
-      charId: editCharId,
+      charId: editCharId || undefined,
       password: editPass.length > 0 ? editPass : undefined,
     });
     setEditUser(null);
+  };
+
+  const handleEditAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const result = await uploadAvatar(file);
+    if (result) {
+      setNewAvatar(result.url);
+      setEditCharId(result.charId);
+    }
   };
 
   const handleAdjustMoney = (amount: number) => {
@@ -193,20 +198,17 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
             <div>
               <div className="px-panel" style={{ padding: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 8 }}>ДОБАВИТЬ ИГРОКА</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <input className="px-input" placeholder="Email игрока" value={newLogin} onChange={e => setNewLogin(e.target.value)} style={{ fontSize: 10 }} />
-                  <select value={newCharId} onChange={e => setNewCharId(e.target.value)} className="px-input" style={{ fontSize: 10 }}>
-                    {CHAR_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.name} ({c.id})</option>)}
-                  </select>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <input className="px-input" placeholder="Email игрока" value={newLogin} onChange={e => setNewLogin(e.target.value)} style={{ fontSize: 10, flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
-                    📷 Аватар
+                    📷 ЗАГРУЗИТЬ СПРАЙТ
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                   </label>
-                  {newAvatar && <img src={newAvatar} alt="" style={{ width: 32, height: 32, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
+                  {newAvatar && <img src={newAvatar} alt="" style={{ width: 40, height: 80, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
                   <div style={{ flex: 1 }} />
-                  <button onClick={handleAddUser} className="px-btn accent small" style={{ fontSize: 10 }}>ADD PLAYER</button>
+                  <button onClick={handleAddUser} className="px-btn accent small" style={{ fontSize: 10 }} disabled={!newLogin.trim() || !newCharId}>ADD PLAYER</button>
                 </div>
               </div>
 
@@ -216,9 +218,9 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 {users.map(u => (
                   <div key={u.login} className="px-panel" style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {u.avatar ? (
-                      <img src={u.avatar} alt="" style={{ width: 28, height: 28, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
+                      <img src={u.avatar} alt="" style={{ width: 28, height: 56, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
                     ) : (
-                      <div style={{ width: 28, height: 28, background: 'var(--px-panel-header)', border: '1px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>?</div>
+                      <div style={{ width: 28, height: 56, background: 'var(--px-panel-header)', border: '1px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>?</div>
                     )}
                     <div style={{ minWidth: 80 }}>
                       <div style={{ fontSize: 10, color: 'var(--px-title)' }}>{u.name || '—'}</div>
@@ -241,16 +243,19 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input className="px-input" placeholder="Name" value={editName} onChange={e => { const v = e.target.value; setEditName(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
                     <input className="px-input" placeholder="Role" value={editRole} onChange={e => { const v = e.target.value; setEditRole(v.charAt(0).toUpperCase() + v.slice(1)); }} style={{ flex: 1, fontSize: 10 }} />
-                    <select value={editCharId} onChange={e => setEditCharId(e.target.value)} className="px-input" style={{ flex: 1, fontSize: 10 }}>
-                      {CHAR_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.name} ({c.id})</option>)}
-                    </select>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input className="px-input" type="password" placeholder="New pass (optional)" value={editPass} onChange={e => setEditPass(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setEditUser(null)} className="px-btn small" style={{ fontSize: 9 }}>CANCEL</button>
-                    <button onClick={() => handleUpdateUser(editUser)} className="px-btn accent small" style={{ fontSize: 9 }}>SAVE</button>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
+                      📷 НОВЫЙ СПРАЙТ
+                      <input type="file" accept="image/*" onChange={handleEditAvatarUpload} style={{ display: 'none' }} />
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setEditUser(null)} className="px-btn small" style={{ fontSize: 9 }}>CANCEL</button>
+                      <button onClick={() => handleUpdateUser(editUser)} className="px-btn accent small" style={{ fontSize: 9 }}>SAVE</button>
+                    </div>
                   </div>
                 </div>
               )}

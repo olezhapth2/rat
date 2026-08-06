@@ -65,13 +65,26 @@ let onPlayerDataSyncCb: ((data: any) => void) | null = null;
 
 // === Public API ===
 
+let onAuthReadyCb: (() => void) | null = null;
+let authReady = false;
+
+export function onAuthReady(cb: () => void): void { onAuthReadyCb = cb; }
+export function isAuthReady(): boolean { return authReady; }
+
 export function connectAuth(): void {
-  if (socket) return;
+  if (socket) {
+    // If already connected and reconnect was done, fire ready
+    if (socket.connected && authReady) {
+      onAuthReadyCb?.();
+    }
+    return;
+  }
   socket = io(process.env.NEXT_PUBLIC_SERVER_URL || window.location.origin, {
     transports: ['websocket', 'polling'],
   });
   socket.on('connect', () => {
     myId = socket!.id!;
+    authReady = false;
     console.log('[MP] Auth socket connected:', myId);
     // Re-auth from localStorage session
     try {
@@ -80,12 +93,24 @@ export function connectAuth(): void {
         const session = JSON.parse(raw);
         if (session?.login) {
           socket!.emit('auth:reconnect', { login: session.login });
+          // Server processes reconnect synchronously; fire ready on next tick
+          setTimeout(() => { authReady = true; onAuthReadyCb?.(); }, 0);
+        } else {
+          authReady = true;
+          onAuthReadyCb?.();
         }
+      } else {
+        authReady = true;
+        onAuthReadyCb?.();
       }
-    } catch {}
+    } catch {
+      authReady = true;
+      onAuthReadyCb?.();
+    }
   });
   socket.on('disconnect', () => {
     console.log('[MP] Auth socket disconnected');
+    authReady = false;
   });
 
   // Auth events — needed before login

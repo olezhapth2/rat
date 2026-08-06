@@ -61,13 +61,16 @@ export default function GameCanvas() {
     const res = await loginAsync(authEmail, authPass);
     setAuthLoading(false);
     if (res.ok && res.user) {
-      setAuthUser(res.user);
-      setAuthError('');
       if (res.firstLogin) {
+        // Don't set authUser yet — first-login form needs authUser to be null
         setFirstLogin(true);
         setFirstLoginEmail(authEmail);
-      } else if (!res.user.photoTaken) {
-        setOnboardingPhase('photo');
+      } else {
+        setAuthUser(res.user);
+        setAuthError('');
+        if (!res.user.photoTaken) {
+          setOnboardingPhase('photo');
+        }
       }
     } else {
       setAuthError(res.msg || 'Ошибка');
@@ -80,8 +83,8 @@ export default function GameCanvas() {
     const res = await firstLoginAsync(firstLoginEmail, password, name, role);
     setAuthLoading(false);
     if (res.ok && res.user) {
-      setAuthUser(res.user);
       setFirstLogin(false);
+      setAuthUser(res.user);
       setOnboardingPhase('photo');
     } else {
       setAuthError(res.msg || 'Ошибка');

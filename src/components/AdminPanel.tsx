@@ -18,6 +18,8 @@ import {
   onAuthUsersList,
   onAuthUserUpdated,
   onAuthUserDeleted,
+  onAuthReady,
+  isAuthReady,
 } from '../game/multiplayer';
 import { uploadAvatar } from '../game/auth';
 import { ACHIEVEMENTS } from '../game/constants';
@@ -88,10 +90,16 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     onAuthUserUpdated(() => showSuccess('User updated'));
     onAuthUserDeleted(() => showSuccess('User deleted'));
 
-    // Retry auth:get-users with delays in case reconnect hasn't propagated yet
-    authGetUsers();
-    const t1 = setTimeout(() => authGetUsers(), 1000);
-    const t2 = setTimeout(() => authGetUsers(), 3000);
+    // Wait for auth reconnect to complete before requesting users
+    const fetchUsers = () => authGetUsers();
+    if (isAuthReady()) {
+      fetchUsers();
+    }
+    onAuthReady(fetchUsers);
+
+    // Fallback retries in case auth ready fires before listener is set
+    const t1 = setTimeout(fetchUsers, 1000);
+    const t2 = setTimeout(fetchUsers, 3000);
     adminGetPlayers();
     adminGetAchievements();
     return () => { clearTimeout(t1); clearTimeout(t2); };
@@ -118,7 +126,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     });
     showSuccess(`Игрок "${newLogin}" создан — ждём первый вход`);
     setNewLogin(''); setNewAvatar(''); setNewCharId(''); setNewAdmin(false);
-    // Server will also send auth:users-list, but retry just in case
+    // Server sends auth:users-list after create, but retry just in case
     setTimeout(() => authGetUsers(), 500);
     setTimeout(() => authGetUsers(), 1500);
   };

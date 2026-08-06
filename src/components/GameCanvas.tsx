@@ -28,9 +28,11 @@ import {
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
 import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
+import { GameIcon, ICONS, type IconKey } from '../game/icons';
+import { Icon } from '@iconify/react';
 
 interface CtxItem {
-  icon: string;
+  icon: IconKey;
   text: string;
   fn: () => void;
 }
@@ -278,6 +280,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Admin panel
   const [showAdmin, setShowAdmin] = useState(false);
 
+  // Context menu state
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
+
   // Minigame canvas state refs
   const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
@@ -323,8 +328,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
     const state = stateRef.current;
     enterTilePaintMode(state, type, 0);
     setTilePicker(null);
-    const el = document.getElementById('ctx-menu');
-    if (el) el.style.display = 'none';
+    setCtxMenu(null);
   }, []);
 
   // Input listeners
@@ -1025,18 +1029,18 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       if (foundBot) {
         if (foundBot.id === 'kryska') {
-          items.push({ icon: '💬', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); addXP(stateRef.current, 10); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
+          items.push({ icon: 'talk', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); addXP(stateRef.current, 10); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
           if ((foundBot as any)._stolenCoins > 0) {
             const coins = (foundBot as any)._stolenCoins;
-            items.push({ icon: '💰', text: `Вернуть ${coins} алт`, fn: () => {
+            items.push({ icon: 'coins', text: `Вернуть ${coins} алт`, fn: () => {
               const res = takeBackFromKryska(stateRef.current, 'kryska');
               toast(res.msg, res.ok ? 'ok' : 'info');
             }});
           }
         } else {
-          items.push({ icon: '💬', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); addXP(stateRef.current, 10); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
-          items.push({ icon: '✊', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
-          items.push({ icon: '🚶', text: 'Кабинет', fn: () => { logActivity(stateRef.current, '🚶', `Посетил кабинет ${foundBot.name}`); toast(`Ты у ${foundBot.name}`, 'ok'); } });
+          items.push({ icon: 'talk', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); addXP(stateRef.current, 10); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
+          items.push({ icon: 'rock', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
+          items.push({ icon: 'walk', text: 'Кабинет', fn: () => { logActivity(stateRef.current, '🚶', `Посетил кабинет ${foundBot.name}`); toast(`Ты у ${foundBot.name}`, 'ok'); } });
         }
       }
 
@@ -1045,14 +1049,14 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const dx = worldX - rp.x;
         const dy = worldY - rp.y;
         if (Math.sqrt(dx * dx + dy * dy) < TILE * 1.5) {
-          items.push({ icon: '👤', text: `Профиль ${rp.name}`, fn: () => openModal('profile', { remotePlayer: rp }) });
-          items.push({ icon: '🎮', text: `КНБ с ${rp.name}`, fn: () => { sendRpsInvite(rp.id); toast(`Приглашение отправлено ${rp.name}`, 'info'); } });
+          items.push({ icon: 'profile', text: `Профиль ${rp.name}`, fn: () => openModal('profile', { remotePlayer: rp }) });
+          items.push({ icon: 'game', text: `КНБ с ${rp.name}`, fn: () => { sendRpsInvite(rp.id); toast(`Приглашение отправлено ${rp.name}`, 'info'); } });
           break;
         }
       }
 
       if (foundObj) {
-        items.push({ icon: '🪑', text: foundObj.label || foundObj.id, fn: () => {} });
+        items.push({ icon: 'furniture', text: foundObj.label || foundObj.id, fn: () => {} });
       }
 
       // Placed item nearby — pick up option
@@ -1060,7 +1064,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const pi = s.player.placedItems[nearestPlacedIdx];
         const piDef = ALL_ITEMS.find(item => item.id === pi.id);
         items.push({
-          icon: '📦',
+          icon: 'inventory',
           text: `Взять: ${piDef?.e || ''} ${piDef?.n || ''}`,
           fn: () => {
             const removedItem = s.player.placedItems[nearestPlacedIdx];
@@ -1070,7 +1074,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           }
         });
         items.push({
-          icon: '🔄',
+          icon: 'move',
           text: `Переставить: ${piDef?.e || ''} ${piDef?.n || ''}`,
           fn: () => {
             const removedItem = s.player.placedItems[nearestPlacedIdx];
@@ -1088,7 +1092,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (s.player.carrying) {
         const carryDef = ALL_ITEMS.find(item => item.id === s.player.carrying);
         items.push({
-          icon: '📥',
+          icon: 'place',
           text: `Поставить: ${carryDef?.e || ''}`,
           fn: () => {
             const dropX = s.player.x - (carryDef?.w || 1) * TILE / 2;
@@ -1105,7 +1109,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           }
         });
         items.push({
-          icon: '🎒',
+          icon: 'backpack',
           text: `Убрать в инвентарь: ${carryDef?.e || ''}`,
           fn: () => {
             s.player.carrying = null;
@@ -1122,7 +1126,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const dyPet = worldY - s.player.petY;
         if (Math.sqrt(dxPet * dxPet + dyPet * dyPet) < TILE * 2) {
           items.push({
-            icon: '🐾',
+            icon: 'pet',
             text: 'Погладить',
             fn: () => {
               s.player.petPetCount = (s.player.petPetCount || 0) + 1;
@@ -1148,7 +1152,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         if (tileType === 1 || tileType === 3) {
           const floorSnap = findFloorSnap(s.map, playerTileX, playerTileY);
           if (floorSnap) {
-            items.push({ icon: '🎨', text: 'Покрасить пол', fn: () => openTilePicker('floor', floorSnap.x, floorSnap.y) });
+            items.push({ icon: 'paint', text: 'Покрасить пол', fn: () => openTilePicker('floor', floorSnap.x, floorSnap.y) });
           }
         }
 
@@ -1166,7 +1170,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           if (tt === 3) {
             const wallSnap = findWallSnap(s.map, t.x, t.y);
             if (wallSnap && !wallPaintAdded) {
-              items.push({ icon: '🎨', text: 'Покрасить стену', fn: () => openTilePicker('wall', wallSnap.x, wallSnap.y) });
+              items.push({ icon: 'paint', text: 'Покрасить стену', fn: () => openTilePicker('wall', wallSnap.x, wallSnap.y) });
               wallPaintAdded = true;
             }
           }
@@ -1178,7 +1182,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const hasWall = s.tileOverrides[wallKey];
         if (hasFloor) {
           items.push({
-            icon: '🗑️', text: 'Убрать покраску пола',
+            icon: 'trash', text: 'Убрать покраску пола',
             fn: () => {
               removeTilePaint(s, playerTileX, playerTileY, 'floor');
               sendTileRemove(playerTileX, playerTileY, 'floor');
@@ -1187,7 +1191,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         }
         if (hasWall) {
           items.push({
-            icon: '🗑️', text: 'Убрать покраску стены',
+            icon: 'trash', text: 'Убрать покраску стены',
             fn: () => {
               removeTilePaint(s, playerTileX, playerTileY, 'wall');
               sendTileRemove(playerTileX, playerTileY, 'wall');
@@ -1196,11 +1200,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
         }
       }
 
-      items.push({ icon: '👤', text: 'Профиль', fn: () => openModal('profile') });
-      items.push({ icon: '📋', text: 'Дейли квесты', fn: () => openModal('quests') });
-      items.push({ icon: '🛒', text: 'Магазин', fn: () => openModal('shop') });
-      items.push({ icon: '📋', text: 'Инвентарь', fn: () => openModal('inventory') });
-      items.push({ icon: '📐', text: 'Whiteboard', fn: () => openModal('whiteboard') });
+      items.push({ icon: 'profile', text: 'Профиль', fn: () => openModal('profile') });
+      items.push({ icon: 'quests', text: 'Дейли квесты', fn: () => openModal('quests') });
+      items.push({ icon: 'shop', text: 'Магазин', fn: () => openModal('shop') });
+      items.push({ icon: 'inventory', text: 'Инвентарь', fn: () => openModal('inventory') });
+      items.push({ icon: 'whiteboard', text: 'Whiteboard', fn: () => openModal('whiteboard') });
 
       showCtx(e.clientX, e.clientY, items);
     };
@@ -1210,30 +1214,16 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
   // Close ctx menu on click
   useEffect(() => {
-    const close = () => {
-      const el = document.getElementById('ctx-menu');
-      if (el) el.style.display = 'none';
-    };
+    const close = () => setCtxMenu(null);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, []);
 
   function showCtx(x: number, y: number, items: CtxItem[]) {
-    const el = document.getElementById('ctx-menu');
-    if (!el) return;
-    el.innerHTML = items
-      .map((i, idx) => `<div class="ctx-item" data-idx="${idx}"><span class="ctx-icon">${i.icon}</span><span class="ctx-text">${i.text}</span></div>`)
-      .join('');
-    el.style.left = Math.min(x, window.innerWidth - 250) + 'px';
-    el.style.top = Math.min(y, window.innerHeight - items.length * 44 - 16) + 'px';
-    el.style.display = 'block';
-    el.querySelectorAll('.ctx-item').forEach((itemEl) => {
-      itemEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        el.style.display = 'none';
-        const idx = parseInt((itemEl as HTMLElement).dataset.idx || '0');
-        items[idx].fn();
-      });
+    setCtxMenu({
+      x: Math.min(x, window.innerWidth - 250),
+      y: Math.min(y, window.innerHeight - items.length * 44 - 16),
+      items,
     });
   }
 
@@ -1767,22 +1757,44 @@ function GameInner({ authUser }: { authUser: UserData }) {
       )}
 
       {/* Context Menu */}
-      <div
-        id="ctx-menu"
-        style={{
-          position: 'fixed',
-          display: 'none',
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderRadius: 14,
-          boxShadow: '0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08)',
-          padding: 8,
-          zIndex: 100,
-          minWidth: 230,
-          border: '1px solid rgba(0,0,0,.06)',
-        }}
-      />
+      {ctxMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: ctxMenu.x,
+            top: ctxMenu.y,
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderRadius: 14,
+            boxShadow: '0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08)',
+            padding: 8,
+            zIndex: 100,
+            minWidth: 230,
+            border: '1px solid rgba(0,0,0,.06)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {ctxMenu.items.map((item, idx) => (
+            <div
+              key={idx}
+              className="ctx-item"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.06)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              onClick={() => {
+                setCtxMenu(null);
+                item.fn();
+              }}
+            >
+              <span className="ctx-icon" style={{ display: 'flex', alignItems: 'center' }}>
+                <GameIcon icon={item.icon} size={18} />
+              </span>
+              <span className="ctx-text" style={{ fontSize: 11, color: '#333' }}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Activity Feed */}
       <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10, pointerEvents: 'none' }}>
@@ -1835,7 +1847,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 13 }}>🪙</span>
+              <Icon icon={ICONS.coin} width={14} height={14} style={{ color: 'var(--px-title)' }} />
               <span style={{ fontSize: 11, color: 'var(--px-title)' }}>{player.coins}</span>
             </div>
             <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>
@@ -1863,10 +1875,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
               background: 'var(--px-panel)', border: '2px solid var(--px-danger)',
               boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
               padding: '8px 14px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
-              fontSize: 11, color: 'var(--px-danger)',
+              fontSize: 11, color: 'var(--px-danger)', display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            ⚙️ ADMIN
+            <Icon icon={ICONS.gear} width={14} height={14} />
+            ADMIN
           </div>
         )}
 
@@ -1883,8 +1896,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
               {mpConnected ? `${remotePlayers.length + 1} ONLINE` : 'OFFLINE'}
             </span>
           </div>
-          <div style={{ fontSize: 9, color: 'var(--px-title)' }}>
-            🏆 {player.achievements.length}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'var(--px-title)' }}>
+            <Icon icon={ICONS.trophy} width={12} height={12} />
+            {player.achievements.length}
           </div>
         </div>
       </div>
@@ -1924,9 +1938,12 @@ function GameInner({ authUser }: { authUser: UserData }) {
           padding: '12px 20px', zIndex: 200, display: 'flex', alignItems: 'center', gap: 14,
           borderColor: 'var(--px-accent)',
         }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--px-title)' }}>🎮 RPS FROM {rpsInvite.fromName}</div>
-            <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginTop: 3 }}>ACCEPT?</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon icon={ICONS.game} width={16} height={16} style={{ color: 'var(--px-accent)' }} />
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--px-title)' }}>RPS FROM {rpsInvite.fromName}</div>
+              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginTop: 3 }}>ACCEPT?</div>
+            </div>
           </div>
           <button onClick={() => { acceptRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn accent small">YES</button>
           <button onClick={() => { declineRpsInvite(rpsInvite.gameId); setRpsInvite(null); }} className="px-btn small">NO</button>

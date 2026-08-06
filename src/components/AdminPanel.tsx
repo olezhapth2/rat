@@ -23,6 +23,8 @@ import {
 } from '../game/multiplayer';
 import { uploadAvatar } from '../game/auth';
 import { ACHIEVEMENTS } from '../game/constants';
+import { Icon } from '@iconify/react';
+import { ICONS, ACHIEVEMENT_ICON_KEYS, type IconKey } from '../game/icons';
 
 interface UserEntry {
   login: string;
@@ -186,7 +188,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     >
       <div className="px-panel" style={{ width: 640, maxHeight: '85vh', overflow: 'hidden' }}>
         <div className="px-panel-header">
-          <span>⚙️ ADMIN PANEL</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon icon={ICONS.admin} width={16} height={16} />
+            ADMIN PANEL
+          </span>
           <div style={{ display: 'flex', gap: 2 }}>
             <button onClick={onClose} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
           </div>
@@ -194,17 +199,21 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
         <div style={{ padding: 16, maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
-            <button onClick={() => setTab('users')} className={`px-btn small${tab === 'users' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
-              👤 USERS ({users.length})
+            <button onClick={() => setTab('users')} className={`px-btn small${tab === 'users' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon={ICONS.users} width={12} height={12} />
+              USERS ({users.length})
             </button>
-            <button onClick={() => setTab('players')} className={`px-btn small${tab === 'players' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
-              👥 PLAYERS ({players.length})
+            <button onClick={() => setTab('players')} className={`px-btn small${tab === 'players' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon={ICONS.players} width={12} height={12} />
+              PLAYERS ({players.length})
             </button>
-            <button onClick={() => setTab('money')} className={`px-btn small${tab === 'money' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
-              💰 MONEY
+            <button onClick={() => setTab('money')} className={`px-btn small${tab === 'money' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon={ICONS.coins} width={12} height={12} />
+              MONEY
             </button>
-            <button onClick={() => setTab('achievements')} className={`px-btn small${tab === 'achievements' ? ' accent' : ''}`} style={{ fontSize: 10 }}>
-              🏆 ACHIEVEMENTS
+            <button onClick={() => setTab('achievements')} className={`px-btn small${tab === 'achievements' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon={ICONS.trophy} width={12} height={12} />
+              ACHIEVEMENTS
             </button>
           </div>
 
@@ -221,14 +230,16 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <input className="px-input" placeholder="Email игрока" value={newLogin} onChange={e => setNewLogin(e.target.value)} style={{ fontSize: 10, flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
-                    📷 ЗАГРУЗИТЬ СПРАЙТ
+                  <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon icon={ICONS.camera} width={12} height={12} />
+                    ЗАГРУЗИТЬ СПРАЙТ
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                   </label>
                   {newAvatar && <img src={newAvatar} alt="" style={{ width: 40, height: 80, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
                   <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', marginLeft: 8 }}>
                     <input type="checkbox" checked={newAdmin} onChange={e => setNewAdmin(e.target.checked)} />
-                    ⭐ ADMIN
+                    <Icon icon={ICONS.star} width={12} height={12} style={{ color: 'var(--px-accent)' }} />
+                    ADMIN
                   </label>
                   <div style={{ flex: 1 }} />
                   <button onClick={handleAddUser} className="px-btn accent small" style={{ fontSize: 10 }} disabled={!newLogin.trim() || !newCharId}>ADD PLAYER</button>
@@ -251,7 +262,12 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     </div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.charId}</div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.role || '—'}</div>
-                    {u.admin && <div style={{ fontSize: 8, color: 'var(--px-accent)', fontWeight: 'bold' }}>⭐ ADMIN</div>}
+                    {u.admin && (
+                      <div style={{ fontSize: 8, color: 'var(--px-accent)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Icon icon={ICONS.star} width={10} height={10} />
+                        ADMIN
+                      </div>
+                    )}
                     {!u.name && <div style={{ fontSize: 8, color: 'var(--px-accent)' }}>ожидает входа</div>}
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                       <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); setEditCharId(u.charId); setEditAdmin(u.admin); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
@@ -274,12 +290,14 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editAdmin} onChange={e => setEditAdmin(e.target.checked)} />
-                      ⭐ ADMIN
+                      <Icon icon={ICONS.star} width={12} height={12} style={{ color: 'var(--px-accent)' }} />
+                      ADMIN
                     </label>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer' }}>
-                      📷 НОВЫЙ СПРАЙТ
+                    <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon icon={ICONS.camera} width={12} height={12} />
+                      НОВЫЙ СПРАЙТ
                       <input type="file" accept="image/*" onChange={handleEditAvatarUpload} style={{ display: 'none' }} />
                     </label>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -301,9 +319,15 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div key={p.key} className="px-panel" style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 11, color: 'var(--px-title)', minWidth: 100 }}>{p.name}</div>
                     <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>{p.charId}</div>
-                    <div style={{ fontSize: 9, color: 'var(--px-accent)', marginLeft: 'auto' }}>🪙 {p.coins}</div>
+                    <div style={{ fontSize: 9, color: 'var(--px-accent)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon icon={ICONS.coin} width={12} height={12} />
+                      {p.coins}
+                    </div>
                     <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>Lv.{p.level}</div>
-                    <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>🏆 {p.achievements.length}</div>
+                    <div style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon icon={ICONS.trophy} width={12} height={12} />
+                      {p.achievements.length}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -318,7 +342,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                   <select value={moneyTarget} onChange={(e) => setMoneyTarget(e.target.value)} className="px-input" style={{ flex: 1, fontSize: 10 }}>
                     <option value="">Select player...</option>
-                    {players.map(p => <option key={p.key} value={p.key}>{p.name} ({p.coins} 🪙)</option>)}
+                    {players.map(p => <option key={p.key} value={p.key}>{p.name} ({p.coins})</option>)}
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -329,9 +353,12 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {players.map(p => (
-                  <div key={p.key} onClick={() => setMoneyTarget(p.key)} className="px-panel" style={{ padding: '6px 10px', cursor: 'pointer', fontSize: 10, borderColor: moneyTarget === p.key ? 'var(--px-accent)' : undefined }}>
+                  <div key={p.key} onClick={() => setMoneyTarget(p.key)} className="px-panel" style={{ padding: '6px 10px', cursor: 'pointer', fontSize: 10, borderColor: moneyTarget === p.key ? 'var(--px-accent)' : undefined, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ color: 'var(--px-text)' }}>{p.name}</span>
-                    <span style={{ color: 'var(--px-accent)', marginLeft: 6 }}>🪙 {p.coins}</span>
+                    <span style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon icon={ICONS.coin} width={10} height={10} />
+                      {p.coins}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -343,13 +370,42 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
             <div>
               <div className="px-panel" style={{ padding: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 8 }}>CREATE CUSTOM ACHIEVEMENT</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                  <input className="px-input" placeholder="Icon" value={achIcon} onChange={(e) => setAchIcon(e.target.value)} style={{ width: 60, fontSize: 10, textAlign: 'center' }} />
-                  <input className="px-input" placeholder="Name" value={achName} onChange={(e) => setAchName(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input className="px-input" placeholder="Description" value={achDesc} onChange={(e) => setAchDesc(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
-                  <button onClick={handleCreateAchievement} className="px-btn accent small" style={{ fontSize: 10 }}>CREATE</button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>ICON</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, padding: 8, background: 'var(--px-panel)', border: '1px solid var(--px-border-dark)', borderRadius: 6 }}>
+                      {ACHIEVEMENT_ICON_KEYS.map((key) => (
+                        <div
+                          key={key}
+                          onClick={() => setAchIcon(key)}
+                          style={{
+                            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: achIcon === key ? 'var(--px-accent)' : 'transparent',
+                            border: `2px solid ${achIcon === key ? 'var(--px-accent)' : 'var(--px-border-dark)'}`,
+                            borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
+                          }}
+                        >
+                          <Icon icon={ICONS[key]} width={18} height={18} style={{ color: achIcon === key ? 'white' : 'var(--px-text)' }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-border-dark)', borderRadius: 4 }}>
+                      <span style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>Selected:</span>
+                      <Icon icon={ICONS[achIcon as IconKey] || achIcon} width={16} height={16} />
+                      <span style={{ fontSize: 9, color: 'var(--px-text)' }}>{achIcon}</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>NAME</div>
+                      <input className="px-input" placeholder="Achievement name" value={achName} onChange={(e) => setAchName(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>DESCRIPTION</div>
+                      <input className="px-input" placeholder="Achievement description" value={achDesc} onChange={(e) => setAchDesc(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                    </div>
+                    <button onClick={handleCreateAchievement} className="px-btn accent small" style={{ fontSize: 10, marginTop: 8, width: '100%' }} disabled={!achName.trim() || !achDesc.trim()}>CREATE</button>
+                  </div>
                 </div>
               </div>
 
@@ -364,7 +420,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <select value={grantAchId} onChange={(e) => setGrantAchId(e.target.value)} className="px-input" style={{ flex: 1, fontSize: 10 }}>
                     <option value="">Select achievement...</option>
-                    {allAchs.map(a => <option key={a.id} value={a.id}>{a.icon} {a.name}</option>)}
+                    {allAchs.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                   <button onClick={handleGrantAchievement} className="px-btn accent small" style={{ fontSize: 10 }}>GRANT</button>
                 </div>
@@ -374,7 +430,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {allAchs.map(a => (
                   <div key={a.id} className="px-panel" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
-                    <span style={{ fontSize: 14 }}>{a.icon}</span>
+                    <Icon icon={ICONS[a.icon as IconKey] || a.icon} width={18} height={18} />
                     <span style={{ color: 'var(--px-title)' }}>{a.name}</span>
                     <span style={{ color: 'var(--px-text-dim)', fontSize: 9, marginLeft: 'auto' }}>{a.desc}</span>
                     {a.id.startsWith('custom_') && <span style={{ fontSize: 8, color: 'var(--px-accent)' }}>CUSTOM</span>}

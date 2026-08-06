@@ -670,8 +670,13 @@ app.prepare().then(() => {
       }
     });
 
-    // === ADMIN EVENTS (pers5 only) ===
+    // === ADMIN EVENTS ===
+    const ADMIN_LOGINS = ['olegdevyatow@gmail.com'];
     function isAdmin(): boolean {
+      // Check by login email
+      const loginKey = loggedInUsers.get(socket.id);
+      if (loginKey && ADMIN_LOGINS.includes(loginKey)) return true;
+      // Check by charId (legacy pers5)
       const player = onlinePlayers.get(socket.id);
       return player?.charId === 'pers5';
     }

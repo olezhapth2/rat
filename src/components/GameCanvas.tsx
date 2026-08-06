@@ -1868,8 +1868,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
           ))}
         </div>
 
-        {/* Admin button (pers5 only) */}
-        {player.charId === 'pers5' && (
+        {/* Admin button */}
+        {(player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com') && (
           <div
             onClick={() => setShowAdmin(true)}
             style={{

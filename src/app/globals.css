@@ -1,21 +1,25 @@
 :root {
-  --px-bg: #111118;
-  --px-bg2: #0e0e1a;
-  --px-panel: #1c1c2c;
-  --px-panel-light: #262636;
-  --px-border: #6e6428;
-  --px-border-dark: #4a4218;
-  --px-border-light: #8a7e30;
-  --px-btn: #6e6428;
-  --px-btn-hover: #7e7430;
-  --px-btn-dark: #5a5020;
-  --px-text: #8a8470;
-  --px-text-dim: #5a5648;
-  --px-text-dark: #1a1a1a;
-  --px-accent: #6e6428;
-  --px-danger: #5a3028;
-  --px-title: #8a7e30;
-  --px-shadow: #060610;
+  --px-bg: #008080;
+  --px-bg2: #006666;
+  --px-panel: #c0c0c0;
+  --px-panel-light: #dfdfdf;
+  --px-panel-dark: #808080;
+  --px-border: #dfdfdf;
+  --px-border-dark: #404040;
+  --px-border-light: #ffffff;
+  --px-titlebar: #000080;
+  --px-titlebar-inactive: #808080;
+  --px-btn: #c0c0c0;
+  --px-btn-hover: #d4d4d4;
+  --px-btn-dark: #808080;
+  --px-text: #000000;
+  --px-text-dim: #404040;
+  --px-text-dark: #000000;
+  --px-accent: #000080;
+  --px-danger: #800000;
+  --px-title: #ffffff;
+  --px-shadow: #000000;
+  --px-field: #ffffff;
 }
 
 * {
@@ -42,43 +46,83 @@ canvas {
   cursor: pointer;
 }
 
-/* ===== PIXEL PANEL — base for all windows ===== */
+/* ===== WIN95 OUTSET BORDER (raised) ===== */
+.win-outset {
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark);
+}
+
+/* ===== WIN95 INSET BORDER (sunken) ===== */
+.win-inset {
+  border: 2px solid;
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark), inset -1px -1px 0 var(--px-panel-light);
+}
+
+/* ===== WINDOW PANEL ===== */
 .px-panel {
   background: var(--px-panel);
-  border: 3px solid var(--px-border);
-  box-shadow:
-    inset 2px 2px 0 var(--px-border-light),
-    inset -2px -2px 0 var(--px-border-dark),
-    4px 4px 0 var(--px-shadow);
-  image-rendering: pixelated;
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: 2px 2px 0 var(--px-shadow);
 }
 
 .px-panel-header {
-  background: var(--px-bg2);
-  border-bottom: 2px solid var(--px-border);
-  padding: 8px 12px;
+  background: linear-gradient(90deg, var(--px-titlebar) 0%, #1084d0 100%);
+  padding: 4px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 8px;
   color: var(--px-title);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
-/* ===== PIXEL BUTTONS ===== */
+.px-panel-header span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== WINDOW CONTROL BUTTONS ===== */
+.win-btn {
+  width: 16px;
+  height: 14px;
+  background: var(--px-panel);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  color: var(--px-text);
+  cursor: pointer;
+  padding: 0;
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1;
+}
+.win-btn:active {
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark);
+  transform: translate(1px, 1px);
+}
+
+/* ===== BUTTONS ===== */
 .px-btn {
   font-family: 'Press Start 2P', monospace;
-  padding: 8px 16px;
+  padding: 6px 14px;
   font-size: 8px;
   cursor: pointer;
-  border: 2px solid var(--px-border-dark);
-  background: var(--px-btn);
-  color: var(--px-text-dark);
-  box-shadow:
-    inset 1px 1px 0 var(--px-border-light),
-    inset -1px -1px 0 var(--px-btn-dark),
-    2px 2px 0 var(--px-shadow);
+  background: var(--px-panel);
+  color: var(--px-text);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: none;
@@ -88,75 +132,76 @@ canvas {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  outline: 1px dotted var(--px-text);
+  outline-offset: -4px;
 }
 .px-btn:hover {
   background: var(--px-btn-hover);
 }
 .px-btn:active {
-  box-shadow:
-    inset -1px -1px 0 var(--px-border-light),
-    inset 1px 1px 0 var(--px-btn-dark);
-  transform: translate(2px, 2px);
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark);
+  transform: translate(1px, 1px);
 }
 .px-btn.accent {
-  background: var(--px-accent);
-  border-color: #2a8a6a;
-  box-shadow:
-    inset 1px 1px 0 #6eecc3,
-    inset -1px -1px 0 #2a8a6a,
-    2px 2px 0 var(--px-shadow);
-}
-.px-btn.accent:hover {
-  background: #5edcb3;
+  background: var(--px-panel);
+  outline-color: var(--px-accent);
 }
 .px-btn.danger {
-  background: var(--px-danger);
-  border-color: #a02040;
-  color: #fff;
-  box-shadow:
-    inset 1px 1px 0 #ff7090,
-    inset -1px -1px 0 #a02040,
-    2px 2px 0 var(--px-shadow);
+  background: var(--px-panel);
+  outline-color: var(--px-danger);
+  color: var(--px-danger);
 }
 .px-btn.small {
-  padding: 4px 10px;
+  padding: 3px 8px;
   font-size: 7px;
+  outline: none;
 }
 
-/* ===== PIXEL INPUT ===== */
+/* ===== INPUT ===== */
 .px-input {
   font-family: 'Press Start 2P', monospace;
-  padding: 8px 10px;
+  padding: 6px 8px;
   font-size: 8px;
-  background: var(--px-bg);
-  border: 2px solid var(--px-border-dark);
+  background: var(--px-field);
+  border: 2px solid;
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark);
   color: var(--px-text);
-  box-shadow: inset 2px 2px 0 var(--px-shadow);
   outline: none;
   width: 100%;
 }
 .px-input:focus {
-  border-color: var(--px-border);
+  outline: 1px dotted var(--px-text);
+  outline-offset: -2px;
 }
 .px-input::placeholder {
   color: var(--px-text-dim);
 }
 
+/* ===== SELECT ===== */
+select.px-input {
+  appearance: none;
+  background: var(--px-field);
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h8L4 4z' fill='%23000'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 20px;
+}
+
 /* ===== CONTEXT MENU ===== */
 #ctx-menu {
   background: var(--px-panel) !important;
-  border: 2px solid var(--px-border) !important;
-  box-shadow:
-    inset 1px 1px 0 var(--px-border-light),
-    inset -1px -1px 0 var(--px-border-dark),
-    4px 4px 0 var(--px-shadow) !important;
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light) !important;
+  box-shadow: 2px 2px 0 var(--px-shadow) !important;
   border-radius: 0 !important;
-  padding: 4px !important;
+  padding: 2px !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 .ctx-item {
-  padding: 7px 10px !important;
+  padding: 6px 10px !important;
   font-family: 'Press Start 2P', monospace;
   font-size: 7px !important;
   color: var(--px-text) !important;
@@ -170,18 +215,20 @@ canvas {
   cursor: pointer;
 }
 .ctx-item:hover {
-  background: var(--px-panel-light) !important;
-  border-color: var(--px-border-dark);
+  background: var(--px-titlebar) !important;
+  color: var(--px-title) !important;
+  border-color: transparent;
 }
 .ctx-item:active {
-  transform: translate(1px, 1px);
+  transform: none;
 }
 .ctx-icon {
   width: 20px !important;
   height: 20px !important;
   border-radius: 0 !important;
-  background: var(--px-bg) !important;
-  border: 1px solid var(--px-border-dark);
+  background: var(--px-panel) !important;
+  border: 2px solid;
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -193,12 +240,10 @@ canvas {
   white-space: nowrap;
 }
 
-/* ===== MODAL BUTTONS (tab switches etc.) ===== */
+/* ===== TAB BUTTONS ===== */
 .modal-btn {
   font-family: 'Press Start 2P', monospace;
   padding: 6px 12px !important;
-  border: 2px solid var(--px-border-dark) !important;
-  border-radius: 0 !important;
   background: var(--px-panel) !important;
   color: var(--px-text-dim) !important;
   font-size: 7px !important;
@@ -206,17 +251,24 @@ canvas {
   cursor: pointer;
   transition: none !important;
   text-transform: uppercase;
-  box-shadow:
-    inset 1px 1px 0 var(--px-panel-light),
-    inset -1px -1px 0 var(--px-shadow);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light) !important;
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark) !important;
 }
 .modal-btn:hover {
-  background: var(--px-panel-light) !important;
+  background: var(--px-btn-hover) !important;
   color: var(--px-text) !important;
-  border-color: var(--px-border) !important;
 }
 .modal-btn:active {
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark) !important;
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark) !important;
   transform: translate(1px, 1px);
+}
+.modal-btn.accent, .modal-btn.selected {
+  background: var(--px-titlebar) !important;
+  color: var(--px-title) !important;
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark) !important;
+  box-shadow: inset 1px 1px 0 #4040c0, inset -1px -1px 0 #000040 !important;
 }
 
 /* ===== EMOJI BAR ===== */
@@ -225,7 +277,8 @@ canvas {
   height: 32px !important;
   border-radius: 0 !important;
   background: var(--px-panel) !important;
-  border: 2px solid var(--px-border-dark);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -235,13 +288,11 @@ canvas {
   user-select: none;
 }
 .emoji-btn:hover {
-  background: var(--px-panel-light) !important;
-  border-color: var(--px-border);
-  transform: none;
-  box-shadow: none;
+  background: var(--px-btn-hover) !important;
 }
 .emoji-btn:active {
-  background: var(--px-bg) !important;
+  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
+  box-shadow: inset 1px 1px 0 var(--px-panel-dark);
   transform: translate(1px, 1px);
 }
 
@@ -261,11 +312,22 @@ canvas {
 }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--px-bg); }
+::-webkit-scrollbar { width: 16px; }
+::-webkit-scrollbar-track {
+  background: repeating-conic-gradient(var(--px-panel) 0% 25%, var(--px-panel-light) 0% 50%) 50% / 2px 2px;
+}
 ::-webkit-scrollbar-thumb {
-  background: var(--px-border-dark);
-  border: 1px solid var(--px-border);
+  background: var(--px-panel);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark);
+}
+::-webkit-scrollbar-button {
+  display: block;
+  height: 16px;
+  background: var(--px-panel);
+  border: 2px solid;
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
 }
 
 /* ===== CONFETTI ===== */

@@ -67,12 +67,16 @@ export default function GameCanvas() {
 
   if (!authUser) {
     return (
-      <div style={{ minHeight: '100vh', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
+      <div style={{ minHeight: '100vh', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace" }}>
         <div className="px-panel" style={{ padding: 0, width: 420 }}>
           {/* Title bar */}
           <div className="px-panel-header">
             <span>SECRET GANG v1.0</span>
-            <span style={{ fontSize: 9, color: '#a09880' }}>FRI 09:45PM</span>
+            <div style={{ display: 'flex', gap: 2 }}>
+              <button className="win-btn" style={{ fontWeight: 'bold', visibility: 'hidden' }}>_</button>
+              <button className="win-btn" style={{ fontWeight: 'bold', visibility: 'hidden' }}>□</button>
+              <button className="win-btn" style={{ fontWeight: 'bold', visibility: 'hidden' }}>X</button>
+            </div>
           </div>
           {/* Content */}
           <div style={{ padding: 24 }}>
@@ -112,7 +116,7 @@ export default function GameCanvas() {
                     onChange={(e) => setAuthPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                 </div>
                 {authError && (
-                  <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+                  <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 14, textAlign: 'center', padding: '7px 10px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
                     {authError}
                   </div>
                 )}
@@ -130,7 +134,7 @@ export default function GameCanvas() {
             )}
 
             {secretToast && (
-              <div style={{ marginTop: 10, padding: '8px 12px', background: '#1a3a2a', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
+              <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--px-panel)', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 10, textAlign: 'center' }}>
                 {secretToast}
               </div>
             )}
@@ -1284,7 +1288,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const H = canvas.height;
 
         // Dark overlay
-        ctx.fillStyle = 'rgba(10,10,26,0.92)';
+        ctx.fillStyle = 'rgba(0,128,128,0.92)';
         ctx.fillRect(0, 0, W, H);
 
         // Title
@@ -1402,7 +1406,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
         // Color picker overlay
         if (cgColorPicker && cgPendingWild) {
-          ctx.fillStyle = 'rgba(10,10,26,0.85)';
+          ctx.fillStyle = 'rgba(0,128,128,0.85)';
           ctx.fillRect(0, 0, W, H);
           ctx.fillStyle = '#8a7e30';
           ctx.font = '10px "Press Start 2P", monospace';
@@ -1436,7 +1440,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
         // Winner overlay
         if (cg.status === 'finished') {
-          ctx.fillStyle = 'rgba(10,10,26,0.85)';
+          ctx.fillStyle = 'rgba(0,128,128,0.85)';
           ctx.fillRect(0, 0, W, H);
           const winnerName = cg.players.find((p: any) => p.id === cg.winner)?.name || '???';
           const isMeWinner = cg.winner === myId;
@@ -1458,7 +1462,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const gy = (H - 400) / 2;
 
         // Dark overlay
-        ctx.fillStyle = 'rgba(10,10,26,0.85)';
+        ctx.fillStyle = 'rgba(0,128,128,0.85)';
         ctx.fillRect(0, 0, W, H);
 
         ctx.save();
@@ -1621,7 +1625,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {/* Smoking result + leaderboard */}
       {smokingResult && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(10,10,26,.85)',
+          position: 'fixed', inset: 0, background: 'rgba(0,128,128,.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
         }}>
           <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
@@ -1640,7 +1644,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               {smokingResult.board.slice(0, 3).map((r, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', marginBottom: 3,
-                  background: i === 0 ? '#3a3020' : 'var(--px-bg)',
+                  background: 'var(--px-panel)',
                   border: i === 0 ? '1px solid var(--px-title)' : '1px solid var(--px-border-dark)',
                 }}>
                   <span style={{ fontSize: 13 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
@@ -1658,7 +1662,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {state.tilePaintMode?.active && (
         <div style={{
           position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(10,10,26,.9)', border: '2px solid var(--px-border)',
+          background: 'rgba(0,128,128,.9)', border: '2px solid var(--px-border)',
           borderRadius: 8, padding: '8px 16px', zIndex: 200,
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
@@ -1833,15 +1837,15 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {/* Modal */}
       {modalType && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,26,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500 }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
           <div className="px-panel" style={{ width: 560, maxHeight: '80vh', overflow: 'hidden' }}>
             <div className="px-panel-header">
               <span>{getModalTitle(modalType)}</span>
-              <button onClick={closeModal} className="px-btn small" style={{ padding: '4px 10px', fontSize: 14, lineHeight: 1 }}>
-                X
-              </button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <button onClick={closeModal} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
+              </div>
             </div>
             <div style={{ padding: 16, maxHeight: '60vh', overflowY: 'auto' }}>
               {modalType === 'shop' && <ShopView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
@@ -2146,7 +2150,7 @@ function drawMicrowaveOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Gam
   const barW = 360;
   const barH = 12;
   const barX = 20;
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = 'var(--px-bg)';
   ctx.fillRect(barX, barY, barW, barH);
   ctx.strokeStyle = '#4a4a6a';
   ctx.lineWidth = 1;
@@ -2223,7 +2227,7 @@ function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameSta
   const barW = 360;
   const barH = 12;
   const barX = 20;
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = 'var(--px-bg)';
   ctx.fillRect(barX, barY, barW, barH);
   ctx.fillStyle = g.done && !g.won ? '#e94560' : '#4ecca3';
   ctx.fillRect(barX, barY, (g.taps / g.targetTaps) * barW, barH);
@@ -3251,7 +3255,7 @@ function RegisterForm({ onDone, onBack }: { onDone: (user: UserData) => void; on
         </div>
       </div>
       {error && (
-        <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: '#3a1020', border: '1px solid var(--px-danger)' }}>
+        <div style={{ color: 'var(--px-danger)', fontSize: 9, marginBottom: 10, textAlign: 'center', padding: '6px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-danger)' }}>
           {error}
         </div>
       )}

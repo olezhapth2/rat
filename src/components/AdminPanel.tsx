@@ -168,13 +168,15 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,26,.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 600 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="px-panel" style={{ width: 640, maxHeight: '85vh', overflow: 'hidden' }}>
         <div className="px-panel-header">
           <span>⚙️ ADMIN PANEL</span>
-          <button onClick={onClose} className="px-btn small" style={{ padding: '4px 10px', fontSize: 14, lineHeight: 1 }}>X</button>
+          <div style={{ display: 'flex', gap: 2 }}>
+            <button onClick={onClose} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
+          </div>
         </div>
         <div style={{ padding: 16, maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Tabs */}
@@ -194,8 +196,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Error/Success */}
-          {error && <div style={{ padding: '6px 10px', marginBottom: 10, background: '#3a1020', border: '1px solid var(--px-danger)', color: 'var(--px-danger)', fontSize: 9 }}>{error}</div>}
-          {success && <div style={{ padding: '6px 10px', marginBottom: 10, background: '#1a3a2a', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 9 }}>{success}</div>}
+          {error && <div style={{ padding: '6px 10px', marginBottom: 10, background: 'var(--px-panel)', border: '1px solid var(--px-danger)', color: 'var(--px-danger)', fontSize: 9 }}>{error}</div>}
+          {success && <div style={{ padding: '6px 10px', marginBottom: 10, background: 'var(--px-panel)', border: '1px solid var(--px-accent)', color: 'var(--px-accent)', fontSize: 9 }}>{success}</div>}
 
           {/* === USERS TAB === */}
           {tab === 'users' && (
@@ -294,7 +296,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input className="px-input" type="number" placeholder="Amount" value={moneyAmount} onChange={(e) => setMoneyAmount(e.target.value)} style={{ width: 100, fontSize: 10 }} />
-                  <button onClick={() => handleAdjustMoney(1)} className="px-btn accent small" style={{ fontSize: 10, background: '#2a6a4a' }}>+ ADD</button>
+                  <button onClick={() => handleAdjustMoney(1)} className="px-btn accent small" style={{ fontSize: 10 }}>+ ADD</button>
                   <button onClick={() => handleAdjustMoney(-1)} className="px-btn danger small" style={{ fontSize: 10 }}>- REMOVE</button>
                 </div>
               </div>

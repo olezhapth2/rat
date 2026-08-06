@@ -78,11 +78,11 @@ export function render(
       }
       if (!drawImg) drawImg = floorImg;
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
+        const tw = drawImg.naturalWidth / 3;
+        const th = drawImg.naturalHeight / 3;
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        const sw = drawImg.naturalWidth / 3;
-        const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
+        ctx.drawImage(drawImg, tx * tw, ty * th, tw, th, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
@@ -104,11 +104,11 @@ export function render(
       }
       if (!drawImg) drawImg = sideImg;
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
+        const tw = drawImg.naturalWidth / 3;
+        const th = drawImg.naturalHeight / 3;
         const tx = ((x % 3) + 3) % 3;
         const ty = ((y % 3) + 3) % 3;
-        const sw = drawImg.naturalWidth / 3;
-        const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
+        ctx.drawImage(drawImg, tx * tw, ty * th, tw, th, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#aaaaaa';
         ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
@@ -346,20 +346,22 @@ export function render(
       if (map[y][x] !== 2) continue;
       const key = `wall:${x},${y}`;
       const override = tileOverrides?.[key];
-      const tx = ((x % 3) + 3) % 3;
-      const ty = ((y % 3) + 3) % 3;
       let drawImg: HTMLImageElement | null = null;
       if (override?.type === 'wall') {
         drawImg = getWallImageByIndex(override.textureIndex);
       }
       if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
-        const sw = drawImg.naturalWidth / 3;
-        const sh = drawImg.naturalHeight / 3;
-        ctx.drawImage(drawImg, tx * sw, ty * sh, sw, sh, x * TILE, y * TILE, TILE + 1, TILE + 1);
+        const tw = drawImg.naturalWidth / 3;
+        const th = drawImg.naturalHeight / 3;
+        const tx = ((x % 3) + 3) % 3;
+        const ty = ((y % 3) + 3) % 3;
+        ctx.drawImage(drawImg, tx * tw, ty * th, tw, th, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else if (wtopImg && wtopImg.complete && wtopImg.naturalWidth > 0) {
-        const wsw = wtopImg.naturalWidth / 3;
-        const wsh = wtopImg.naturalHeight / 3;
-        ctx.drawImage(wtopImg, tx * wsw, ty * wsh, wsw, wsh, x * TILE, y * TILE, TILE + 1, TILE + 1);
+        const tw = wtopImg.naturalWidth / 3;
+        const th = wtopImg.naturalHeight / 3;
+        const tx = ((x % 3) + 3) % 3;
+        const ty = ((y % 3) + 3) % 3;
+        ctx.drawImage(wtopImg, tx * tw, ty * th, tw, th, x * TILE, y * TILE, TILE + 1, TILE + 1);
       } else {
         ctx.fillStyle = '#777777';
         ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
@@ -387,11 +389,11 @@ export function render(
       : getWallImageByIndex(texIdx);
     if (texImg && texImg.complete && texImg.naturalWidth > 0) {
       ctx.globalAlpha = 0.6;
+      const tw = texImg.naturalWidth / 3;
+      const th = texImg.naturalHeight / 3;
       const tx = ((px % 3) + 3) % 3;
       const ty = ((py % 3) + 3) % 3;
-      const sw = texImg.naturalWidth / 3;
-      const sh = texImg.naturalHeight / 3;
-      ctx.drawImage(texImg, tx * sw, ty * sh, sw, sh, px * TILE + TILE, py * TILE + TILE, TILE, TILE);
+      ctx.drawImage(texImg, tx * tw, ty * th, tw, th, px * TILE + TILE, py * TILE + TILE, TILE, TILE);
     }
     ctx.globalAlpha = 1;
   }

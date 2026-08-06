@@ -1817,7 +1817,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               }}
             >
               <span className="ctx-icon" style={{ display: 'flex', alignItems: 'center' }}>
-                <GameIcon icon={item.icon} size={18} />
+                <GameIcon icon={item.icon} size={22} />
               </span>
               <span className="ctx-text" style={{ fontSize: 11, color: '#333' }}>{item.text}</span>
             </div>
@@ -1849,22 +1849,22 @@ function GameInner({ authUser }: { authUser: UserData }) {
           style={{
             pointerEvents: 'auto', cursor: 'pointer',
             background: 'var(--px-panel)', border: '2px solid var(--px-border)',
-            boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark), 2px 2px 0 var(--px-shadow)',
-            padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, minWidth: 240,
+            boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark), 3px 3px 0 var(--px-shadow)',
+            padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 14, minWidth: 280,
           }}
         >
           <div style={{
-            width: 44, height: 44, border: '2px solid var(--px-border)',
+            width: 52, height: 52, border: '2px solid var(--px-border)',
             background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24,
+            fontSize: 28,
           }} suppressHydrationWarning>{player.av}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <div style={{ fontSize: 11, color: 'var(--px-title)' }}>{player.name}</div>
-              <div style={{ fontSize: 9, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{player.level}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--px-title)' }}>{player.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{player.level}</div>
             </div>
-            <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 4 }}>{player.role}</div>
-            <div style={{ width: '100%', height: 4, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden' }}>
+            <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 5 }}>{player.role}</div>
+            <div style={{ width: '100%', height: 5, background: 'var(--px-bg)', border: '1px solid var(--px-border-dark)', overflow: 'hidden' }}>
               <div style={{
                 width: `${(player.xp / (player.level * 100)) * 100}%`,
                 height: '100%',
@@ -1872,14 +1872,14 @@ function GameInner({ authUser }: { authUser: UserData }) {
                 transition: 'width 0.3s',
               }} />
             </div>
-            <div style={{ fontSize: 7, color: 'var(--px-text-dim)', marginTop: 2 }}>{player.xp}/{player.level * 100} XP</div>
+            <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginTop: 3 }}>{player.xp}/{player.level * 100} XP</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon={ICONS.coin} width={14} height={14} style={{ color: 'var(--px-title)' }} />
-              <span style={{ fontSize: 11, color: 'var(--px-title)' }}>{player.coins}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon icon={ICONS.coin} width={18} height={18} style={{ color: 'var(--px-title)' }} />
+              <span style={{ fontSize: 12, color: 'var(--px-title)' }}>{player.coins}</span>
             </div>
-            <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>
+            <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
               {player.placedItems.length} items
             </div>
           </div>
@@ -1889,7 +1889,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
           boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '8px 10px', pointerEvents: 'auto', display: 'flex', gap: 4, alignSelf: 'flex-end',
+          padding: '8px 12px', pointerEvents: 'auto', display: 'flex', gap: 5, alignSelf: 'flex-end',
         }}>
           {EMOJI_CHAT.map((em) => (
             <div key={em} onClick={() => sendEmoji(em)} className="emoji-btn">{em}</div>
@@ -1903,11 +1903,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
             style={{
               background: 'var(--px-panel)', border: '2px solid var(--px-danger)',
               boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-              padding: '8px 14px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
-              fontSize: 11, color: 'var(--px-danger)', display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+              fontSize: 12, color: 'var(--px-danger)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            <Icon icon={ICONS.gear} width={14} height={14} />
+            <Icon icon={ICONS.gear} width={18} height={18} />
             ADMIN
           </div>
         )}
@@ -1916,17 +1916,17 @@ function GameInner({ authUser }: { authUser: UserData }) {
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
           boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '10px 14px', pointerEvents: 'auto', alignSelf: 'flex-end',
-          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+          padding: '12px 16px', pointerEvents: 'auto', alignSelf: 'flex-end',
+          display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 8, height: 8, background: mpConnected ? 'var(--px-accent)' : 'var(--px-danger)' }} />
-            <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 10, height: 10, background: mpConnected ? 'var(--px-accent)' : 'var(--px-danger)' }} />
+            <span style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>
               {mpConnected ? `${remotePlayers.length + 1} ONLINE` : 'OFFLINE'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'var(--px-title)' }}>
-            <Icon icon={ICONS.trophy} width={12} height={12} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--px-title)' }}>
+            <Icon icon={ICONS.trophy} width={16} height={16} />
             {player.achievements.length}
           </div>
         </div>

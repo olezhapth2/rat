@@ -189,7 +189,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       <div className="px-panel" style={{ width: 640, maxHeight: '85vh', overflow: 'hidden' }}>
         <div className="px-panel-header">
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon icon={ICONS.admin} width={16} height={16} />
+            <Icon icon={ICONS.admin} width={20} height={20} />
             ADMIN PANEL
           </span>
           <div style={{ display: 'flex', gap: 2 }}>
@@ -200,19 +200,19 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
             <button onClick={() => setTab('users')} className={`px-btn small${tab === 'users' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon={ICONS.users} width={12} height={12} />
+              <Icon icon={ICONS.users} width={16} height={16} />
               USERS ({users.length})
             </button>
             <button onClick={() => setTab('players')} className={`px-btn small${tab === 'players' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon={ICONS.players} width={12} height={12} />
+              <Icon icon={ICONS.players} width={16} height={16} />
               PLAYERS ({players.length})
             </button>
             <button onClick={() => setTab('money')} className={`px-btn small${tab === 'money' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon={ICONS.coins} width={12} height={12} />
+              <Icon icon={ICONS.coins} width={16} height={16} />
               MONEY
             </button>
             <button onClick={() => setTab('achievements')} className={`px-btn small${tab === 'achievements' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon={ICONS.trophy} width={12} height={12} />
+                      <Icon icon={ICONS.trophy} width={16} height={16} />
               ACHIEVEMENTS
             </button>
           </div>
@@ -231,14 +231,14 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon icon={ICONS.camera} width={12} height={12} />
+                      <Icon icon={ICONS.camera} width={16} height={16} />
                     ЗАГРУЗИТЬ СПРАЙТ
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                   </label>
                   {newAvatar && <img src={newAvatar} alt="" style={{ width: 40, height: 80, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
                   <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', marginLeft: 8 }}>
                     <input type="checkbox" checked={newAdmin} onChange={e => setNewAdmin(e.target.checked)} />
-                    <Icon icon={ICONS.star} width={12} height={12} style={{ color: 'var(--px-accent)' }} />
+                      <Icon icon={ICONS.star} width={16} height={16} style={{ color: 'var(--px-accent)' }} />
                     ADMIN
                   </label>
                   <div style={{ flex: 1 }} />
@@ -264,7 +264,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>{u.role || '—'}</div>
                     {u.admin && (
                       <div style={{ fontSize: 8, color: 'var(--px-accent)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Icon icon={ICONS.star} width={10} height={10} />
+                        <Icon icon={ICONS.star} width={14} height={14} />
                         ADMIN
                       </div>
                     )}
@@ -290,13 +290,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editAdmin} onChange={e => setEditAdmin(e.target.checked)} />
-                      <Icon icon={ICONS.star} width={12} height={12} style={{ color: 'var(--px-accent)' }} />
+                    <Icon icon={ICONS.star} width={16} height={16} style={{ color: 'var(--px-accent)' }} />
                       ADMIN
                     </label>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Icon icon={ICONS.camera} width={12} height={12} />
+                    <Icon icon={ICONS.camera} width={16} height={16} />
                       НОВЫЙ СПРАЙТ
                       <input type="file" accept="image/*" onChange={handleEditAvatarUpload} style={{ display: 'none' }} />
                     </label>
@@ -320,12 +320,12 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <div style={{ fontSize: 11, color: 'var(--px-title)', minWidth: 100 }}>{p.name}</div>
                     <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>{p.charId}</div>
                     <div style={{ fontSize: 9, color: 'var(--px-accent)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Icon icon={ICONS.coin} width={12} height={12} />
+                      <Icon icon={ICONS.coin} width={16} height={16} />
                       {p.coins}
                     </div>
                     <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>Lv.{p.level}</div>
                     <div style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Icon icon={ICONS.trophy} width={12} height={12} />
+              <Icon icon={ICONS.trophy} width={16} height={16} />
                       {p.achievements.length}
                     </div>
                   </div>
@@ -356,7 +356,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div key={p.key} onClick={() => setMoneyTarget(p.key)} className="px-panel" style={{ padding: '6px 10px', cursor: 'pointer', fontSize: 10, borderColor: moneyTarget === p.key ? 'var(--px-accent)' : undefined, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ color: 'var(--px-text)' }}>{p.name}</span>
                     <span style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Icon icon={ICONS.coin} width={10} height={10} />
+                      <Icon icon={ICONS.coin} width={14} height={14} />
                       {p.coins}
                     </span>
                   </div>
@@ -385,13 +385,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                             borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
                           }}
                         >
-                          <Icon icon={ICONS[key]} width={18} height={18} style={{ color: achIcon === key ? 'white' : 'var(--px-text)' }} />
+                          <Icon icon={ICONS[key]} width={22} height={22} style={{ color: achIcon === key ? 'white' : 'var(--px-text)' }} />
                         </div>
                       ))}
                     </div>
                     <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'var(--px-panel)', border: '1px solid var(--px-border-dark)', borderRadius: 4 }}>
                       <span style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>Selected:</span>
-                      <Icon icon={ICONS[achIcon as IconKey] || achIcon} width={16} height={16} />
+                        <Icon icon={ICONS[achIcon as IconKey] || achIcon} width={20} height={20} />
                       <span style={{ fontSize: 9, color: 'var(--px-text)' }}>{achIcon}</span>
                     </div>
                   </div>
@@ -430,7 +430,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {allAchs.map(a => (
                   <div key={a.id} className="px-panel" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
-                    <Icon icon={ICONS[a.icon as IconKey] || a.icon} width={18} height={18} />
+                    <Icon icon={ICONS[a.icon as IconKey] || a.icon} width={22} height={22} />
                     <span style={{ color: 'var(--px-title)' }}>{a.name}</span>
                     <span style={{ color: 'var(--px-text-dim)', fontSize: 9, marginLeft: 'auto' }}>{a.desc}</span>
                     {a.id.startsWith('custom_') && <span style={{ fontSize: 8, color: 'var(--px-accent)' }}>CUSTOM</span>}

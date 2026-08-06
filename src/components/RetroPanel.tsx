@@ -34,8 +34,8 @@ function OptionGroup<T extends string>({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <div style={{ fontSize: 7, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 3 }}>
-        <Icon icon={icon} width={10} height={10} />
+      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Icon icon={icon} width={14} height={14} />
         {label}
       </div>
       <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -44,8 +44,8 @@ function OptionGroup<T extends string>({
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              padding: '3px 5px',
-              fontSize: 7,
+              padding: '4px 7px',
+              fontSize: 8,
               cursor: 'pointer',
               background: value === opt ? 'var(--px-accent)' : 'var(--px-panel-header)',
               color: value === opt ? 'white' : 'var(--px-text-dim)',
@@ -105,9 +105,9 @@ export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelPr
           width: 'fit-content',
         }}
       >
-        <Icon icon="streamline-pixel:photography-retouch-wand" width={12} height={12} />
+        <Icon icon="streamline-pixel:photography-retouch-wand" width={16} height={16} />
         RETRO FX
-        <span style={{ fontSize: 7, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 9, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
       </div>
 
       {/* Panel */}

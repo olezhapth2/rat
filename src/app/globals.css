@@ -65,16 +65,16 @@ canvas {
   background: var(--px-panel);
   border: 2px solid;
   border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
-  box-shadow: 2px 2px 0 var(--px-shadow);
+  box-shadow: 3px 3px 0 var(--px-shadow);
 }
 
 .px-panel-header {
   background: linear-gradient(90deg, var(--px-titlebar) 0%, #1084d0 100%);
-  padding: 4px 6px;
+  padding: 5px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 8px;
+  font-size: 11px;
   color: var(--px-title);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -90,8 +90,8 @@ canvas {
 
 /* ===== WINDOW CONTROL BUTTONS ===== */
 .win-btn {
-  width: 16px;
-  height: 14px;
+  width: 20px;
+  height: 18px;
   background: var(--px-panel);
   border: 2px solid;
   border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
@@ -99,7 +99,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: 9px;
   color: var(--px-text);
   cursor: pointer;
   padding: 0;
@@ -115,8 +115,8 @@ canvas {
 /* ===== BUTTONS ===== */
 .px-btn {
   font-family: 'Press Start 2P', monospace;
-  padding: 6px 14px;
-  font-size: 8px;
+  padding: 8px 16px;
+  font-size: 10px;
   cursor: pointer;
   background: var(--px-panel);
   color: var(--px-text);
@@ -130,7 +130,7 @@ canvas {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
   outline: 1px dotted var(--px-text);
   outline-offset: -4px;
@@ -153,16 +153,16 @@ canvas {
   color: var(--px-danger);
 }
 .px-btn.small {
-  padding: 3px 8px;
-  font-size: 7px;
+  padding: 5px 10px;
+  font-size: 9px;
   outline: none;
 }
 
 /* ===== INPUT ===== */
 .px-input {
   font-family: 'Press Start 2P', monospace;
-  padding: 6px 8px;
-  font-size: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
   background: var(--px-field);
   border: 2px solid;
   border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
@@ -183,10 +183,10 @@ canvas {
 select.px-input {
   appearance: none;
   background: var(--px-field);
-  background-image: url("data:image/svg+xml,%3Csvg width='8' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h8L4 4z' fill='%23000'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h10L5 5z' fill='%23000'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 6px center;
-  padding-right: 20px;
+  background-position: right 8px center;
+  padding-right: 24px;
 }
 
 /* ===== CONTEXT MENU ===== */
@@ -194,22 +194,22 @@ select.px-input {
   background: var(--px-panel) !important;
   border: 2px solid;
   border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light) !important;
-  box-shadow: 2px 2px 0 var(--px-shadow) !important;
+  box-shadow: 3px 3px 0 var(--px-shadow) !important;
   border-radius: 0 !important;
-  padding: 2px !important;
+  padding: 3px !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 .ctx-item {
-  padding: 6px 10px !important;
+  padding: 8px 12px !important;
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px !important;
+  font-size: 9px !important;
   color: var(--px-text) !important;
   border-radius: 0 !important;
   border: 1px solid transparent;
   display: flex !important;
   align-items: center;
-  gap: 8px !important;
+  gap: 10px !important;
   transition: none !important;
   user-select: none;
   cursor: pointer;
@@ -223,8 +223,8 @@ select.px-input {
   transform: none;
 }
 .ctx-icon {
-  width: 20px !important;
-  height: 20px !important;
+  width: 28px !important;
+  height: 28px !important;
   border-radius: 0 !important;
   background: var(--px-panel) !important;
   border: 2px solid;
@@ -232,7 +232,7 @@ select.px-input {
   display: flex !important;
   align-items: center;
   justify-content: center;
-  font-size: 11px !important;
+  font-size: 14px !important;
   flex-shrink: 0;
 }
 .ctx-text {
@@ -243,10 +243,10 @@ select.px-input {
 /* ===== TAB BUTTONS ===== */
 .modal-btn {
   font-family: 'Press Start 2P', monospace;
-  padding: 6px 12px !important;
+  padding: 7px 14px !important;
   background: var(--px-panel) !important;
   color: var(--px-text-dim) !important;
-  font-size: 7px !important;
+  font-size: 9px !important;
   font-weight: 400 !important;
   cursor: pointer;
   transition: none !important;
@@ -254,6 +254,9 @@ select.px-input {
   border: 2px solid;
   border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light) !important;
   box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .modal-btn:hover {
   background: var(--px-btn-hover) !important;
@@ -273,8 +276,8 @@ select.px-input {
 
 /* ===== EMOJI BAR ===== */
 .emoji-btn {
-  width: 32px !important;
-  height: 32px !important;
+  width: 36px !important;
+  height: 36px !important;
   border-radius: 0 !important;
   background: var(--px-panel) !important;
   border: 2px solid;
@@ -282,7 +285,7 @@ select.px-input {
   display: flex !important;
   align-items: center;
   justify-content: center;
-  font-size: 14px !important;
+  font-size: 16px !important;
   cursor: pointer;
   transition: none !important;
   user-select: none;
@@ -312,7 +315,7 @@ select.px-input {
 }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 16px; }
+::-webkit-scrollbar { width: 18px; }
 ::-webkit-scrollbar-track {
   background: repeating-conic-gradient(var(--px-panel) 0% 25%, var(--px-panel-light) 0% 50%) 50% / 2px 2px;
 }
@@ -324,7 +327,7 @@ select.px-input {
 }
 ::-webkit-scrollbar-button {
   display: block;
-  height: 16px;
+  height: 18px;
   background: var(--px-panel);
   border: 2px solid;
   border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);

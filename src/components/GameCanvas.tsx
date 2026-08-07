@@ -285,6 +285,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const [tilePicker, setTilePicker] = useState<{ type: 'floor' | 'wall'; x: number; y: number } | null>(null);
   // Admin panel
   const [showAdmin, setShowAdmin] = useState(false);
+  // Retro FX panel
+  const [retroPanelOpen, setRetroPanelOpen] = useState(false);
 
   // Context menu state
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
@@ -849,6 +851,28 @@ function GameInner({ authUser }: { authUser: UserData }) {
     );
     preloadTileTextures();
   }, []);
+
+  // Activity feed auto-hide tick
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ESC key — close any open overlay
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showAdmin) { setShowAdmin(false); return; }
+      if (showLeaderboard) { setShowLeaderboard(null); return; }
+      if (retroPanelOpen) { setRetroPanelOpen(false); return; }
+      if (smokingResult) { setSmokingResult(null); return; }
+      if (modalType) { closeModal(); return; }
+      if (activeGameRef.current) { setActiveGame(null); activeGameRef.current = null; return; }
+      if (rpsInvite) { setRpsInvite(null); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showAdmin, showLeaderboard, retroPanelOpen, smokingResult, modalType, rpsInvite, closeModal]);
 
   // Multiplayer connection
   useEffect(() => {
@@ -1698,11 +1722,12 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {smokingResult && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,128,128,.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
-        }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,
+        }} onClick={(e) => { if (e.target === e.currentTarget) setSmokingResult(null); }}>
           <div className="px-panel" style={{ width: 360, textAlign: 'center' }}>
-            <div className="px-panel-header">
+            <div className="px-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>LEADERBOARD</span>
+              <button onClick={() => setSmokingResult(null)} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
             </div>
             <div style={{ padding: 20 }}>
               <div style={{ fontSize: 34, marginBottom: 6 }}>🏆</div>
@@ -1825,7 +1850,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       {/* Activity Feed */}
       <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10, pointerEvents: 'none' }}>
-        {player.activities.slice(0, 3).map((a: Activity, i: number) => (
+        {player.activities.filter((a: Activity) => Date.now() - a.ts < 120000).slice(0, 3).map((a: Activity, i: number) => (
           <div key={i} className="px-panel" style={{ padding: '6px 12px', marginBottom: 4, fontSize: 9, color: 'var(--px-text)', display: 'flex', alignItems: 'center', gap: 7 }}>
             <span>{a.icon}</span>
             <span>{a.text}</span>
@@ -1924,6 +1949,22 @@ function GameInner({ authUser }: { authUser: UserData }) {
           🏆 SCORES
         </div>
 
+        {/* Retro FX button */}
+        {(player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com') && (
+          <div
+            onClick={() => setRetroPanelOpen(!retroPanelOpen)}
+            style={{
+              background: 'var(--px-panel)', border: `2px solid ${retroPanelOpen ? 'var(--px-accent)' : 'var(--px-border)'}`,
+              boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
+              padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+              fontSize: 12, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            <Icon icon="streamline-pixel:photography-retouch-wand" width={22} height={22} />
+            RETRO FX
+          </div>
+        )}
+
         {/* MP + coins */}
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
@@ -2009,12 +2050,12 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {showLeaderboard && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
-        }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,
+        }} onClick={(e) => { if (e.target === e.currentTarget) setShowLeaderboard(null); }}>
           <div className="px-panel" style={{ width: 400, maxHeight: '80vh', overflow: 'auto' }}>
             <div className="px-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>🏆 ALL SCORES</span>
-              <span onClick={() => setShowLeaderboard(null)} style={{ cursor: 'pointer', fontSize: 14, color: 'var(--px-text)' }}>✕</span>
+              <button onClick={() => setShowLeaderboard(null)} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
             </div>
             <div style={{ padding: 12 }}>
               {(['smoking', 'microwave', 'basketball', 'rps', 'cardgame', 'furniture_toss'] as const).map(game => {
@@ -2064,7 +2105,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
 
       {/* Retro Effects Panel */}
-      <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} />
+      <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} isOpen={retroPanelOpen} onToggle={() => setRetroPanelOpen(!retroPanelOpen)} />
     </>
   );
 }

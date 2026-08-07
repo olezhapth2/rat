@@ -9,6 +9,8 @@ interface RetroPanelProps {
   settings: RetroSettings;
   onChange: (s: RetroSettings) => void;
   isAdmin: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 type OptionDef = { value: string; label: string };
@@ -95,9 +97,7 @@ function OptionGroup({
   );
 }
 
-export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelProps) {
-  const [collapsed, setCollapsed] = useState(true);
-
+export default function RetroPanel({ settings, onChange, isAdmin, isOpen, onToggle }: RetroPanelProps) {
   if (!isAdmin) return null;
 
   const update = (partial: Partial<RetroSettings>) => {
@@ -107,37 +107,28 @@ export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelPr
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 200, pointerEvents: 'auto' }}>
-      <div
-        onClick={() => setCollapsed(!collapsed)}
-        style={{
-          background: 'var(--px-panel)', border: '2px solid var(--px-border)',
-          boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-          padding: '6px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 10, color: 'var(--px-text-dim)', borderRadius: 0, userSelect: 'none', width: 'fit-content',
-        }}
-      >
-        <Icon icon="streamline-pixel:photography-retouch-wand" width={20} height={20} />
-        RETRO FX
-        <span style={{ fontSize: 9, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
-      </div>
-
-      {!collapsed && (
+    <>
+      {isOpen && (
         <div
           style={{
-            background: 'var(--px-panel)', border: '2px solid var(--px-border)',
-            boxShadow: '3px 3px 0 var(--px-shadow)', padding: 12, marginTop: 4,
-            display: 'flex', flexDirection: 'column', gap: 10, minWidth: 320,
+            position: 'fixed', bottom: 56, left: '50%', transform: 'translateX(-50%)', zIndex: 200, pointerEvents: 'auto',
           }}
-          onClick={(e) => e.stopPropagation()}
         >
-          <OptionGroup label="CRT" icon="streamline-pixel:computers-devices-electronics-television-vintage" options={CRT_OPTIONS} value={settings.crt} onChange={(v) => update({ crt: v as any })} />
-          <OptionGroup label="SCANLINES" icon="streamline-pixel:design-color-spray" options={SCANLINE_OPTIONS} value={settings.scanlines} onChange={(v) => update({ scanlines: v as any })} />
-          <OptionGroup label="NOISE" icon="streamline-pixel:interface-essential-alert" options={NOISE_OPTIONS} value={settings.noise} onChange={(v) => update({ noise: v as any })} />
-          <OptionGroup label="COLOR" icon="streamline-pixel:design-color-painting-palette" options={COLOR_OPTIONS} value={settings.color} onChange={(v) => update({ color: v as any })} />
-          <OptionGroup label="VIGNETTE" icon="streamline-pixel:interface-essential-view-eye" options={VIGNETTE_OPTIONS} value={settings.vignette} onChange={(v) => update({ vignette: v as any })} />
+          <div
+            style={{
+              background: 'var(--px-panel)', border: '2px solid var(--px-border)',
+              boxShadow: '3px 3px 0 var(--px-shadow)', padding: 12,
+              display: 'flex', flexDirection: 'column', gap: 10, minWidth: 320,
+            }}
+          >
+            <OptionGroup label="CRT" icon="streamline-pixel:computers-devices-electronics-television-vintage" options={CRT_OPTIONS} value={settings.crt} onChange={(v) => update({ crt: v as any })} />
+            <OptionGroup label="SCANLINES" icon="streamline-pixel:design-color-spray" options={SCANLINE_OPTIONS} value={settings.scanlines} onChange={(v) => update({ scanlines: v as any })} />
+            <OptionGroup label="NOISE" icon="streamline-pixel:interface-essential-alert" options={NOISE_OPTIONS} value={settings.noise} onChange={(v) => update({ noise: v as any })} />
+            <OptionGroup label="COLOR" icon="streamline-pixel:design-color-painting-palette" options={COLOR_OPTIONS} value={settings.color} onChange={(v) => update({ color: v as any })} />
+            <OptionGroup label="VIGNETTE" icon="streamline-pixel:interface-essential-view-eye" options={VIGNETTE_OPTIONS} value={settings.vignette} onChange={(v) => update({ vignette: v as any })} />
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

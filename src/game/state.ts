@@ -8,6 +8,7 @@ export interface Activity {
   icon: string;
   text: string;
   time: string;
+  ts: number;
 }
 
 export interface PlacedItem {
@@ -416,7 +417,7 @@ export function getItemEmoji(id: string): string {
 
 export function logActivity(state: GameState, icon: string, text: string) {
   const now = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-  state.player.activities.unshift({ icon, text, time: now });
+  state.player.activities.unshift({ icon, text, time: now, ts: Date.now() });
   if (state.player.activities.length > 50) state.player.activities.pop();
 }
 

@@ -67,7 +67,7 @@ function OptionGroup({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Icon icon={icon} width={14} height={14} />
+        <Icon icon={icon} width={18} height={18} />
         {label}
       </div>
       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
@@ -117,7 +117,7 @@ export default function RetroPanel({ settings, onChange, isAdmin }: RetroPanelPr
           fontSize: 10, color: 'var(--px-text-dim)', borderRadius: 0, userSelect: 'none', width: 'fit-content',
         }}
       >
-        <Icon icon="streamline-pixel:photography-retouch-wand" width={16} height={16} />
+        <Icon icon="streamline-pixel:photography-retouch-wand" width={20} height={20} />
         RETRO FX
         <span style={{ fontSize: 9, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
       </div>

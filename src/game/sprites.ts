@@ -46,14 +46,6 @@ const CHAR_FILES: Record<string, string> = {
   kryska: '/sprites/pers/kryska.webp',
 };
 
-// Pet files
-const PET_FILES: Record<string, string> = {
-  pet1: '/sprites/pets/pet1.webp',
-  pet2: '/sprites/pets/pet2.webp',
-  pet3: '/sprites/pets/pet3.webp',
-  pet4: '/sprites/pets/pet4.webp',
-};
-
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -114,21 +106,6 @@ export async function preloadCharacterSprites(
   await Promise.all(promises);
   onLoadCallback?.();
   console.log(`[Sprites] Loaded ${totalLoaded} character sprites`);
-}
-
-/**
- * Preload pet sprites.
- */
-export async function preloadPetSprites(): Promise<void> {
-  const entries = Object.entries(PET_FILES);
-  for (const [petId, url] of entries) {
-    const img = await loadImage(url);
-    if (img.complete && img.naturalWidth > 0) {
-      spriteCache.set(petId, img);
-    }
-    // No fallback
-  }
-  console.log('[Sprites] Pet sprites loaded');
 }
 
 // Get cached sprite (always returns the single character image)
@@ -202,19 +179,4 @@ export function drawCharacterSprite(
   }
   // No fallback — skip rendering if sprite not loaded
 
-}
-
-// === Draw Pet ===
-export function drawPet(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  petId: string
-): void {
-  const petSize = 30;
-  const sprite = spriteCache.get(petId);
-  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    ctx.drawImage(sprite, x - petSize / 2, y - petSize / 2, petSize, petSize);
-  }
-  // No fallback — skip rendering if sprite not loaded
 }

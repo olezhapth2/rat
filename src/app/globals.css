@@ -137,6 +137,7 @@ canvas {
 }
 .px-btn:hover {
   background: var(--px-btn-hover);
+  color: #ffffff;
 }
 .px-btn:active {
   border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);

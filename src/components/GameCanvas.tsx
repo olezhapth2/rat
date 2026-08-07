@@ -5,9 +5,9 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS } from '../game
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updatePet, updateDropPreview, takeBackFromKryska, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
+import { createInitialState, persistState, persistStateDebounced, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updateDropPreview, takeBackFromKryska, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
 import type { GameState, Activity } from '../game/state';
-import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
+import { preloadCharacterSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
 import {
   connectMultiplayer, disconnectMultiplayer, sendPosition,
@@ -267,8 +267,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
         level: s.player.level,
         furniture: s.player.furniture,
         achievements: s.player.achievements,
-        petId: s.player.petId,
-        petPetCount: s.player.petPetCount,
         wallColor: s.player.wallColor,
         doorName: s.player.doorName,
         av: s.player.av,
@@ -837,7 +835,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       (loaded, total) => console.log(`Sprites: ${loaded}/${total}`),
       () => console.log('All sprites loaded')
     );
-    preloadPetSprites();
     preloadTileTextures();
   }, []);
 
@@ -909,10 +906,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
       setRpsSentChoice(false);
     });
 
+    const itemsMap = new Map(ALL_ITEMS.map(i => [i.id, i]));
     onItems((items: SharedItem[]) => {
       const s = stateRef.current;
       s.player.placedItems = items.map(si => {
-        const def = ALL_ITEMS.find(i => i.id === si.id);
+        const def = itemsMap.get(si.id);
         return {
           id: si.id,
           x: si.x,
@@ -922,8 +920,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         };
       });
       s._placedItemsVersion++;
-      persistState(s);
-      saveToServer();
+      persistStateDebounced(s);
     });
 
     onEmoji((data) => {
@@ -953,8 +950,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (data.level !== undefined) s.player.level = data.level;
       if (data.furniture) s.player.furniture = data.furniture;
       if (data.achievements) s.player.achievements = data.achievements;
-      if (data.petId) s.player.petId = data.petId;
-      if (data.petPetCount !== undefined) s.player.petPetCount = data.petPetCount;
       if (data.wallColor) s.player.wallColor = data.wallColor;
       if (data.doorName) s.player.doorName = data.doorName;
       if (data.dailyQuests) s.dailyQuests = data.dailyQuests;
@@ -1126,29 +1121,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
         });
       }
 
-      // Pet petting — check if right-click near pet
-      if (s.player.petId && s.player.petX !== undefined && s.player.petY !== undefined) {
-        const dxPet = worldX - s.player.petX;
-        const dyPet = worldY - s.player.petY;
-        if (Math.sqrt(dxPet * dxPet + dyPet * dyPet) < TILE * 2) {
-          items.push({
-            icon: 'pet',
-            text: 'Погладить',
-            fn: () => {
-              s.player.petPetCount = (s.player.petPetCount || 0) + 1;
-              persistState(s);
-              saveToServer();
-              if (s.player.petPetCount >= 10) {
-                unlockAchievement(s, 'pet_lover');
-                toast('🐾 Зоофил! Питомец счастлив!', 'ok');
-              } else {
-                toast(`🐾 Гладишь питомца... (${s.player.petPetCount}/10)`, 'info');
-              }
-            }
-          });
-        }
-      }
-
       // Tile painting — floor/wall (3x3 block)
       if (!foundBot && !foundObj && nearestPlacedIdx < 0 && !s.player.carrying) {
         const playerTileX = Math.floor(s.player.x / TILE);
@@ -1275,7 +1247,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       const onlineCharIds = new Set(remotePlayersRef.current.map(rp => rp.charId));
       onlineCharIds.add(s.player.charId);
       updateBots(s, dt, onlineCharIds);
-      updatePet(s, dt);
       const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.id));
       // Update bot animations (only for visible bots)
       for (const bot of visibleBots) {
@@ -1876,7 +1847,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Icon icon={ICONS.coin} width={18} height={18} style={{ color: 'var(--px-title)' }} />
+              <Icon icon={ICONS.coin} width={22} height={22} style={{ color: 'var(--px-title)' }} />
               <span style={{ fontSize: 12, color: 'var(--px-title)' }}>{player.coins}</span>
             </div>
             <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
@@ -1907,7 +1878,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               fontSize: 12, color: 'var(--px-danger)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            <Icon icon={ICONS.gear} width={18} height={18} />
+            <Icon icon={ICONS.gear} width={22} height={22} />
             ADMIN
           </div>
         )}
@@ -1926,7 +1897,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--px-title)' }}>
-            <Icon icon={ICONS.trophy} width={16} height={16} />
+            <Icon icon={ICONS.trophy} width={20} height={20} />
             {player.achievements.length}
           </div>
         </div>
@@ -1968,7 +1939,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           borderColor: 'var(--px-accent)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon icon={ICONS.game} width={16} height={16} style={{ color: 'var(--px-accent)' }} />
+            <Icon icon={ICONS.game} width={20} height={20} style={{ color: 'var(--px-accent)' }} />
             <div>
               <div style={{ fontSize: 11, color: 'var(--px-title)' }}>RPS FROM {rpsInvite.fromName}</div>
               <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginTop: 3 }}>ACCEPT?</div>
@@ -2427,10 +2398,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {(SHOP as any)[cat]?.map((item: any) => {
-          const isPet = item.id.startsWith('pet');
-          const count = isPet
-            ? (state.player.petId === item.id ? 1 : 0)
-            : state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
+          const count = state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
           return (
             <div
               key={item.id}
@@ -2447,7 +2415,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{item.n}</div>
-              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({isPet ? '✓' : count})</span>}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
             </div>
           );
         })}
@@ -2595,8 +2563,8 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
 
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
-      <div style={{ width: 56, height: 56, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)' }}>
-        <img src={avatar || `/sprites/pers/${charId}.png`} alt={charId} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <div style={{ width: 64, height: 64, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)', borderRadius: 4 }}>
+        <img src={`/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '200%', height: 'auto', objectFit: 'contain', imageRendering: 'pixelated', marginTop: 0, display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
         <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{name}</div>
@@ -3234,7 +3202,6 @@ function OnboardingLoader({ onComplete }: { onComplete: () => void }) {
     startedRef.current = true;
     Promise.all([
       preloadCharacterSprites(),
-      preloadPetSprites(),
       preloadTileTextures(),
       ...ALL_ITEMS.filter(i => i.sprite).map(i =>
         new Promise<void>((resolve) => {

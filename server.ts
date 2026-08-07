@@ -33,8 +33,6 @@ interface PlayerData {
   furniture: string[];
   placedItems: Array<{ id: string; x: number; y: number; surface: 'floor' | 'wall'; placedBy: string }>;
   achievements: string[];
-  petId: string;
-  petPetCount: number;
   wallColor: string;
   doorName: string;
   av: string;
@@ -722,8 +720,6 @@ app.prepare().then(() => {
         furniture: [],
         placedItems: [],
         achievements: [],
-        petId: '',
-        petPetCount: 0,
         wallColor: '#2a2a4a',
         doorName: '',
         av: '🧑‍🚀',

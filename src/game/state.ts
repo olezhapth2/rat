@@ -40,12 +40,8 @@ export interface GameState {
     charId: string;  // character sprite ID (e.g. 'pers1', 'pers2')
     hatId: string;   // hat sprite ID (e.g. 'none', 'hat0')
     anim: AnimState; // animation state (dir, frame, tick)
-    petId: string | null; // active pet sprite ID (e.g. 'pet1')
-    petX: number;
-    petY: number;
     wallColor: string;
     doorName: string;
-    petPetCount: number;
   };
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
   bots: Bot[];
@@ -110,10 +106,8 @@ function savePartial(state: GameState) {
       achievements: state.player.achievements,
       charId: state.player.charId,
       hatId: state.player.hatId,
-      petId: state.player.petId,
       wallColor: state.player.wallColor,
       doorName: state.player.doorName,
-      petPetCount: state.player.petPetCount,
       tileOverrides: state.tileOverrides,
     })
   );
@@ -149,12 +143,8 @@ export function createInitialState(authUser?: { charId: string; name: string; ro
     charId,
     hatId: (saved?.hatId as string) || 'none',
     anim: createAnimState(),
-    petId: 'pet1',
-    petX: 0,
-    petY: 0,
     wallColor: (saved?.wallColor as string) || '#2a2a4a',
     doorName: (saved?.doorName as string) || '',
-    petPetCount: (saved?.petPetCount as number) ?? 0,
   };
 
   if (player.daily !== today) {
@@ -189,21 +179,18 @@ export function persistState(state: GameState) {
   savePartial(state);
 }
 
+// Debounced persist for high-frequency sync events (items/tiles received on connect)
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+export function persistStateDebounced(state: GameState) {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => savePartial(state), 300);
+}
+
 export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: string } {
   const item = Object.values(SHOP)
     .flat()
     .find((i) => i.id === itemId);
   if (!item) return { ok: false, msg: 'Не найдено' };
-
-  // Special handling for pets
-  if (itemId.startsWith('pet')) {
-    if (state.player.petId === itemId) return { ok: false, msg: 'Уже есть' };
-    if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
-    state.player.coins -= item.p;
-    state.player.petId = itemId;
-    persistState(state);
-    return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };
-  }
 
   if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
   state.player.coins -= item.p;
@@ -510,7 +497,7 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
     // Skip bots for online players (player is connected → no bot needed)
     if (onlineCharIds && onlineCharIds.has(bot.id)) continue;
 
-    if (bot.id === 'kryska') {
+    if (bot.id === 'bot_kryska') {
       updateKryska(bot, state, dt);
       continue;
     }
@@ -577,7 +564,7 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
     // === 4. Bot-to-bot conversations ===
     if (Math.random() < 0.002 * dt && now - bot._speechTime > 15000) {
       for (const other of bots) {
-        if (other.id === bot.id || other.id === 'kryska') continue;
+        if (other.id === bot.id || other.id === 'bot_kryska') continue;
         const dxo = other.x - bot.x;
         const dyo = other.y - bot.y;
         const distBetween = Math.sqrt(dxo * dxo + dyo * dyo);
@@ -782,21 +769,6 @@ export function claimQuestReward(state: GameState, questId: string): { ok: boole
 
 export function getQuestProgress(state: GameState, questId: string): number {
   return state.dailyQuests.progress[questId] || 0;
-}
-
-// === Update pet following player ===
-export function updatePet(state: GameState, dt: number) {
-  const p = state.player;
-  if (!p.petId) return;
-
-  // Pet target: slightly behind and to the right of player
-  const targetX = p.x - (p.vx !== 0 ? Math.sign(p.vx) * TILE * 1.2 : TILE * 0.8);
-  const targetY = p.y + TILE * 0.6;
-
-  // Smooth follow with delay
-  const lerp = 0.06 * dt;
-  p.petX += (targetX - p.petX) * lerp;
-  p.petY += (targetY - p.petY) * lerp;
 }
 
 // === Convert PlacedItems to GameObjects for collision ===

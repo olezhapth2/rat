@@ -156,7 +156,7 @@ export function createPlayer(): Player {
 }
 
 export interface Bot {
-  id: string; name: string; color: string;
+  id: string; name: string; color: string; spriteId: string;
   x: number; y: number; radius: number;
   role: string;
   wanderTimer: number;
@@ -174,15 +174,15 @@ export interface Bot {
 
 export function createBots(): Bot[] {
   return [
-    { id: 'pers1',  name: 'Олег',    color: '#4ecca3', x: 5 * TILE,  y: 7 * TILE,  radius: 8, role: 'Разработчик', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
-    { id: 'kryska', name: 'Крыска',  color: '#888',     x: 8 * TILE,  y: 36 * TILE, radius: 6, role: 'крыса',      wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'bot_oleg',  name: 'Олег',    color: '#4ecca3', spriteId: 'pers1', x: 5 * TILE,  y: 7 * TILE,  radius: 8, role: 'Разработчик', wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
+    { id: 'bot_kryska', name: 'Крыска',  color: '#888', spriteId: 'kryska', x: 8 * TILE,  y: 36 * TILE, radius: 6, role: 'крыса',      wanderTimer: 0, wanderTargetX: null, wanderTargetY: null, _speechBubble: null, _speechTime: 0, _emoji: null, _emojiTime: 0, _targetRoomId: null, _roomTimer: 0, _stealCooldown: 0, _lastVx: 0, _lastVy: 0, _stolenCoins: 0, _chaseTimer: 0, _speedMultiplier: 1, _chasingPlayer: false },
   ];
 }
 
 export const EMOJI_CHAT = ['👋', '😂', '👍', '❤️', '🔥', '💀', '👀', '🎮'];
 
 export const BOT_PHRASES: Record<string, string[]> = {
-  pers1: [
+  bot_oleg: [
     'разъ*б чуваки',
     'газ!',
     'hola amigos',
@@ -204,7 +204,7 @@ export const BOT_PHRASES: Record<string, string[]> = {
     'отдых не мой конек',
     'пу пу пу',
   ],
-  kryska: [
+  bot_kryska: [
     '*пии-пии*',
     '*грызёт провода*',
     '*ночью вылезу*',
@@ -212,8 +212,8 @@ export const BOT_PHRASES: Record<string, string[]> = {
 };
 
 export const BOT_REACTIONS: Record<string, string[]> = {
-  pers1: ['👋', '💻', '🔧', '🚀'],
-  kryska: ['🐀', '🧀', '👀', '💀'],
+  bot_oleg: ['👋', '💻', '🔧', '🚀'],
+  bot_kryska: ['🐀', '🧀', '👀', '💀'],
 };
 
 export const BOT_CONVERSATIONS: string[][] = [
@@ -308,12 +308,6 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'wall_freez', n: 'Холодильник', e: '🧊', p: 200, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_freez.webp' },
     { id: 'wall_safe', n: 'Сейф', e: '🔐', p: 250, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/wall_safe.webp' },
   ],
-  pets: [
-    { id: 'pet1', n: 'Кот', e: '🐱', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp' },
-    { id: 'pet2', n: 'Пёс', e: '🐶', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.webp' },
-    { id: 'pet3', n: 'Рыба', e: '🐟', p: 80, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.webp' },
-    { id: 'pet4', n: 'Птица', e: '🐦', p: 90, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.webp' },
-  ],
   minigames: [
     { id: 'minigame_ashtray', n: 'Пепельница', e: '🚬', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/ashtray.webp', minigame: 'smoke' as const },
     { id: 'minigame_bookshelf', n: 'Шкаф', e: '📖', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/bookshelf.webp', minigame: 'book_prediction' as const },
@@ -344,7 +338,6 @@ export const ACHIEVEMENTS = [
   { id: 'social',        name: 'Социальный',           icon: '🤝', desc: 'Посети 3 кабинета' },
   { id: 'kryska_victim', name: 'Жертва Крыски',        icon: '🐀', desc: 'Крыска украла твои деньги' },
   { id: 'secret_finder', name: 'Тайна раскрыта',        icon: '🔍', desc: 'Найди секрет за книжным шкафом' },
-  { id: 'pet_lover',     name: 'Зоофил',                icon: '🐾', desc: 'Погладь питомца 10 раз' },
 ];
 
 export interface DailyQuest {

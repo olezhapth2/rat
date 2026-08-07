@@ -1,6 +1,6 @@
 import { TILE, MAP_W, MAP_H } from './constants';
 import type { Player, GameObject, Bot } from './constants';
-import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite, drawPet } from './sprites';
+import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite } from './sprites';
 import { getFloorImage, getFloorImageByIndex, getWallImageByIndex, getSideWallImage, getWallTopImage } from './tiles';
 import type { RemotePlayer } from './multiplayer';
 
@@ -157,17 +157,9 @@ export function render(
   const playerName = (player as any).name || 'Ты';
   const allChars = [
     { x: player.x, y: player.y, name: playerName, isPlayer: true, bot: null as any, charId: (player as any).charId || 'pers4', hatId: (player as any).hatId || 'none' },
-    ...bots.map((b) => ({ x: b.x, y: b.y, name: b.name, isPlayer: false, bot: b, charId: b.id, hatId: 'none' })),
+    ...bots.map((b) => ({ x: b.x, y: b.y, name: b.name, isPlayer: false, bot: b, charId: b.spriteId, hatId: 'none' })),
     ...remotePlayers.map((rp) => ({ x: rp.x, y: rp.y, name: rp.name, isPlayer: false, bot: null as any, charId: rp.charId, hatId: rp.hatId })),
   ];
-
-  // Pet
-  const petId = (player as any).petId as string | undefined;
-  const petX = (player as any).petX as number | undefined;
-  const petY = (player as any).petY as number | undefined;
-  if (petId && petX !== undefined && petY !== undefined) {
-    entities.push({ sortY: petY, draw: () => drawPet(ctx, petX, petY, petId) });
-  }
 
   for (const c of allChars) {
     entities.push({

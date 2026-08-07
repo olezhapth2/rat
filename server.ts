@@ -16,11 +16,44 @@ const STATE_FILE = join(DATA_DIR, 'game-state.json');
 const PLAYERS_FILE = join(DATA_DIR, 'players.json');
 const ACHIEVEMENTS_FILE = join(DATA_DIR, 'custom-achievements.json');
 const USERS_FILE = join(DATA_DIR, 'users.json');
+const LEADERBOARDS_FILE = join(DATA_DIR, 'leaderboards.json');
 
 interface PersistedState {
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
   sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }>;
   whiteboardData: string;
+}
+
+// === Leaderboards ===
+interface LeaderboardEntry {
+  name: string;
+  charId: string;
+  score: number;
+  date: string;
+}
+type LeaderboardKey = 'smoking' | 'microwave' | 'basketball' | 'rps' | 'cardgame' | 'furniture_toss';
+type LeaderboardData = Record<LeaderboardKey, LeaderboardEntry[]>;
+const LEADERBOARD_MAX = 20;
+
+function loadLeaderboards(): LeaderboardData {
+  ensureDataDir();
+  try {
+    if (existsSync(LEADERBOARDS_FILE)) {
+      return JSON.parse(readFileSync(LEADERBOARDS_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load leaderboards:', e);
+  }
+  return { smoking: [], microwave: [], basketball: [], rps: [], cardgame: [], furniture_toss: [] };
+}
+
+function saveLeaderboards(data: LeaderboardData) {
+  ensureDataDir();
+  try {
+    writeFileSync(LEADERBOARDS_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save leaderboards:', e);
+  }
 }
 
 interface PlayerData {
@@ -202,6 +235,8 @@ const handle = app.getRequestHandler();
 let tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
 let sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }> = [];
 let whiteboardData: string = '';
+let leaderboards: LeaderboardData = { smoking: [], microwave: [], basketball: [], rps: [], cardgame: [], furniture_toss: [] };
+leaderboards = loadLeaderboards();
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
@@ -934,6 +969,45 @@ app.prepare().then(() => {
       }));
       socket.emit('auth:users-list', list);
     });
+
+    // === Leaderboards ===
+    socket.on('leaderboard:submit', (data: { game: LeaderboardKey; score: number }) => {
+      const { game, score } = data;
+      if (!['smoking', 'microwave', 'basketball', 'rps', 'cardgame', 'furniture_toss'].includes(game)) return;
+      if (typeof score !== 'number' || isNaN(score)) return;
+
+      const loginKey = loggedInUsers.get(socket.id);
+      if (!loginKey) return;
+      const user = usersDb[loginKey];
+      if (!user) return;
+
+      const entry: LeaderboardEntry = {
+        name: user.name || loginKey,
+        charId: user.charId || 'char1',
+        score,
+        date: new Date().toISOString(),
+      };
+
+      if (!leaderboards[game]) leaderboards[game] = [];
+      const board = leaderboards[game];
+
+      // For smoking, lower is better; for everything else, higher is better
+      if (game === 'smoking') {
+        board.push(entry);
+        board.sort((a, b) => a.score - b.score);
+      } else {
+        board.push(entry);
+        board.sort((a, b) => b.score - a.score);
+      }
+
+      // Keep top entries
+      leaderboards[game] = board.slice(0, LEADERBOARD_MAX);
+      saveLeaderboards(leaderboards);
+
+      io.emit('leaderboard:updated', { game, entries: leaderboards[game] });
+    });
+
+    socket.emit('leaderboard:sync', leaderboards);
 
     // Disconnect
     socket.on('disconnect', () => {

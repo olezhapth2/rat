@@ -23,10 +23,11 @@ import {
   onTileSync,
   sendTilePaint, sendTileRemove, sendTileReset,
   sendPlayerSave, onPlayerDataSync,
+  submitLeaderboard, onLeaderboardSync, onLeaderboardUpdated,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
-import { checkInteractions, getSmokingLeaderboard, saveSmokingRecord, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
+import { checkInteractions, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
 import AdminPanel from './AdminPanel';
 import { GameIcon, ICONS, type IconKey } from '../game/icons';
 import { Icon } from '@iconify/react';
@@ -240,7 +241,11 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Interaction + smoking minigame
   const [nearInteraction, setNearInteraction] = useState<InteractionZone | null>(null);
   const [smokingGame, setSmokingGame] = useState<{ active: boolean; startTime: number; taps: number; targetTaps: number } | null>(null);
-  const [smokingResult, setSmokingResult] = useState<{ time: number; board: ReturnType<typeof getSmokingLeaderboard> } | null>(null);
+  const [smokingResult, setSmokingResult] = useState<{ time: number } | null>(null);
+
+  // Server-side leaderboards
+  const [leaderboards, setLeaderboards] = useState<Record<string, any[]>>({});
+  const [showLeaderboard, setShowLeaderboard] = useState<string | null>(null);
 
   // Card game state
   const [cardGame, setCardGame] = useState<any>(null);
@@ -533,6 +538,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           g.result = res;
           g.status = 'done';
           g.elapsed = stoppedAt;
+          submitLeaderboard('microwave', res.reward);
           if (res.reward > 0) {
             if (res.reward >= 35) addXP(stateRef.current, 15);
             else if (res.reward >= 25) addXP(stateRef.current, 10);
@@ -560,14 +566,14 @@ function GameInner({ authUser }: { authUser: UserData }) {
             g.done = true;
             g.won = true;
             const elapsed = Date.now() - g.startTime;
-            const board = saveSmokingRecord(stateRef.current.player.name, elapsed);
+            submitLeaderboard('smoking', elapsed);
             addCoins(stateRef.current, 20);
             addXP(stateRef.current, 15);
             unlockAchievement(stateRef.current, 'smoker');
             trackQuestProgress(stateRef.current, 'smoke_1');
             logActivity(stateRef.current, '🚬', 'Smoked in the smoking room');
             toast('+20 COINS SMOKED!', 'ok');
-            setSmokingResult({ time: elapsed, board });
+            setSmokingResult({ time: elapsed });
           }
         }
       }
@@ -651,6 +657,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         if (g.attempts <= 0) {
           setTimeout(() => {
             const coins = g.score * 10;
+            submitLeaderboard('furniture_toss', g.score);
             addCoins(stateRef.current, coins);
             toast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8 → +${coins} алт` : `${g.score}/8 → +${coins} алт`, g.score >= 5 ? 'ok' : 'info');
             if (g.score >= 5) { /* confetti handled via toast */ }
@@ -888,6 +895,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
     onGameResult((data) => {
       setRpsResult(data);
       setRpsGameState(null);
+      submitLeaderboard('rps', data.reward);
       if (data.reward > 0) {
         addCoins(stateRef.current, data.reward);
         if (data.winner === 'you') addXP(stateRef.current, 20);
@@ -933,14 +941,28 @@ function GameInner({ authUser }: { authUser: UserData }) {
     });
 
     onCardGameState((game) => {
+      const prevGame = cardGame;
       setCardGame(game);
       const myId = (window as any).__mpMyId;
       const me = game.players.find((p: any) => p.id === myId);
       if (me) setCardGameMyHand(me.hand);
+      if (game.status === 'finished' && game.winner && prevGame?.status !== 'finished') {
+        const won = game.winner === myId;
+        submitLeaderboard('cardgame', won ? 1 : 0);
+        if (won) confetti();
+      }
     });
 
     onCardGameError((error) => {
       toast(error, 'info');
+    });
+
+    onLeaderboardSync((data) => {
+      setLeaderboards(data);
+    });
+
+    onLeaderboardUpdated((data) => {
+      setLeaderboards(prev => ({ ...prev, [data.game]: data.entries }));
     });
 
     onTileSync((overrides) => {
@@ -1691,7 +1713,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               <div style={{ fontSize: 11, color: 'var(--px-text)', marginBottom: 10, textAlign: 'left' }}>
                 🏅 TOP 3
               </div>
-              {smokingResult.board.slice(0, 3).map((r, i) => (
+              {(leaderboards.smoking || []).slice(0, 3).map((r, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', marginBottom: 3,
                   background: 'var(--px-panel)',
@@ -1699,7 +1721,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
                 }}>
                   <span style={{ fontSize: 13 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                   <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
-                  <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>{(r.time / 1000).toFixed(1)}s</span>
+                  <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>{(r.score / 1000).toFixed(1)}s</span>
                 </div>
               ))}
               <button onClick={() => setSmokingResult(null)} className="px-btn accent" style={{ marginTop: 12 }}>OK</button>
@@ -1888,6 +1910,19 @@ function GameInner({ authUser }: { authUser: UserData }) {
           </div>
         )}
 
+        {/* Leaderboard button */}
+        <div
+          onClick={() => setShowLeaderboard('all')}
+          style={{
+            background: 'var(--px-panel)', border: '2px solid var(--px-accent)',
+            boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
+            padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+            fontSize: 12, color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          🏆 SCORES
+        </div>
+
         {/* MP + coins */}
         <div style={{
           background: 'var(--px-panel)', border: '2px solid var(--px-border)',
@@ -1968,6 +2003,61 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       {/* Admin Panel */}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }}>
+          <div className="px-panel" style={{ width: 400, maxHeight: '80vh', overflow: 'auto' }}>
+            <div className="px-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🏆 ALL SCORES</span>
+              <span onClick={() => setShowLeaderboard(null)} style={{ cursor: 'pointer', fontSize: 14, color: 'var(--px-text)' }}>✕</span>
+            </div>
+            <div style={{ padding: 12 }}>
+              {(['smoking', 'microwave', 'basketball', 'rps', 'cardgame', 'furniture_toss'] as const).map(game => {
+                const labels: Record<string, string> = {
+                  smoking: '🚬 SMOKING (fastest wins)',
+                  microwave: '⏱️ MICROWAVE (best reward)',
+                  basketball: '🏀 BASKETBALL (most scored)',
+                  rps: '✊ ROCK PAPER SCISSORS (most wins)',
+                  cardgame: '🃏 OKIYA (most wins)',
+                  furniture_toss: '🪑 FURNITURE TOSS (most scored)',
+                };
+                const entries = leaderboards[game] || [];
+                if (entries.length === 0) return null;
+                return (
+                  <div key={game} style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, color: 'var(--px-text)', fontWeight: 'bold', marginBottom: 4 }}>{labels[game]}</div>
+                    {entries.slice(0, 5).map((r, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', marginBottom: 2,
+                        background: 'var(--px-panel)',
+                        border: i === 0 ? '1px solid var(--px-accent)' : '1px solid var(--px-border-dark)',
+                      }}>
+                        <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`}</span>
+                        <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
+                        <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
+                          {game === 'smoking' ? `${(r.score / 1000).toFixed(1)}s` :
+                           game === 'basketball' ? `${r.score}/10` :
+                           game === 'furniture_toss' ? `${r.score}/8` :
+                           r.score}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+              {Object.keys(leaderboards).length === 0 && (
+                <div style={{ textAlign: 'center', color: 'var(--px-text-dim)', fontSize: 11, padding: 20 }}>
+                  No scores yet. Play some games!
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confetti */}
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
@@ -2077,6 +2167,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
       g.attempts--;
       if (g.attempts <= 0) {
         const coins = g.score * 15;
+        submitLeaderboard('basketball', g.score);
         addCoins(state, coins);
         toast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10 → +${coins} алт` : `${g.score}/10 → +${coins} алт`, g.score >= 7 ? 'ok' : 'info');
         if (g.score >= 7) confetti();

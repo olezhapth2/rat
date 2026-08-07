@@ -22,31 +22,6 @@ export function checkInteractions(px: number, py: number): InteractionZone | nul
   return null;
 }
 
-export interface SmokingRecord {
-  name: string;
-  time: number;
-  date: string;
-}
-
-const STORAGE_KEY = 'smoking_leaderboard';
-
-export function getSmokingLeaderboard(): SmokingRecord[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-export function saveSmokingRecord(name: string, timeMs: number) {
-  const board = getSmokingLeaderboard();
-  board.push({ name, time: timeMs, date: new Date().toISOString() });
-  board.sort((a, b) => a.time - b.time);
-  const top10 = board.slice(0, 10);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(top10));
-  return top10;
-}
-
 export const BOOK_PREDICTIONS: string[] = [
   'Клиент скажет "сделайте попроще", но будет прав',
   'Сегодня цвет дня — тот, который ты выбрал вчера',

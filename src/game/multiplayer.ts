@@ -212,6 +212,14 @@ function registerGameListeners(): void {
       onPlayerDataSyncCb?.(data);
     });
 
+    // Leaderboard events
+    socket.on('leaderboard:sync', (data: Record<string, any[]>) => {
+      onLeaderboardSyncCb?.(data);
+    });
+    socket.on('leaderboard:updated', (data: { game: string; entries: any[] }) => {
+      onLeaderboardUpdatedCb?.(data);
+    });
+
     // Admin events
     socket.on('admin:players-list', (list: any[]) => {
       onAdminPlayersListCb?.(list);
@@ -534,3 +542,14 @@ export function onAuthUsersList(cb: (list: any[]) => void): void { onAuthUsersLi
 export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpdatedCb = cb; }
 export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }
 export function onAuthUserSync(cb: (data: any) => void): void { onAuthUserSyncCb = cb; }
+
+// === LEADERBOARD API ===
+export function submitLeaderboard(game: string, score: number): void {
+  socket?.emit('leaderboard:submit', { game, score });
+}
+
+let onLeaderboardSyncCb: ((data: Record<string, any[]>) => void) | null = null;
+let onLeaderboardUpdatedCb: ((data: { game: string; entries: any[] }) => void) | null = null;
+
+export function onLeaderboardSync(cb: (data: Record<string, any[]>) => void): void { onLeaderboardSyncCb = cb; }
+export function onLeaderboardUpdated(cb: (data: { game: string; entries: any[] }) => void): void { onLeaderboardUpdatedCb = cb; }

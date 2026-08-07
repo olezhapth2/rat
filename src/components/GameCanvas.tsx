@@ -131,7 +131,7 @@ export default function GameCanvas() {
                     return prev + 1;
                   });
                 }}
-                style={{ fontSize: 20, color: 'var(--px-title)', marginBottom: 8, letterSpacing: 2, cursor: 'pointer', userSelect: 'none' }}
+                style={{ fontSize: 20, color: 'var(--px-text)', marginBottom: 8, letterSpacing: 2, cursor: 'pointer', userSelect: 'none' }}
               >
                 SECRET GANG
               </div>
@@ -1247,7 +1247,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       const onlineCharIds = new Set(remotePlayersRef.current.map(rp => rp.charId));
       onlineCharIds.add(s.player.charId);
       updateBots(s, dt, onlineCharIds);
-      const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.id));
+      const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.spriteId));
       // Update bot animations (only for visible bots)
       for (const bot of visibleBots) {
         const bvx = (bot as any)._lastVx ?? 0;
@@ -1679,7 +1679,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             </div>
             <div style={{ padding: 20 }}>
               <div style={{ fontSize: 34, marginBottom: 6 }}>🏆</div>
-              <div style={{ fontSize: 18, color: 'var(--px-title)', marginBottom: 3 }}>
+              <div style={{ fontSize: 18, color: 'var(--px-text)', marginBottom: 3 }}>
                 {(smokingResult.time / 1000).toFixed(1)}s
               </div>
               <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 16 }}>YOUR TIME</div>
@@ -1690,7 +1690,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', marginBottom: 3,
                   background: 'var(--px-panel)',
-                  border: i === 0 ? '1px solid var(--px-title)' : '1px solid var(--px-border-dark)',
+                  border: i === 0 ? '1px solid var(--px-text)' : '1px solid var(--px-border-dark)',
                 }}>
                   <span style={{ fontSize: 13 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                   <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
@@ -1711,7 +1711,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           borderRadius: 8, padding: '8px 16px', zIndex: 200,
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
-          <span style={{ fontSize: 10, color: 'var(--px-title)' }}>
+          <span style={{ fontSize: 10, color: 'var(--px-text)' }}>
             {state.tilePaintMode.type === 'floor' ? '🎨 ПОЛ' : '🎨 СТЕНА'}
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -1726,7 +1726,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
                   onClick={() => setTilePaintTexture(state, idx)}
                   style={{
                     width: 32, height: 32,
-                    border: `2px solid ${isSelected ? 'var(--px-title)' : 'var(--px-border-dark)'}`,
+                    border: `2px solid ${isSelected ? 'var(--px-text)' : 'var(--px-border-dark)'}`,
                     cursor: 'pointer',
                     overflow: 'hidden',
                   }}
@@ -1780,8 +1780,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
               key={idx}
               className="ctx-item"
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.06)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--px-titlebar)'; e.currentTarget.style.color = '#ffffff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = ''; }}
               onClick={() => {
                 setCtxMenu(null);
                 item.fn();
@@ -1831,7 +1831,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           }} suppressHydrationWarning>{player.av}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ fontSize: 12, color: 'var(--px-title)' }}>{player.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--px-text)' }}>{player.name}</div>
               <div style={{ fontSize: 10, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{player.level}</div>
             </div>
             <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 5 }}>{player.role}</div>
@@ -1847,8 +1847,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Icon icon={ICONS.coin} width={22} height={22} style={{ color: 'var(--px-title)' }} />
-              <span style={{ fontSize: 12, color: 'var(--px-title)' }}>{player.coins}</span>
+              <Icon icon={ICONS.coin} width={22} height={22} style={{ color: 'var(--px-text)' }} />
+              <span style={{ fontSize: 12, color: 'var(--px-text)' }}>{player.coins}</span>
             </div>
             <div style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
               {player.placedItems.length} items
@@ -1896,7 +1896,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               {mpConnected ? `${remotePlayers.length + 1} ONLINE` : 'OFFLINE'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--px-title)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--px-text)' }}>
             <Icon icon={ICONS.trophy} width={20} height={20} />
             {player.achievements.length}
           </div>
@@ -1941,7 +1941,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon icon={ICONS.game} width={20} height={20} style={{ color: 'var(--px-accent)' }} />
             <div>
-              <div style={{ fontSize: 11, color: 'var(--px-title)' }}>RPS FROM {rpsInvite.fromName}</div>
+              <div style={{ fontSize: 11, color: 'var(--px-text)' }}>RPS FROM {rpsInvite.fromName}</div>
               <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginTop: 3 }}>ACCEPT?</div>
             </div>
           </div>
@@ -2379,7 +2379,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
               <img src={pItem.sprite} alt={pItem.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, color: 'var(--px-title)', marginBottom: 4 }}>{pItem.n}</div>
+              <div style={{ fontSize: 12, color: 'var(--px-text)', marginBottom: 4 }}>{pItem.n}</div>
               <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 4 }}>{pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · {pItem.w}×{pItem.h}</div>
               <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>{pItem.p} COINS</div>
               <button
@@ -2533,7 +2533,7 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
           <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', overflow: 'hidden', border: '1px solid var(--px-border-dark)' }}>
             <img src={ALL_ITEMS.find(i => i.id === state.player.carrying)?.sprite} alt="" style={{ maxWidth: '85%', maxHeight: '85%', objectFit: 'contain', imageRendering: 'pixelated' }} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--px-title)', marginBottom: 8 }}>HOLDING: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
+          <div style={{ fontSize: 11, color: 'var(--px-text)', marginBottom: 8 }}>HOLDING: {ALL_ITEMS.find(i => i.id === state.player.carrying)?.n}</div>
           <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>GO TO DESTINATION → RIGHT-CLICK → PLACE</div>
         </div>
       )}
@@ -2567,7 +2567,7 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
         <img src={`/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '200%', height: 'auto', objectFit: 'contain', imageRendering: 'pixelated', marginTop: 0, display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
-        <div style={{ fontSize: 13, color: 'var(--px-title)' }}>{name}</div>
+        <div style={{ fontSize: 13, color: 'var(--px-text)' }}>{name}</div>
         <div style={{ fontSize: 11, color: 'var(--px-accent)', fontWeight: 'bold' }}>Lv.{level}</div>
       </div>
       <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>{role}</div>
@@ -2584,7 +2584,7 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
               transition: 'width 0.3s',
             }} />
           </div>
-          <div style={{ fontSize: 9, color: 'var(--px-title)' }}>{p.xp} / {xpNeeded} XP</div>
+          <div style={{ fontSize: 9, color: 'var(--px-text)' }}>{p.xp} / {xpNeeded} XP</div>
         </div>
       )}
 
@@ -2694,7 +2694,7 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                 alignItems: 'center',
                 gap: 10,
                 padding: '8px 10px',
-                borderColor: claimed ? 'var(--px-accent)' : done ? 'var(--px-title)' : undefined,
+                borderColor: claimed ? 'var(--px-accent)' : done ? 'var(--px-text)' : undefined,
               }}
             >
               <div style={{ fontSize: 20 }}>{quest.icon}</div>
@@ -2748,7 +2748,7 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
   return (
     <div style={{ padding: 10 }}>
       <div className="px-panel" style={{ padding: 10, marginBottom: 12, fontSize: 11 }}>
-        <span style={{ color: 'var(--px-title)' }}>{bot?.name}:</span> <span style={{ color: 'var(--px-text)' }}>"{phrases[Math.floor(Math.random() * phrases.length)]}"</span>
+        <span style={{ color: 'var(--px-text)' }}>{bot?.name}:</span> <span style={{ color: 'var(--px-text)' }}>"{phrases[Math.floor(Math.random() * phrases.length)]}"</span>
       </div>
       <div style={{ fontSize: 10, color: 'var(--px-accent)', marginTop: 8 }}>+5 COINS</div>
     </div>
@@ -2913,7 +2913,7 @@ function SmokeView({ state, onToast, onConfetti }: { state: GameState; onToast: 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
       <div style={{ fontSize: 44, marginBottom: 10 }}>🚬</div>
-      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 6 }}>SMOKE IT!</div>
+      <div style={{ fontSize: 13, color: 'var(--px-text)', marginBottom: 6 }}>SMOKE IT!</div>
       <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>
         {done ? (won ? 'DONE!' : 'TIME UP!') : `TAP ${TAP_TARGET} TIMES IN ${TIME_LIMIT}S`}
       </div>
@@ -3002,10 +3002,10 @@ function MicrowaveView({ state, onToast, onConfetti }: { state: GameState; onToa
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>
       <div style={{ fontSize: 44, marginBottom: 10 }}>⏱️</div>
-      <div style={{ fontSize: 13, color: 'var(--px-title)', marginBottom: 6 }}>HEAT LUNCH</div>
+      <div style={{ fontSize: 13, color: 'var(--px-text)', marginBottom: 6 }}>HEAT LUNCH</div>
       <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 12 }}>STOP AT 5.000 SECONDS</div>
 
-      <div style={{ fontSize: 30, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? 'var(--px-danger)' : 'var(--px-title)' }}>
+      <div style={{ fontSize: 30, fontVariantNumeric: 'tabular-nums', marginBottom: 16, color: status === 'running' ? 'var(--px-danger)' : 'var(--px-text)' }}>
         {status === 'waiting' ? '0.000' : status === 'done' ? result?.stoppedAt || '0.000' : displayTime}
       </div>
 
@@ -3064,7 +3064,7 @@ function MpRpsView({ data, myChoice, sentChoice, result, onChoice, onClose, onTo
             <div style={{ fontSize: 10, color: 'var(--px-text-dim)' }}>{(data.opponentName as string) || 'Player'}</div>
           </div>
         </div>
-        <div style={{ fontSize: 13, color: result.winner === 'you' ? 'var(--px-accent)' : result.winner === 'draw' ? 'var(--px-title)' : 'var(--px-danger)' }}>
+        <div style={{ fontSize: 13, color: result.winner === 'you' ? 'var(--px-accent)' : result.winner === 'draw' ? 'var(--px-text)' : 'var(--px-danger)' }}>
           {result.winner === 'you' ? 'YOU WIN!' : result.winner === 'draw' ? 'DRAW!' : 'YOU LOSE!'}
           {result.reward > 0 ? ` +${result.reward} COINS` : ''}
         </div>
@@ -3099,7 +3099,7 @@ function BookPredictionView({ prediction }: { prediction: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '10px 0' }}>
       <div className="px-panel" style={{ padding: 16, width: 280, textAlign: 'center' }}>
         <div style={{
-          fontSize: 10, color: 'var(--px-title)', marginBottom: 12,
+          fontSize: 10, color: 'var(--px-text)', marginBottom: 12,
           letterSpacing: 2,
         }}>
           ✦ PREDICTION OF THE DAY ✦
@@ -3231,7 +3231,7 @@ function FirstLoginForm({ email, onSubmit, error, loading }: { email: string; on
 
   return (
     <div>
-      <div style={{ fontSize: 10, color: 'var(--px-title)', marginBottom: 8, textAlign: 'center' }}>ПЕРВЫЙ ВХОД</div>
+      <div style={{ fontSize: 10, color: 'var(--px-text)', marginBottom: 8, textAlign: 'center' }}>ПЕРВЫЙ ВХОД</div>
       <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 12, textAlign: 'center' }}>{email}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
         <input className="px-input" type="password" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ" value={password}

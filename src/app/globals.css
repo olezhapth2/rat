@@ -132,8 +132,6 @@ canvas {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  outline: 1px dotted var(--px-text);
-  outline-offset: -4px;
 }
 .px-btn:hover {
   background: var(--px-btn-hover);
@@ -173,8 +171,7 @@ canvas {
   width: 100%;
 }
 .px-input:focus {
-  outline: 1px dotted var(--px-text);
-  outline-offset: -2px;
+  border-color: var(--px-accent);
 }
 .px-input::placeholder {
   color: var(--px-text-dim);
@@ -224,16 +221,9 @@ select.px-input {
   transform: none;
 }
 .ctx-icon {
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 0 !important;
-  background: var(--px-panel) !important;
-  border: 2px solid;
-  border-color: var(--px-border-dark) var(--px-border-light) var(--px-border-light) var(--px-border-dark);
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px !important;
   flex-shrink: 0;
 }
 .ctx-text {

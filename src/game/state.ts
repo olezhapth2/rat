@@ -495,7 +495,7 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
 
   for (const bot of bots) {
     // Skip bots for online players (player is connected → no bot needed)
-    if (onlineCharIds && onlineCharIds.has(bot.id)) continue;
+    if (onlineCharIds && onlineCharIds.has(bot.spriteId)) continue;
 
     if (bot.id === 'bot_kryska') {
       updateKryska(bot, state, dt);

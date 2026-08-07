@@ -315,6 +315,7 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'minigame_basketball', n: 'Баскетбол', e: '🏀', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/basketball.webp', minigame: 'basketball' as const },
     { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/microwave.webp', minigame: 'microwave' as const },
     { id: 'minigame_okia', n: 'OKIЯ', e: '🃏', p: 50, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/okia.webp', minigame: 'okiya' as const },
+    { id: 'minigame_uno', n: 'UNO', e: '🃏', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/uno.webp', minigame: 'cardgame' as const },
     { id: 'minigame_malboro', n: 'Мальборо', e: '🌿', p: 65, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/malboro.webp' },
   ],
 };

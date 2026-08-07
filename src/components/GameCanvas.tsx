@@ -32,7 +32,7 @@ import { GameIcon, ICONS, type IconKey } from '../game/icons';
 import { Icon } from '@iconify/react';
 import RetroEffects from './RetroEffects';
 import RetroPanel from './RetroPanel';
-import { loadRetroSettings, getColorFilter, getCrtIntensity, type RetroSettings } from '../game/retro';
+import { loadRetroSettings, RETRO_DEFAULTS, getColorFilter, getCrtIntensity, type RetroSettings } from '../game/retro';
 
 interface CtxItem {
   icon: IconKey;
@@ -284,8 +284,13 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Context menu state
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
 
-  // Retro effects state
-  const [retroSettings, setRetroSettings] = useState<RetroSettings>(loadRetroSettings);
+  // Retro effects state — init with defaults, load from localStorage on client only
+  const [retroSettings, setRetroSettings] = useState<RetroSettings>(RETRO_DEFAULTS);
+
+  // Load retro settings from localStorage on client mount (avoid SSR hydration mismatch)
+  useEffect(() => {
+    setRetroSettings(loadRetroSettings());
+  }, []);
 
   // Minigame canvas state refs
   const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });

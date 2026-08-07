@@ -212,6 +212,14 @@ function registerGameListeners(): void {
       onPlayerDataSyncCb?.(data);
     });
 
+    // OKIYA events
+    socket.on('okiya:state', (game: any) => {
+      onOkiyaStateCb?.(game);
+    });
+    socket.on('okiya:error', (error: string) => {
+      onOkiyaErrorCb?.(error);
+    });
+
     // Leaderboard events
     socket.on('leaderboard:sync', (data: Record<string, any[]>) => {
       onLeaderboardSyncCb?.(data);
@@ -553,3 +561,26 @@ let onLeaderboardUpdatedCb: ((data: { game: string; entries: any[] }) => void) |
 
 export function onLeaderboardSync(cb: (data: Record<string, any[]>) => void): void { onLeaderboardSyncCb = cb; }
 export function onLeaderboardUpdated(cb: (data: { game: string; entries: any[] }) => void): void { onLeaderboardUpdatedCb = cb; }
+
+// === OKIYA API ===
+export function createOkiyaGameMp(): void {
+  socket?.emit('okiya:create');
+}
+
+export function joinOkiyaGameMp(gameId: string): void {
+  socket?.emit('okiya:join', gameId);
+}
+
+export function playOkiyaMoveMp(gameId: string, r: number, c: number): void {
+  socket?.emit('okiya:play', { gameId, r, c });
+}
+
+export function leaveOkiyaGame(): void {
+  socket?.emit('okiya:leave');
+}
+
+let onOkiyaStateCb: ((game: any) => void) | null = null;
+let onOkiyaErrorCb: ((error: string) => void) | null = null;
+
+export function onOkiyaState(cb: (game: any) => void): void { onOkiyaStateCb = cb; }
+export function onOkiyaError(cb: (error: string) => void): void { onOkiyaErrorCb = cb; }

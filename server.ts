@@ -3,6 +3,7 @@ import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import { type CardGameState, createGame, joinGame, playCard, drawCard } from './src/game/cardgame';
+import { type OkiyaGameState, createOkiyaGame, joinOkiyaGame, playOkiyaMove } from './src/game/okiya';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
@@ -358,6 +359,10 @@ app.prepare().then(() => {
   // === Card game state ===
   const cardGames = new Map<string, CardGameState>();
   const playerCardGames = new Map<string, string>();
+
+  // === OKIYA game state ===
+  const okiyaGames = new Map<string, OkiyaGameState>();
+  const playerOkiyaGames = new Map<string, string>();
 
   // === Shared state (loaded from disk) ===
   whiteboardData = persistedState.whiteboardData;
@@ -719,6 +724,78 @@ app.prepare().then(() => {
       }
     });
 
+    // === OKIYA EVENTS ===
+    socket.on('okiya:create', () => {
+      const loginKey = loggedInUsers.get(socket.id);
+      if (!loginKey) return;
+      const user = usersDb[loginKey];
+      if (!user) return;
+      // Check if already in a game
+      if (playerOkiyaGames.has(socket.id)) return;
+
+      const game = createOkiyaGame(socket.id, user.name || loginKey);
+      okiyaGames.set(game.id, game);
+      playerOkiyaGames.set(socket.id, game.id);
+      io.to(socket.id).emit('okiya:state', game);
+    });
+
+    socket.on('okiya:join', (gameId: string) => {
+      const loginKey = loggedInUsers.get(socket.id);
+      if (!loginKey) return;
+      const user = usersDb[loginKey];
+      if (!user) return;
+      if (playerOkiyaGames.has(socket.id)) return;
+
+      const game = okiyaGames.get(gameId);
+      if (!game) return;
+
+      const ok = joinOkiyaGame(game, socket.id, user.name || loginKey);
+      if (!ok) return;
+
+      playerOkiyaGames.set(socket.id, game.id);
+      for (const p of game.players) {
+        io.to(p.id).emit('okiya:state', game);
+      }
+    });
+
+    socket.on('okiya:play', (data: { gameId: string; r: number; c: number }) => {
+      const game = okiyaGames.get(data.gameId);
+      if (!game) return;
+
+      const result = playOkiyaMove(game, socket.id, data.r, data.c);
+      if (!result.ok) {
+        io.to(socket.id).emit('okiya:error', result.error);
+        return;
+      }
+
+      for (const p of game.players) {
+        io.to(p.id).emit('okiya:state', game);
+      }
+    });
+
+    socket.on('okiya:leave', () => {
+      const gameId = playerOkiyaGames.get(socket.id);
+      if (!gameId) return;
+      const game = okiyaGames.get(gameId);
+      if (!game) return;
+
+      game.players = game.players.filter(p => p.id !== socket.id);
+      playerOkiyaGames.delete(socket.id);
+
+      if (game.players.length === 0) {
+        okiyaGames.delete(gameId);
+      } else {
+        if (game.status === 'playing') {
+          game.status = 'finished';
+          game.winner = game.players[0].id;
+          game.winReason = 'Opponent left';
+        }
+        for (const p of game.players) {
+          io.to(p.id).emit('okiya:state', game);
+        }
+      }
+    });
+
     // === ADMIN EVENTS ===
     function isAdmin(): boolean {
       const loginKey = loggedInUsers.get(socket.id);
@@ -1031,6 +1108,26 @@ app.prepare().then(() => {
           }
         }
         playerCardGames.delete(socket.id);
+      }
+      const okiyaGameId = playerOkiyaGames.get(socket.id);
+      if (okiyaGameId) {
+        const og = okiyaGames.get(okiyaGameId);
+        if (og) {
+          og.players = og.players.filter(p => p.id !== socket.id);
+          if (og.players.length === 0) {
+            okiyaGames.delete(okiyaGameId);
+          } else {
+            if (og.status === 'playing') {
+              og.status = 'finished';
+              og.winner = og.players[0].id;
+              og.winReason = 'Opponent disconnected';
+            }
+            for (const p of og.players) {
+              io.to(p.id).emit('okiya:state', og);
+            }
+          }
+        }
+        playerOkiyaGames.delete(socket.id);
       }
       onlinePlayers.delete(socket.id);
       broadcastPlayers();

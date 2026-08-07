@@ -226,7 +226,7 @@ export interface ShopItem {
   surface: 'floor' | 'wall';
   noCollision?: boolean;
   sprite: string;
-  minigame?: 'smoke' | 'microwave' | 'furniture_toss' | 'book_prediction' | 'cardgame' | 'basketball';
+  minigame?: 'smoke' | 'microwave' | 'furniture_toss' | 'book_prediction' | 'cardgame' | 'basketball' | 'okiya';
 }
 
 export const SHOP: Record<string, ShopItem[]> = {
@@ -314,7 +314,7 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'minigame_plant', n: 'Растение', e: '🌿', p: 70, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/plant.webp', minigame: 'cardgame' as const },
     { id: 'minigame_basketball', n: 'Баскетбол', e: '🏀', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/basketball.webp', minigame: 'basketball' as const },
     { id: 'minigame_microwave', n: 'Микроволновка', e: '📦', p: 80, w: 3, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/minigames/microwave.webp', minigame: 'microwave' as const },
-    { id: 'minigame_okia', n: 'OKIЯ', e: '🃏', p: 50, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/okia.webp', minigame: 'cardgame' as const },
+    { id: 'minigame_okia', n: 'OKIЯ', e: '🃏', p: 50, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/okia.webp', minigame: 'okiya' as const },
     { id: 'minigame_malboro', n: 'Мальборо', e: '🌿', p: 65, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/malboro.webp' },
   ],
 };

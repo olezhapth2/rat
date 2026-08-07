@@ -33,6 +33,8 @@ import { GameIcon, ICONS, type IconKey } from '../game/icons';
 import { Icon } from '@iconify/react';
 import RetroEffects from './RetroEffects';
 import RetroPanel from './RetroPanel';
+import OkiyaGame from './OkiyaGame';
+import UnoGame from './UnoGame';
 import { loadRetroSettings, RETRO_DEFAULTS, getColorFilter, getCrtIntensity, type RetroSettings } from '../game/retro';
 
 interface CtxItem {
@@ -253,6 +255,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const [cardGameSelectedCard, setCardGameSelectedCard] = useState<string | null>(null);
   const [cardGameShowColorPicker, setCardGameShowColorPicker] = useState(false);
   const [cardGamePendingWild, setCardGamePendingWild] = useState<string | null>(null);
+
+  // Card game type selector: 'uno' or 'okiya'
+  const [cardGameType, setCardGameType] = useState<'uno' | 'okiya' | null>(null);
 
   // Active minigame overlay state
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -1702,7 +1707,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             animation: 'pulse 1.5s infinite',
           }}
         >
-          🃏 СЫГРАТЬ В OKIЯ
+          🃏 СЫГРАТЬ В UNO
         </button>
       )}
       {nearInteraction && nearInteraction.id === 'cardgame' && cardGame && cardGame.status === 'waiting' && (
@@ -1716,6 +1721,53 @@ function GameInner({ authUser }: { authUser: UserData }) {
         >
           🃏 ЖДЁМ ИГРОКОВ... ({cardGame.players.length}/4)
         </button>
+      )}
+
+      {/* OKIYA interaction */}
+      {nearInteraction && nearInteraction.id === 'okiya' && !cardGameType && (
+        <button
+          onClick={() => setCardGameType('okiya')}
+          className="px-btn accent"
+          style={{
+            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+            padding: '12px 28px', fontSize: 13, zIndex: 50,
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          🌿 СЫГРАТЬ В ОКИЯ
+        </button>
+      )}
+
+      {/* OKIYA Game Overlay */}
+      {cardGameType === 'okiya' && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,
+        }}>
+          <div className="px-panel" style={{ position: 'relative' }}>
+            <div className="px-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🌿 ОКИЯ — Сад</span>
+              <button onClick={() => setCardGameType(null)} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
+            </div>
+            <OkiyaGame myId={(window as any).__mpMyId || ''} onClose={() => setCardGameType(null)} onToast={toast} />
+          </div>
+        </div>
+      )}
+
+      {/* UNO Game Overlay */}
+      {cardGame && nearInteraction?.id === 'cardgame' && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,
+        }}>
+          <div className="px-panel" style={{ position: 'relative' }}>
+            <div className="px-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🃏 UNO</span>
+              <button onClick={() => { mpLeaveCardGame(); setCardGame(null); }} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
+            </div>
+            <UnoGame myId={(window as any).__mpMyId || ''} onClose={() => { mpLeaveCardGame(); setCardGame(null); }} onToast={toast} />
+          </div>
+        </div>
       )}
 
       {/* Smoking result + leaderboard */}

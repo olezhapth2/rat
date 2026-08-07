@@ -188,7 +188,7 @@ export default function GameCanvas() {
               animation: 'zoomOut 2s ease-out forwards',
               transformOrigin: 'center center',
             }}>
-              <img src={authUser!.avatar || `/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 200, height: 200, imageRendering: 'pixelated' }} />
+              <img src={authUser!.avatar || `/sprites/pers/${authUser!.charId}.png`} alt="" style={{ width: 120, height: 120, objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)' }}>
               <div style={{ fontSize: 9, color: '#888', animation: 'pulse 1s infinite' }}>LOADING...</div>
@@ -1853,9 +1853,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
         >
           <div style={{
             width: 52, height: 52, border: '2px solid var(--px-border)',
-            background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28,
-          }} suppressHydrationWarning>{player.av}</div>
+            background: 'var(--px-bg)', overflow: 'hidden',
+          }}>
+            <img src={`/sprites/pers/${player.charId}.webp`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated' }} />
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <div style={{ fontSize: 12, color: 'var(--px-text)' }}>{player.name}</div>
@@ -2660,7 +2661,7 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
       <div style={{ width: 64, height: 64, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)', borderRadius: 4 }}>
-        <img src={`/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '200%', height: 'auto', objectFit: 'contain', imageRendering: 'pixelated', marginTop: 0, display: 'block' }} />
+        <img src={`/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated', display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
         <div style={{ fontSize: 13, color: 'var(--px-text)' }}>{name}</div>

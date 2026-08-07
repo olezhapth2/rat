@@ -252,9 +252,9 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 {users.map(u => (
                   <div key={u.login} className="px-panel" style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                     {u.avatar ? (
-                      <img src={u.avatar} alt="" style={{ width: 28, height: 56, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
+                      <img src={u.avatar} alt="" style={{ width: 32, height: 32, objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />
                     ) : (
-                      <div style={{ width: 28, height: 56, background: 'var(--px-panel-header)', border: '1px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>?</div>
+                      <div style={{ width: 32, height: 32, background: 'var(--px-panel-header)', border: '1px solid var(--px-border-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>?</div>
                     )}
                     <div style={{ minWidth: 80 }}>
                       <div style={{ fontSize: 10, color: 'var(--px-title)' }}>{u.name || '—'}</div>

@@ -202,9 +202,13 @@ export function joinGame(game: CardGameState, playerId: string, playerName: stri
     }
   }
 
-  if (game.players.length >= 2) {
-    game.status = 'playing';
-  }
+  return true;
+}
+
+export function startGame(game: CardGameState): boolean {
+  if (game.status !== 'waiting') return false;
+  if (game.players.length < 2) return false;
+  game.status = 'playing';
   return true;
 }
 

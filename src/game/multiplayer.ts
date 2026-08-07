@@ -220,6 +220,14 @@ function registerGameListeners(): void {
       onOkiyaErrorCb?.(error);
     });
 
+    // Lobby events
+    socket.on('okiya:lobby', (waiting: Array<{ id: string; creator: string; players: number; maxPlayers: number }>) => {
+      onOkiyaLobbyCb?.(waiting);
+    });
+    socket.on('cardgame:lobby', (waiting: Array<{ id: string; creator: string; players: number; maxPlayers: number }>) => {
+      onCardgameLobbyCb?.(waiting);
+    });
+
     // Leaderboard events
     socket.on('leaderboard:sync', (data: Record<string, any[]>) => {
       onLeaderboardSyncCb?.(data);
@@ -584,3 +592,20 @@ let onOkiyaErrorCb: ((error: string) => void) | null = null;
 
 export function onOkiyaState(cb: (game: any) => void): void { onOkiyaStateCb = cb; }
 export function onOkiyaError(cb: (error: string) => void): void { onOkiyaErrorCb = cb; }
+
+// === LOBBY API ===
+export type LobbyGame = { id: string; creator: string; players: number; maxPlayers: number };
+
+let onOkiyaLobbyCb: ((waiting: LobbyGame[]) => void) | null = null;
+let onCardgameLobbyCb: ((waiting: LobbyGame[]) => void) | null = null;
+
+export function onOkiyaLobby(cb: (waiting: LobbyGame[]) => void): void { onOkiyaLobbyCb = cb; }
+export function onCardgameLobby(cb: (waiting: LobbyGame[]) => void): void { onCardgameLobbyCb = cb; }
+
+export function startOkiyaGameMp(): void {
+  socket?.emit('okiya:start');
+}
+
+export function startCardGameMp(): void {
+  socket?.emit('cardgame:start');
+}

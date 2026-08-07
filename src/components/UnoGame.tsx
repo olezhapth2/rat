@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   createCardGame as mpCreateCardGame, joinCardGame as mpJoinCardGame,
   playCardGame as mpPlayCardGame, drawCardGame as mpDrawCardGame,
-  leaveCardGame as mpLeaveCardGame,
+  leaveCardGame as mpLeaveCardGame, startCardGameMp,
   onCardGameState, onCardGameError,
 } from '../game/multiplayer';
 
@@ -115,17 +115,25 @@ export default function UnoGame({ myId, onClose, onToast }: { myId: string; onCl
   }
 
   if (game.status === 'waiting') {
+    const isCreator = game.players[0]?.id === myId;
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
         <div style={{ fontSize: 14, color: 'var(--px-text)', marginBottom: 12 }}>ОЖИДАНИЕ ИГРОКОВ...</div>
-        <div style={{ fontSize: 8, color: 'var(--px-accent)', marginBottom: 12, wordBreak: 'break-all' }}>
-          ID: {game.id}
-        </div>
         <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 12 }}>
           Игроков: {game.players.length}/4
         </div>
-        <button onClick={handleJoin} className="px-btn accent" style={{ marginRight: 8 }}>ПРИСОЕДИНИТЬСЯ</button>
-        <button onClick={handleLeave} className="px-btn">ВЫЙТИ</button>
+        {game.players.map(p => (
+          <div key={p.id} style={{ fontSize: 9, color: 'var(--px-text)', marginBottom: 4 }}>
+            {p.name}
+          </div>
+        ))}
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
+          {isCreator && game.players.length >= 2 && (
+            <button onClick={() => startCardGameMp()} className="px-btn accent">▶ НАЧАТЬ UNO</button>
+          )}
+          <button onClick={handleJoin} className="px-btn accent" style={{ marginRight: 8 }}>ПРИСОЕДИНИТЬСЯ</button>
+          <button onClick={handleLeave} className="px-btn">ВЫЙТИ</button>
+        </div>
       </div>
     );
   }

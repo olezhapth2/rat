@@ -2,7 +2,7 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
-import { type CardGameState, createGame, joinGame, playCard, drawCard } from './src/game/cardgame';
+import { type CardGameState, createGame, joinGame, startGame, playCard, drawCard } from './src/game/cardgame';
 import { type OkiyaGameState, createOkiyaGame, joinOkiyaGame, playOkiyaMove } from './src/game/okiya';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -387,6 +387,30 @@ app.prepare().then(() => {
     io.emit('players:list', list);
   }
 
+  function broadcastOkiyaLobby() {
+    const waiting = Array.from(okiyaGames.values())
+      .filter(g => g.status === 'waiting')
+      .map(g => ({
+        id: g.id,
+        creator: g.players[0]?.name || '?',
+        players: g.players.length,
+        maxPlayers: 2,
+      }));
+    io.emit('okiya:lobby', waiting);
+  }
+
+  function broadcastCardgameLobby() {
+    const waiting = Array.from(cardGames.values())
+      .filter(g => g.status === 'waiting')
+      .map(g => ({
+        id: g.id,
+        creator: g.players[0]?.name || '?',
+        players: g.players.length,
+        maxPlayers: 4,
+      }));
+    io.emit('cardgame:lobby', waiting);
+  }
+
   io.on('connection', (socket) => {
     console.log(`[+] Player connected: ${socket.id}`);
 
@@ -645,6 +669,7 @@ app.prepare().then(() => {
       playerCardGames.set(socket.id, game.id);
 
       socket.emit('cardgame:state', game);
+      broadcastCardgameLobby();
     });
 
     socket.on('cardgame:join', (gameId: string) => {
@@ -663,6 +688,22 @@ app.prepare().then(() => {
       for (const p of game.players) {
         io.to(p.id).emit('cardgame:state', game);
       }
+      broadcastCardgameLobby();
+    });
+
+    socket.on('cardgame:start', () => {
+      const gameId = playerCardGames.get(socket.id);
+      if (!gameId) return;
+      const game = cardGames.get(gameId);
+      if (!game || game.status !== 'waiting') return;
+      if (game.players.length < 2) return;
+      if (game.players[0].id !== socket.id) return;
+
+      startGame(game);
+      for (const p of game.players) {
+        io.to(p.id).emit('cardgame:state', game);
+      }
+      broadcastCardgameLobby();
     });
 
     socket.on('cardgame:play', (data: { cardId: string; chosenColor?: string }) => {
@@ -722,6 +763,7 @@ app.prepare().then(() => {
           io.to(p.id).emit('cardgame:state', game);
         }
       }
+      broadcastCardgameLobby();
     });
 
     // === OKIYA EVENTS ===
@@ -730,13 +772,13 @@ app.prepare().then(() => {
       if (!loginKey) return;
       const user = usersDb[loginKey];
       if (!user) return;
-      // Check if already in a game
       if (playerOkiyaGames.has(socket.id)) return;
 
       const game = createOkiyaGame(socket.id, user.name || loginKey);
       okiyaGames.set(game.id, game);
       playerOkiyaGames.set(socket.id, game.id);
       io.to(socket.id).emit('okiya:state', game);
+      broadcastOkiyaLobby();
     });
 
     socket.on('okiya:join', (gameId: string) => {
@@ -756,6 +798,23 @@ app.prepare().then(() => {
       for (const p of game.players) {
         io.to(p.id).emit('okiya:state', game);
       }
+      broadcastOkiyaLobby();
+    });
+
+    socket.on('okiya:start', () => {
+      const gameId = playerOkiyaGames.get(socket.id);
+      if (!gameId) return;
+      const game = okiyaGames.get(gameId);
+      if (!game || game.status !== 'waiting') return;
+      if (game.players.length < 2) return;
+      if (game.players[0].id !== socket.id) return;
+
+      game.status = 'playing';
+      game.currentTurn = 0;
+      for (const p of game.players) {
+        io.to(p.id).emit('okiya:state', game);
+      }
+      broadcastOkiyaLobby();
     });
 
     socket.on('okiya:play', (data: { gameId: string; r: number; c: number }) => {
@@ -794,6 +853,7 @@ app.prepare().then(() => {
           io.to(p.id).emit('okiya:state', game);
         }
       }
+      broadcastOkiyaLobby();
     });
 
     // === ADMIN EVENTS ===
@@ -1131,6 +1191,8 @@ app.prepare().then(() => {
       }
       onlinePlayers.delete(socket.id);
       broadcastPlayers();
+      broadcastOkiyaLobby();
+      broadcastCardgameLobby();
     });
   });
 

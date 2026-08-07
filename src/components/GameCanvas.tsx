@@ -24,7 +24,8 @@ import {
   sendTilePaint, sendTileRemove, sendTileReset,
   sendPlayerSave, onPlayerDataSync,
   submitLeaderboard, onLeaderboardSync, onLeaderboardUpdated,
-  type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem,
+  onOkiyaLobby, onCardgameLobby, startOkiyaGameMp, startCardGameMp,
+  type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem, type LobbyGame,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
 import { checkInteractions, BOOK_PREDICTIONS, type InteractionZone } from '../game/interactions';
@@ -258,6 +259,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
   // Card game type selector: 'uno' or 'okiya'
   const [cardGameType, setCardGameType] = useState<'uno' | 'okiya' | null>(null);
+
+  // Lobby state — available waiting games
+  const [okiyaLobby, setOkiyaLobby] = useState<LobbyGame[]>([]);
+  const [cardgameLobby, setCardgameLobby] = useState<LobbyGame[]>([]);
 
   // Active minigame overlay state
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -1012,6 +1017,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
       console.log('[MP] Player data synced from server');
     });
 
+    onOkiyaLobby((waiting) => setOkiyaLobby(waiting));
+    onCardgameLobby((waiting) => setCardgameLobby(waiting));
+
     return () => disconnectMultiplayer();
   }, []);
 
@@ -1697,45 +1705,80 @@ function GameInner({ authUser }: { authUser: UserData }) {
           ⏱️ РАЗОГРЕТЬ ОБЕД
         </button>
       )}
+      {/* UNO: No game active */}
       {nearInteraction && nearInteraction.id === 'cardgame' && !cardGame && (
-        <button
-          onClick={() => mpCreateCardGame()}
-          className="px-btn accent"
-          style={{
-            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '12px 28px', fontSize: 13, zIndex: 50,
-            animation: 'pulse 1.5s infinite',
-          }}
-        >
-          🃏 СЫГРАТЬ В UNO
-        </button>
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: 8, zIndex: 50,
+        }}>
+          <button
+            onClick={() => mpCreateCardGame()}
+            className="px-btn accent"
+            style={{ padding: '12px 28px', fontSize: 13, animation: 'pulse 1.5s infinite' }}
+          >
+            🃏 СОЗДАТЬ UNO
+          </button>
+          {cardgameLobby.map(g => (
+            <button
+              key={g.id}
+              onClick={() => mpJoinCardGame(g.id)}
+              className="px-btn accent"
+              style={{ padding: '12px 28px', fontSize: 13, animation: 'pulse 1.5s infinite' }}
+            >
+              🃏 ПРИСОЕДИНИТЬСЯ К {g.creator} ({g.players}/{g.maxPlayers})
+            </button>
+          ))}
+        </div>
       )}
+      {/* UNO: Waiting (creator sees start button) */}
       {nearInteraction && nearInteraction.id === 'cardgame' && cardGame && cardGame.status === 'waiting' && (
-        <button
-          onClick={() => {}}
-          className="px-btn accent"
-          style={{
-            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '12px 28px', fontSize: 13, zIndex: 50,
-          }}
-        >
-          🃏 ЖДЁМ ИГРОКОВ... ({cardGame.players.length}/4)
-        </button>
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: 8, alignItems: 'center', zIndex: 50,
+        }}>
+          <div style={{ fontSize: 11, color: 'var(--px-text)', padding: '10px 16px', background: 'var(--px-panel)', border: '1px solid var(--px-border)', borderRadius: 6 }}>
+            🃏 ЖДЁМ: {cardGame.players.length}/{4}
+          </div>
+          {cardGame.players[0]?.id === (window as any).__mpMyId && cardGame.players.length >= 2 && (
+            <button
+              onClick={() => startCardGameMp()}
+              className="px-btn accent"
+              style={{ padding: '12px 28px', fontSize: 13, animation: 'pulse 1.5s infinite' }}
+            >
+              ▶ НАЧАТЬ UNO
+            </button>
+          )}
+        </div>
       )}
 
-      {/* OKIYA interaction */}
+      {/* OKIYA: No game active */}
       {nearInteraction && nearInteraction.id === 'okiya' && !cardGameType && (
-        <button
-          onClick={() => setCardGameType('okiya')}
-          className="px-btn accent"
-          style={{
-            position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-            padding: '12px 28px', fontSize: 13, zIndex: 50,
-            animation: 'pulse 1.5s infinite',
-          }}
-        >
-          🌿 СЫГРАТЬ В ОКИЯ
-        </button>
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: 8, zIndex: 50,
+        }}>
+          <button
+            onClick={() => setCardGameType('okiya')}
+            className="px-btn accent"
+            style={{ padding: '12px 28px', fontSize: 13, animation: 'pulse 1.5s infinite' }}
+          >
+            🌿 СОЗДАТЬ ОКИЯ
+          </button>
+          {okiyaLobby.map(g => (
+            <button
+              key={g.id}
+              onClick={() => {
+                setCardGameType('okiya');
+                // Will be joined inside OkiyaGame
+                (window as any).__okiyaJoinId = g.id;
+              }}
+              className="px-btn accent"
+              style={{ padding: '12px 28px', fontSize: 13, animation: 'pulse 1.5s infinite' }}
+            >
+              🌿 ПРИСОЕДИНИТЬСЯ К {g.creator} ({g.players}/{g.maxPlayers})
+            </button>
+          ))}
+        </div>
       )}
 
       {/* OKIYA Game Overlay */}

@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  createOkiyaGameMp, joinOkiyaGameMp, playOkiyaMoveMp, leaveOkiyaGame,
+import { createOkiyaGameMp, joinOkiyaGameMp, playOkiyaMoveMp, leaveOkiyaGame, startOkiyaGameMp,
   onOkiyaState, onOkiyaError,
 } from '../game/multiplayer';
 
@@ -49,6 +48,13 @@ export default function OkiyaGame({ myId, onClose, onToast }: { myId: string; on
       }
     });
     onOkiyaError((e) => { setError(e); setTimeout(() => setError(null), 2000); });
+
+    // Auto-join if join ID was set
+    const joinId = (window as any).__okiyaJoinId;
+    if (joinId) {
+      delete (window as any).__okiyaJoinId;
+      joinOkiyaGameMp(joinId);
+    }
   }, [myId, onToast]);
 
   const handleCreate = useCallback(() => {
@@ -88,16 +94,24 @@ export default function OkiyaGame({ myId, onClose, onToast }: { myId: string; on
   }
 
   if (game.status === 'waiting') {
+    const isCreator = game.players[0]?.id === myId;
     return (
       <div style={{ textAlign: 'center', padding: 20 }}>
         <div style={{ fontSize: 14, color: 'var(--px-text)', marginBottom: 12 }}>ОЖИДАНИЕ ИГРОКА...</div>
         <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 16 }}>
-          Поделитесь ID игры или дождитесь второго игрока
+          Игроков: {game.players.length}/2
         </div>
-        <div style={{ fontSize: 8, color: 'var(--px-accent)', marginBottom: 12, wordBreak: 'break-all' }}>
-          ID: {game.id}
+        {game.players.map(p => (
+          <div key={p.id} style={{ fontSize: 9, color: 'var(--px-text)', marginBottom: 4 }}>
+            {p.name} ({p.token})
+          </div>
+        ))}
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
+          {isCreator && game.players.length >= 2 && (
+            <button onClick={() => startOkiyaGameMp()} className="px-btn accent">▶ НАЧАТЬ</button>
+          )}
+          <button onClick={handleLeave} className="px-btn">ВЫЙТИ</button>
         </div>
-        <button onClick={handleLeave} className="px-btn">ВЫЙТИ</button>
       </div>
     );
   }

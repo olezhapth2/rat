@@ -135,7 +135,7 @@ export default function GameCanvas() {
                     return prev + 1;
                   });
                 }}
-                style={{ fontSize: 20, color: 'var(--px-text)', marginBottom: 8, letterSpacing: 2, cursor: 'pointer', userSelect: 'none' }}
+                style={{ fontSize: 20, color: 'var(--px-text)', marginBottom: 8, letterSpacing: 2, userSelect: 'none' }}
               >
                 SECRET GANG
               </div>
@@ -1632,7 +1632,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
           position: 'fixed',
           inset: 0,
           overflow: 'hidden',
-          cursor: 'url(/sprites/cursor.webp) 0 0, auto',
           borderRadius: crtI > 0 ? `${8 + crtI * 12}px` : 0,
           transform: crtI > 0
             ? `perspective(${800 - crtI * 200}px) rotateX(${crtI * 1.5}deg) scale(${1 + crtI * 0.02})`
@@ -1642,7 +1641,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             : undefined,
         }}
       >
-        <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings), cursor: 'inherit' }} />
+        <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings) }} />
       </div>
 
       {/* Click ripples */}
@@ -1911,7 +1910,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
                   style={{
                     width: 32, height: 32,
                     border: `2px solid ${isSelected ? 'var(--px-text)' : 'var(--px-border-dark)'}`,
-                    cursor: 'pointer',
                     overflow: 'hidden',
                   }}
                 >
@@ -1931,7 +1929,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               sendTileReset();
             }}
             style={{
-              fontSize: 9, color: '#ff6b6b', cursor: 'pointer',
+              fontSize: 9, color: '#ff6b6b',
               border: '1px solid #ff6b6b44', borderRadius: 4, padding: '2px 6px',
             }}
           >
@@ -1963,7 +1961,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             <div
               key={idx}
               className="ctx-item"
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, transition: 'background 0.15s' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--px-titlebar)'; e.currentTarget.style.color = '#ffffff'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = ''; }}
               onClick={() => {
@@ -2002,7 +2000,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           className="hud-card"
           onClick={() => openModal('profile')}
           style={{
-            pointerEvents: 'auto', cursor: 'pointer',
+            pointerEvents: 'auto',
             background: 'var(--px-panel)', border: '2px solid var(--px-border)',
             boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark), 3px 3px 0 var(--px-shadow)',
             padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 14, minWidth: 280,
@@ -2059,7 +2057,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             style={{
               background: 'var(--px-panel)', border: '2px solid var(--px-danger)',
               boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-              padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+              padding: '10px 18px', pointerEvents: 'auto', alignSelf: 'flex-end',
               fontSize: 12, color: 'var(--px-danger)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
@@ -2074,7 +2072,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           style={{
             background: 'var(--px-panel)', border: '2px solid var(--px-accent)',
             boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-            padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+            padding: '10px 18px', pointerEvents: 'auto', alignSelf: 'flex-end',
             fontSize: 12, color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 8,
           }}
         >
@@ -2088,7 +2086,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             style={{
               background: 'var(--px-panel)', border: `2px solid ${retroPanelOpen ? 'var(--px-accent)' : 'var(--px-border)'}`,
               boxShadow: 'inset 1px 1px 0 var(--px-border-light), inset -1px -1px 0 var(--px-border-dark)',
-              padding: '10px 18px', pointerEvents: 'auto', cursor: 'pointer', alignSelf: 'flex-end',
+              padding: '10px 18px', pointerEvents: 'auto', alignSelf: 'flex-end',
               fontSize: 12, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
@@ -2698,7 +2696,6 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
               style={{
                 padding: 8,
                 textAlign: 'center',
-                cursor: 'pointer',
                 borderColor: preview === item.id ? 'var(--px-accent)' : petActive ? '#4ecca3' : undefined,
               }}
             >
@@ -2783,7 +2780,6 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    cursor: available > 0 ? 'pointer' : 'default',
                     opacity: available > 0 ? 1 : 0.4,
                     borderColor: available > 0 ? undefined : 'var(--px-border-dark)',
                   }}
@@ -3016,7 +3012,7 @@ function QuestsView({ state, onToast, onConfetti }: { state: GameState; onToast:
                       if (res.ok) { addXP(state, 25); onToast(res.msg, 'ok'); onConfetti(); }
                       else onToast(res.msg, 'info');
                     }}
-                    style={{ fontSize: 10, color: 'var(--px-accent)', cursor: 'pointer', marginTop: 2 }}
+                    style={{ fontSize: 10, color: 'var(--px-accent)', marginTop: 2 }}
                   >
                     +{quest.reward} COINS
                   </div>
@@ -3141,7 +3137,7 @@ function WhiteboardView() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
         {['#333', '#e94560', '#4ecca3', '#ffa726', '#2196f3', '#9c27b0'].map((c) => (
-          <div key={c} onClick={() => { color.current = c; }} style={{ width: 18, height: 18, cursor: 'pointer', background: c, border: '2px solid var(--px-border)' }} />
+          <div key={c} onClick={() => { color.current = c; }} style={{ width: 18, height: 18, background: c, border: '2px solid var(--px-border)' }} />
         ))}
         <div style={{ width: 1, height: 16, background: 'var(--px-border-dark)', margin: '0 4px' }} />
         <button onClick={() => {

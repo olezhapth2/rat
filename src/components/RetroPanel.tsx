@@ -80,7 +80,6 @@ function OptionGroup({
             style={{
               padding: '4px 7px',
               fontSize: 8,
-              cursor: 'pointer',
               background: value === opt.value ? 'var(--px-accent)' : 'var(--px-panel-header)',
               color: value === opt.value ? 'white' : 'var(--px-text-dim)',
               border: `1px solid ${value === opt.value ? 'var(--px-accent)' : 'var(--px-border-dark)'}`,

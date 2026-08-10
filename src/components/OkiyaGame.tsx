@@ -154,7 +154,6 @@ export default function OkiyaGame({ myId, onClose, onToast }: { myId: string; on
                     width: CELL, height: CELL,
                     background: cell.card ? COLOR_MAP[cell.card.color] || '#333' : '#222',
                     border: `2px solid ${isLast ? '#fff' : isEmpty && myTurn ? '#f1c40f' : '#111'}`,
-                    cursor: isEmpty && myTurn ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     position: 'relative',
                     opacity: game.status === 'finished' ? 0.7 : 1,

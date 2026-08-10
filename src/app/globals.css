@@ -26,6 +26,15 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  cursor: url('/sprites/cursor.webp') 0 0, auto;
+}
+
+a, button, input, select, textarea, [role="button"], summary, label {
+  cursor: url('/sprites/cursor_active.webp') 0 0, pointer !important;
+}
+
+.clickable {
+  cursor: url('/sprites/cursor_active.webp') 0 0, pointer !important;
 }
 
 body {

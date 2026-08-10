@@ -232,13 +232,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <input className="px-input" placeholder="Email игрока" value={newLogin} onChange={e => setNewLogin(e.target.value)} style={{ fontSize: 10, flex: 1 }} />
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <label className="px-btn small" style={{ fontSize: 9, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Icon icon={ICONS.camera} width={18} height={18} />
                     ЗАГРУЗИТЬ СПРАЙТ
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                   </label>
                   {newAvatar && <img src={newAvatar} alt="" style={{ width: 40, height: 80, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid var(--px-border-dark)' }} />}
-                  <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', marginLeft: 8 }}>
+                  <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
                     <input type="checkbox" checked={newAdmin} onChange={e => setNewAdmin(e.target.checked)} />
                       <Icon icon={ICONS.star} width={18} height={18} style={{ color: 'var(--px-accent)' }} />
                     ADMIN
@@ -290,14 +290,14 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <input className="px-input" type="password" placeholder="New pass (optional)" value={editPass} onChange={e => setEditPass(e.target.value)} style={{ flex: 1, fontSize: 10 }} />
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <input type="checkbox" checked={editAdmin} onChange={e => setEditAdmin(e.target.checked)} />
                     <Icon icon={ICONS.star} width={18} height={18} style={{ color: 'var(--px-accent)' }} />
                       ADMIN
                     </label>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <label className="px-btn small" style={{ fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <label className="px-btn small" style={{ fontSize: 9, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Icon icon={ICONS.camera} width={18} height={18} />
                       НОВЫЙ СПРАЙТ
                       <input type="file" accept="image/*" onChange={handleEditAvatarUpload} style={{ display: 'none' }} />
@@ -356,8 +356,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {players.map(p => (
                   <div key={p.key} className="px-panel" style={{ padding: '6px 10px', fontSize: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-text)', cursor: 'pointer' }}>{p.name}</span>
-                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-text)' }}>{p.name}</span>
+                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Icon icon={ICONS.coin} width={16} height={16} />
                       {p.coins}
                     </span>
@@ -385,7 +385,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                             width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: achIcon === key ? 'var(--px-accent)' : 'transparent',
                             border: `2px solid ${achIcon === key ? 'var(--px-accent)' : 'var(--px-border-dark)'}`,
-                            borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
+                            borderRadius: 4, transition: 'all 0.15s',
                           }}
                         >
                           <Icon icon={ICONS[key]} width={22} height={22} style={{ color: achIcon === key ? 'white' : 'var(--px-text)' }} />

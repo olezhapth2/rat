@@ -150,7 +150,7 @@ export default function UnoGame({ myId, onClose, onToast }: { myId: string; onCl
             <div style={{ display: 'flex', gap: 8 }}>
               {['red', 'blue', 'green', 'yellow'].map(c => (
                 <div key={c} onClick={() => handleColorPick(c)} style={{
-                  width: 40, height: 40, background: COLOR_HEX[c], cursor: 'pointer',
+                  width: 40, height: 40, background: COLOR_HEX[c],
                   border: '3px solid #fff', borderRadius: 8,
                 }} />
               ))}
@@ -178,7 +178,7 @@ export default function UnoGame({ myId, onClose, onToast }: { myId: string; onCl
         <div style={{
           width: 50, height: 75, background: '#2c3e50', border: '2px solid #fff',
           borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, color: '#fff', cursor: myTurn ? 'pointer' : 'default',
+          fontSize: 10, color: '#fff',
           opacity: myTurn ? 1 : 0.5,
         }} onClick={() => myTurn && handleDraw()}>
           <span>DRAW<br/>{game.deck.length}</span>
@@ -221,7 +221,6 @@ export default function UnoGame({ myId, onClose, onToast }: { myId: string; onCl
               key={card.id}
               onClick={() => canPlay && myTurn && handlePlayCard(card.id)}
               style={{
-                cursor: canPlay && myTurn ? 'pointer' : 'default',
                 opacity: canPlay && myTurn ? 1 : 0.5,
                 transform: canPlay && myTurn ? 'translateY(-4px)' : 'none',
                 transition: 'transform 0.1s',

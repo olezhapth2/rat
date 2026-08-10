@@ -43,6 +43,8 @@ export interface GameState {
     anim: AnimState; // animation state (dir, frame, tick)
     wallColor: string;
     doorName: string;
+    pets: string[];       // owned pet item IDs
+    activePet: string | null; // currently active pet ID (null = none)
   };
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
   bots: Bot[];
@@ -109,6 +111,8 @@ function savePartial(state: GameState) {
       hatId: state.player.hatId,
       wallColor: state.player.wallColor,
       doorName: state.player.doorName,
+      pets: state.player.pets,
+      activePet: state.player.activePet,
       tileOverrides: state.tileOverrides,
     })
   );
@@ -146,6 +150,8 @@ export function createInitialState(authUser?: { charId: string; name: string; ro
     anim: createAnimState(),
     wallColor: (saved?.wallColor as string) || '#2a2a4a',
     doorName: (saved?.doorName as string) || '',
+    pets: (saved?.pets as string[]) || [],
+    activePet: (saved?.activePet as string) || null,
   };
 
   if (player.daily !== today) {
@@ -195,11 +201,27 @@ export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: s
 
   if (state.player.coins < item.p) return { ok: false, msg: 'Не хватает алт' };
   state.player.coins -= item.p;
-  state.player.furniture.push(itemId);
-  state.player.carrying = itemId;
+
+  if (item.pet) {
+    state.player.pets.push(itemId);
+    state.player.activePet = itemId;
+  } else {
+    state.player.furniture.push(itemId);
+    state.player.carrying = itemId;
+  }
+
   addXP(state, 5);
   persistState(state);
   return { ok: true, msg: `Куплено: ${item.e} ${item.n}` };
+}
+
+export function togglePet(state: GameState, petId: string): void {
+  if (state.player.activePet === petId) {
+    state.player.activePet = null;
+  } else {
+    state.player.activePet = petId;
+  }
+  persistState(state);
 }
 
 export function addCoins(state: GameState, amount: number) {

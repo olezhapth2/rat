@@ -73,6 +73,8 @@ interface PlayerData {
   role: string;
   visitedRooms: string[];
   dailyQuests: { date: string; progress: Record<string, number>; claimed: string[] };
+  pets: string[];
+  activePet: string | null;
 }
 
 interface CustomAchievement {
@@ -382,6 +384,7 @@ app.prepare().then(() => {
         achievements: playerData?.achievements,
         role: userData?.role,
         avatar: userData?.avatar,
+        activePet: playerData?.activePet || null,
       };
     });
     io.emit('players:list', list);
@@ -898,6 +901,8 @@ app.prepare().then(() => {
         role: 'Разработчик',
         visitedRooms: [],
         dailyQuests: { date: '', progress: {}, claimed: [] },
+        pets: [],
+        activePet: null,
       };
       savePlayers(playersDb);
       socket.emit('admin:player-added', { name: data.name, charId: data.charId });

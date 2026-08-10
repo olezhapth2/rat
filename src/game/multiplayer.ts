@@ -13,6 +13,7 @@ export interface RemotePlayer {
   achievements?: string[];
   role?: string;
   avatar?: string;
+  activePet?: string | null;
 }
 
 export interface RpsInvite {

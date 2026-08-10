@@ -227,6 +227,7 @@ export interface ShopItem {
   noCollision?: boolean;
   sprite: string;
   minigame?: 'smoke' | 'microwave' | 'furniture_toss' | 'book_prediction' | 'cardgame' | 'basketball' | 'okiya';
+  pet?: boolean;
 }
 
 export const SHOP: Record<string, ShopItem[]> = {
@@ -317,6 +318,13 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'minigame_okia', n: 'OKIЯ', e: '🃏', p: 50, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/okia.webp', minigame: 'okiya' as const },
     { id: 'minigame_uno', n: 'UNO', e: '🃏', p: 60, w: 3, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/uno.webp', minigame: 'cardgame' as const },
     { id: 'minigame_malboro', n: 'Мальборо', e: '🌿', p: 65, w: 2, h: 2, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/minigames/malboro.webp' },
+  ],
+  pets: [
+    { id: 'pet_cat', n: 'Кошка', e: '🐱', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp', pet: true },
+    { id: 'pet_dog', n: 'Собака', e: '🐶', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.webp', pet: true },
+    { id: 'pet_bird', n: 'Птица', e: '🐦', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.webp', pet: true },
+    { id: 'pet_bunny', n: 'Кролик', e: '🐰', p: 130, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.webp', pet: true },
+    { id: 'pet_rat', n: 'Крыса', e: '🐀', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/petrat.webp', pet: true },
   ],
 };
 

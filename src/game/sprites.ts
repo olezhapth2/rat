@@ -133,6 +133,32 @@ export function hasSprite(charId: string, _hatId: string, _dir: Direction, _stat
   return spriteCache.has(charId) || !customLoadAttempted.has(charId);
 }
 
+// === Pet Sprite Cache ===
+const PET_FILES: Record<string, string> = {
+  pet_cat: '/sprites/pets/pet1.webp',
+  pet_dog: '/sprites/pets/pet2.webp',
+  pet_bird: '/sprites/pets/pet3.webp',
+  pet_bunny: '/sprites/pets/pet4.webp',
+  pet_rat: '/sprites/pets/petrat.webp',
+};
+const petCache: Map<string, HTMLImageElement> = new Map();
+
+export async function preloadPetSprites(): Promise<void> {
+  const entries = Object.entries(PET_FILES);
+  const promises = entries.map(async ([petId, url]) => {
+    const img = await loadImage(url);
+    if (img.complete && img.naturalWidth > 0) {
+      petCache.set(petId, img);
+    }
+  });
+  await Promise.all(promises);
+  console.log(`[Sprites] Loaded ${petCache.size} pet sprites`);
+}
+
+export function getPetSprite(petId: string): HTMLImageElement | null {
+  return petCache.get(petId) || null;
+}
+
 // === Update AnimState ===
 export function updateAnimState(anim: AnimState, vx: number, vy: number): void {
   anim.isMoving = Math.abs(vx) > 0.3 || Math.abs(vy) > 0.3;

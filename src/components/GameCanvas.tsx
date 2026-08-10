@@ -5,9 +5,9 @@ import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS } from '../game
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
-import { createInitialState, persistState, persistStateDebounced, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, trackQuestProgress, claimQuestReward, getQuestProgress, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updateDropPreview, takeBackFromKryska, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
+import { createInitialState, persistState, persistStateDebounced, updateBots, logActivity, unlockAchievement, addCoins, addXP, rpsGame, microwaveGame, buyItem, togglePet, trackQuestProgress, claimQuestReward, getQuestProgress, getPlacedObjectsAsGameObjects, pickUpItem, dropItem, canPlaceItem, getItemEmoji, updateDropPreview, takeBackFromKryska, paintTile, removeTilePaint, resetAllTileOverrides, enterTilePaintMode, exitTilePaintMode, updateTilePaintPreview, setTilePaintTexture, findWallSnap, findFloorSnap } from '../game/state';
 import type { GameState, Activity } from '../game/state';
-import { preloadCharacterSprites, updateAnimState } from '../game/sprites';
+import { preloadCharacterSprites, preloadPetSprites, updateAnimState } from '../game/sprites';
 import { preloadTileTextures } from '../game/tiles';
 import {
   connectMultiplayer, disconnectMultiplayer, sendPosition,
@@ -853,12 +853,13 @@ function GameInner({ authUser }: { authUser: UserData }) {
     return () => window.removeEventListener('resize', resize);
   }, []);
 
-  // Preload character sprites + tile textures
+  // Preload character sprites + pet sprites + tile textures
   useEffect(() => {
     preloadCharacterSprites(
       (loaded, total) => console.log(`Sprites: ${loaded}/${total}`),
       () => console.log('All sprites loaded')
     );
+    preloadPetSprites();
     preloadTileTextures();
   }, []);
 
@@ -1014,6 +1015,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (data.wallColor) s.player.wallColor = data.wallColor;
       if (data.doorName) s.player.doorName = data.doorName;
       if (data.dailyQuests) s.dailyQuests = data.dailyQuests;
+      if (data.pets) s.player.pets = data.pets;
+      if (data.activePet !== undefined) s.player.activePet = data.activePet;
       console.log('[MP] Player data synced from server');
     });
 
@@ -1361,7 +1364,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       updateCamera(cam, s.player, canvas.width, canvas.height);
 
-      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, visibleBots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides, s.tilePaintMode);
+      render(ctx, canvas, cam, s.map, [...s.objects, ...placedObjs], s.player, visibleBots, frameRef.current, [], s.player.carrying, s.player._dropPreview, s.player.anim, s.botAnims, remotePlayersRef.current, s.tileOverrides, s.tilePaintMode, s.player.activePet);
 
       // === Card game overlay ===
       const cg = cardGameRef.current;
@@ -2580,7 +2583,7 @@ function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameSta
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { minigames: 'ИГРЫ' };
+  const labels: Record<string, string> = { minigames: 'ИГРЫ', pets: 'ПИТОМЦЫ' };
 
   return (
     <>
@@ -2606,6 +2609,9 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
       {preview && (() => {
         const pItem = ALL_ITEMS.find(i => i.id === preview);
         if (!pItem) return null;
+        const isPet = pItem.pet;
+        const ownedPet = isPet ? state.player.pets.includes(pItem.id) : false;
+        const activePetItem = isPet && state.player.activePet === pItem.id;
         return (
           <div className="px-panel" style={{ position: 'sticky', top: 0, zIndex: 10, padding: 12, marginBottom: 10, display: 'flex', gap: 14, alignItems: 'center', background: 'var(--px-panel)', boxShadow: '0 4px 12px rgba(0,0,0,.5)' }}>
             <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)', flexShrink: 0 }}>
@@ -2613,17 +2619,32 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: 'var(--px-text)', marginBottom: 4 }}>{pItem.n}</div>
-              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 4 }}>{pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · {pItem.w}×{pItem.h}</div>
-              <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>{pItem.p} COINS</div>
-              <button
-                onClick={() => {
-                  const res = buyItem(state, pItem.id);
-                  if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
-                  else onToast(res.msg, 'info');
-                }}
-                className="px-btn accent"
-                style={{ fontSize: 10 }}
-              >BUY</button>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 4 }}>
+                {isPet ? 'ПИТОМЕЦ' : `${pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · ${pItem.w}×${pItem.h}`}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>
+                {isPet ? (ownedPet ? (activePetItem ? 'АКТИВЕН' : 'КУПЛЕН') : `${pItem.p} COINS`) : `${pItem.p} COINS`}
+              </div>
+              {isPet && ownedPet ? (
+                <button
+                  onClick={() => {
+                    togglePet(state, pItem.id);
+                    onToast(activePetItem ? 'Питомец скрыт' : `Питомец: ${pItem.n}`, 'ok');
+                  }}
+                  className="px-btn"
+                  style={{ fontSize: 10 }}
+                >{activePetItem ? 'СКРЫТЬ' : 'ПОКАЗАТЬ'}</button>
+              ) : !isPet || !ownedPet ? (
+                <button
+                  onClick={() => {
+                    const res = buyItem(state, pItem.id);
+                    if (res.ok) { onToast(res.msg, 'ok'); onConfetti(); }
+                    else onToast(res.msg, 'info');
+                  }}
+                  className="px-btn accent"
+                  style={{ fontSize: 10 }}
+                >BUY</button>
+              ) : null}
             </div>
           </div>
         );
@@ -2631,7 +2652,10 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {(SHOP as any)[cat]?.map((item: any) => {
-          const count = state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
+          const isPet = item.pet;
+          const petOwned = isPet ? state.player.pets.includes(item.id) : false;
+          const petActive = isPet && state.player.activePet === item.id;
+          const itemCount = isPet ? 0 : state.player.furniture.filter(id => id === item.id).length + state.player.placedItems.filter(pi => pi.id === item.id).length;
           return (
             <div
               key={item.id}
@@ -2641,14 +2665,26 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                 padding: 8,
                 textAlign: 'center',
                 cursor: 'pointer',
-                borderColor: preview === item.id ? 'var(--px-accent)' : undefined,
+                borderColor: preview === item.id ? 'var(--px-accent)' : petActive ? '#4ecca3' : undefined,
               }}
             >
               <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 120 }}>
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{item.n}</div>
-              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>{item.p} {count > 0 && <span style={{ color: 'var(--px-accent)' }}>({count})</span>}</div>
+              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>
+                {isPet ? (
+                  petOwned ? (
+                    <span style={{ color: petActive ? '#4ecca3' : 'var(--px-text-dim)' }}>
+                      {petActive ? '● АКТИВЕН' : '○ КУПЛЕН'}
+                    </span>
+                  ) : (
+                    <span>{item.p} COINS</span>
+                  )
+                ) : (
+                  <span>{item.p} {itemCount > 0 && <span style={{ color: 'var(--px-accent)' }}>({itemCount})</span>}</span>
+                )}
+              </div>
             </div>
           );
         })}

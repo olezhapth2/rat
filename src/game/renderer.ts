@@ -1,6 +1,6 @@
 import { TILE, MAP_W, MAP_H } from './constants';
 import type { Player, GameObject, Bot } from './constants';
-import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite } from './sprites';
+import { getSprite, CHAR_W, CHAR_H, type AnimState, drawCharacterSprite, getPetSprite } from './sprites';
 import { getFloorImage, getFloorImageByIndex, getWallImageByIndex, getSideWallImage, getWallTopImage } from './tiles';
 import type { RemotePlayer } from './multiplayer';
 
@@ -43,7 +43,8 @@ export function render(
   botAnims?: Record<string, AnimState>,
   remotePlayers: RemotePlayer[] = [],
   tileOverrides?: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>,
-  tilePaintMode?: { active: boolean; type: 'floor' | 'wall'; textureIndex: number; previewX: number; previewY: number } | null
+  tilePaintMode?: { active: boolean; type: 'floor' | 'wall'; textureIndex: number; previewX: number; previewY: number } | null,
+  activePet?: string | null
 
 ): void {
   const cw = canvas.width;
@@ -156,9 +157,9 @@ export function render(
   // Characters
   const playerName = (player as any).name || 'Ты';
   const allChars = [
-    { x: player.x, y: player.y, name: playerName, isPlayer: true, bot: null as any, charId: (player as any).charId || 'pers4', hatId: (player as any).hatId || 'none' },
-    ...bots.map((b) => ({ x: b.x, y: b.y, name: b.name, isPlayer: false, bot: b, charId: b.spriteId, hatId: 'none' })),
-    ...remotePlayers.map((rp) => ({ x: rp.x, y: rp.y, name: rp.name, isPlayer: false, bot: null as any, charId: rp.charId, hatId: rp.hatId })),
+    { x: player.x, y: player.y, name: playerName, isPlayer: true, bot: null as any, charId: (player as any).charId || 'pers4', hatId: (player as any).hatId || 'none', activePet },
+    ...bots.map((b) => ({ x: b.x, y: b.y, name: b.name, isPlayer: false, bot: b, charId: b.spriteId, hatId: 'none', activePet: null as string | null })),
+    ...remotePlayers.map((rp) => ({ x: rp.x, y: rp.y, name: rp.name, isPlayer: false, bot: null as any, charId: rp.charId, hatId: rp.hatId, activePet: rp.activePet || null })),
   ];
 
   for (const c of allChars) {
@@ -228,6 +229,20 @@ export function render(
           ctx.moveTo(c.x, bobY - TILE * 0.9);
           ctx.lineTo(c.x, itemY + itemH + 2);
           ctx.stroke();
+        }
+
+        // Active pet for player
+        if ((c.isPlayer || c.activePet) && c.activePet) {
+          const petImg = getPetSprite(c.activePet);
+          if (petImg && petImg.complete && petImg.naturalWidth > 0) {
+            const petW = TILE * 0.8;
+            const petH = TILE * 0.8;
+            const petX = c.x + 20;
+            const petY = bobY + 5;
+            // Slight bob animation
+            const petBob = Math.sin(frame * 0.06 + 1) * 2;
+            ctx.drawImage(petImg, petX - petW / 2, petY + petBob - petH / 2, petW, petH);
+          }
         }
 
         // Bot emoji bubble

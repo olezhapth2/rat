@@ -25,7 +25,9 @@ Browser-гра в стиле top-down RPG с пиксельной графико
 17. [Текущее состояние](#текущее-состояние)
 18. [Что можно доделать](#что-можно-доделать)
 19. [Деплой на Railway](#деплой-на-railway)
-20. [Структура файлов](#структура-файлов)
+20. [Деплой на VPS + Docker (рекомендуется)](#деплой-на-vps--docker-рекомендуется)
+21. [Вынос данных с локала](#вынос-данных-с-локала)
+22. [Структура файлов](#структура-файлов)
 
 ---
 
@@ -522,7 +524,7 @@ game-next/
 │   │   │   ├── lights/          # 5 светильников
 │   │   │   ├── wall/            # 20 настенных предметов
 │   │   │   └── minigames/       # 7 мини-игр
-│   │   └── pets/                # Питомцы (пока не используются)
+│   │   └── pets/                # Питомцы (5 видов)
 │   └── ast/                     # Исходные ассеты (PNG)
 ├── .game-data/                  # Данные (JSON, gitignored)
 │   ├── players.json
@@ -536,6 +538,219 @@ game-next/
 ├── railway.json
 └── README.md
 ```
+
+---
+
+## Деплой на VPS + Docker (рекомендуется)
+
+### Почему VPS + Docker
+
+| Параметр | Значение |
+|----------|----------|
+| Стоимость | $5-10/мес |
+| Сложность | Средняя |
+| Доступ к файлам | Полный (SSH) |
+| Данные | Persistent на диске |
+
+**Преимущества:**
+- Полный контроль над данными
+- SSH доступ для заказчика
+- Данные не теряются при перезапусках
+- Легко бэкапить
+- Масштабируется
+- Профессионально
+
+**Где арендовать VPS:**
+- Hetzner: `https://www.hetzner.com/cloud/` — от €4.5/мес
+- DigitalOcean: `https://www.digitalocean.com/` — от $5/мес
+- TimeWeb: `https://timeweb.cloud/` — от 99₽/мес
+- Yandex Cloud: `https://cloud.yandex.ru/` — от 500₽/мес
+
+### Dockerfile
+
+```dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Копируем зависимости
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Копируем исходники
+COPY . .
+
+# Сборка
+RUN npm run build
+
+# Создаём директорию для данных
+RUN mkdir -p /app/.game-data
+
+EXPOSE 3001
+
+CMD ["node", "server.ts"]
+```
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  secret-gang:
+    build: .
+    container_name: secret-gang
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./game-data:/app/.game-data
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+### Скрипт деплоя (deploy.sh)
+
+```bash
+#!/bin/bash
+echo "🚀 Деплой SECRET GANG..."
+
+# Остановка старой версии
+docker-compose down
+
+# Сборка нового образа
+docker-compose build --no-cache
+
+# Запуск
+docker-compose up -d
+
+echo "✅ Игра запущена на http://$(hostname -I | awk '{print $1}'):3001"
+```
+
+### Структура данных на VPS
+
+```
+/home/client/secret-gang/
+├── docker-compose.yml
+├── game-data/              ← persistent (volume)
+│   ├── users.json
+│   ├── players.json
+│   ├── leaderboards.json
+│   └── custom-achievements.json
+├── logs/
+│   └── server.log
+└── public/sprites/         ← спрайты
+```
+
+### Команды для заказчика
+
+```bash
+# Запуск
+docker-compose up -d
+
+# Остановка
+docker-compose down
+
+# Обновление
+git pull
+docker-compose up -d --build
+
+# Логи
+docker-compose logs -f
+
+# Резервное копирование
+cp -r game-data game-data-backup-$(date +%Y%m%d)
+```
+
+---
+
+## Вынос данных с локала
+
+### Что сейчас захардкожено
+
+| Файл | Что внутри | Выносим в |
+|------|-----------|-----------|
+| `constants.ts` | Карта, предметы магазина, боты | JSON на сервере |
+| `interactions.ts` | Зоны взаимодействий | JSON на сервере |
+| `okiya.ts` | Правила ОКИЯ | JSON на сервере |
+| `cardgame.ts` | Правила UNO | JSON на сервере |
+
+### Целевая структура
+
+```
+server/
+├── game-config/
+│   ├── map.json            ← карта (58×45 тайлов)
+│   ├── shop.json           ← предметы магазина
+│   ├── bots.json           ← боты (позиции, диалоги)
+│   ├── interactions.json   ← зоны взаимодействий
+│   ├── items.json          ← спрайты предметов
+│   └── config.json         ← общие настройки
+├── game-data/              ← пользователи, лидерборды
+├── server.ts
+└── public/sprites/
+```
+
+### API для загрузки данных
+
+```typescript
+// Сервер отдаёт данные
+app.get('/api/map', (req, res) => {
+  const map = JSON.parse(readFileSync('game-config/map.json', 'utf-8'));
+  res.json(map);
+});
+
+app.get('/api/shop', (req, res) => {
+  const shop = JSON.parse(readFileSync('game-config/shop.json', 'utf-8'));
+  res.json(shop);
+});
+
+app.get('/api/bots', (req, res) => {
+  const bots = JSON.parse(readFileSync('game-config/bots.json', 'utf-8'));
+  res.json(bots);
+});
+
+app.get('/api/interactions', (req, res) => {
+  const interactions = JSON.parse(readFileSync('game-config/interactions.json', 'utf-8'));
+  res.json(interactions);
+});
+```
+
+### Клиент загружает данные
+
+```typescript
+// При старте игры
+const [map, shop, bots, interactions] = await Promise.all([
+  fetch('/api/map').then(r => r.json()),
+  fetch('/api/shop').then(r => r.json()),
+  fetch('/api/bots').then(r => r.json()),
+  fetch('/api/interactions').then(r => r.json()),
+]);
+```
+
+### Что赢得аем
+
+- ✅ Клиент может менять карту без разработчика
+- ✅ Клиент может добавлять предметы в магазин
+- ✅ Клиент может менять ботов и диалоги
+- ✅ Всё хранится на VPS, не локально
+- ✅ Обновления через админ-панель
+
+### Приоритеты работ
+
+1. **Docker + деплой** — создать Dockerfile, docker-compose.yml
+2. **Вынос карты** — map.json на сервере
+3. **Вынос магазина** — shop.json на сервере
+4. **Вынос ботов** — bots.json на сервере
+5. **Вынос взаимодействий** — interactions.json на сервере
+6. **Админ-панель** — редактирование JSON через веб
 
 ---
 

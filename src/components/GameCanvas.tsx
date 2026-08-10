@@ -1632,7 +1632,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         top: 0,
         left: 0,
         right: 0,
-        height: 50,
+        height: 100,
         zIndex: 9999,
         pointerEvents: 'none',
         display: 'flex',

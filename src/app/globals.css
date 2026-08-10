@@ -29,6 +29,13 @@
   cursor: url('/sprites/cursor.png') 0 0, auto !important;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 a, button, input, select, textarea, [role="button"], summary, label {
   cursor: url('/sprites/cursor_active.png') 0 0, auto !important;
 }
@@ -38,6 +45,7 @@ a, button, input, select, textarea, [role="button"], summary, label {
 }
 
 body {
+  margin: 0;
   overflow: hidden;
   background: var(--px-bg);
   font-family: 'Press Start 2P', monospace;

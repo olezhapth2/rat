@@ -2102,7 +2102,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               {modalType === 'profile' && <ProfileView state={stateRef.current} profilePlayer={modalData.remotePlayer as { name: string; charId: string; role?: string; avatar?: string; coins?: number; level?: number; achievements?: string[] } | undefined} />}
               {modalType === 'quests' && <QuestsView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'talk' && <TalkView data={modalData} state={stateRef.current} onToast={toast} />}
-              {modalType === 'rps' && <RpsView data={modalData} state={stateRef.current} onToast={toast} onConfetti={confetti} />}
+              {modalType === 'rps' && <RpsView key={Date.now()} data={modalData} state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'whiteboard' && <WhiteboardView />}
               {modalType === 'mp_rps' && <MpRpsView data={modalData} myChoice={rpsMyChoice} sentChoice={rpsSentChoice} result={rpsResult} onChoice={(c) => { setRpsMyChoice(c); setRpsSentChoice(true); sendRpsChoice(modalData.gameId as string, c); }} onClose={closeModal} onToast={toast} />}
               {modalType === 'book_prediction' && <BookPredictionView prediction={modalData.prediction as string} />}
@@ -3026,7 +3026,7 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
 
 // ===== RPS =====
 function RpsView({ data, state, onToast, onConfetti }: { data: Record<string, unknown>; state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
-  const result = rpsGame(state);
+  const [result] = useState(() => rpsGame(state));
   useEffect(() => {
     if (result.reward > 0) { unlockAchievement(state, 'rps_win'); onToast(`+${result.reward} COINS`, 'ok'); onConfetti(); }
   }, []);

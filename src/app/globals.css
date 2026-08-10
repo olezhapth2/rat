@@ -26,15 +26,15 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  cursor: url('/sprites/cursor.webp') 0 0, auto;
+  cursor: url('/sprites/cursor.png') 0 0, auto !important;
 }
 
 a, button, input, select, textarea, [role="button"], summary, label {
-  cursor: url('/sprites/cursor_active.webp') 0 0, pointer !important;
+  cursor: url('/sprites/cursor_active.png') 0 0, auto !important;
 }
 
 .clickable {
-  cursor: url('/sprites/cursor_active.webp') 0 0, pointer !important;
+  cursor: url('/sprites/cursor_active.png') 0 0, auto !important;
 }
 
 body {
@@ -52,7 +52,7 @@ canvas {
   position: fixed;
   top: 0;
   left: 0;
-  cursor: pointer;
+  cursor: url('/sprites/cursor.png') 0 0, auto !important;
 }
 
 /* ===== WIN95 OUTSET BORDER (raised) ===== */
@@ -110,7 +110,7 @@ canvas {
   justify-content: center;
   font-size: 9px;
   color: var(--px-text);
-  cursor: pointer;
+
   padding: 0;
   font-family: 'Press Start 2P', monospace;
   line-height: 1;
@@ -126,7 +126,7 @@ canvas {
   font-family: 'Press Start 2P', monospace;
   padding: 8px 16px;
   font-size: 10px;
-  cursor: pointer;
+
   background: var(--px-panel);
   color: var(--px-text);
   border: 2px solid;
@@ -219,7 +219,7 @@ select.px-input {
   gap: 10px !important;
   transition: none !important;
   user-select: none;
-  cursor: pointer;
+
 }
 .ctx-item:hover {
   background: var(--px-titlebar) !important;
@@ -248,7 +248,7 @@ select.px-input {
   color: var(--px-text-dim) !important;
   font-size: 9px !important;
   font-weight: 400 !important;
-  cursor: pointer;
+
   transition: none !important;
   text-transform: uppercase;
   border: 2px solid;
@@ -286,7 +286,7 @@ select.px-input {
   align-items: center;
   justify-content: center;
   font-size: 16px !important;
-  cursor: pointer;
+
   transition: none !important;
   user-select: none;
 }

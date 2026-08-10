@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   adminGetPlayers,
   adminAdjustMoney,
+  adminClearInventory,
   adminGetAchievements,
   adminCreateAchievement,
   adminGrantAchievement,
@@ -354,12 +355,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {players.map(p => (
-                  <div key={p.key} onClick={() => setMoneyTarget(p.key)} className="px-panel" style={{ padding: '6px 10px', cursor: 'pointer', fontSize: 10, borderColor: moneyTarget === p.key ? 'var(--px-accent)' : undefined, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ color: 'var(--px-text)' }}>{p.name}</span>
-                    <span style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div key={p.key} className="px-panel" style={{ padding: '6px 10px', fontSize: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-text)', cursor: 'pointer' }}>{p.name}</span>
+                    <span onClick={() => setMoneyTarget(p.key)} style={{ color: 'var(--px-accent)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                       <Icon icon={ICONS.coin} width={16} height={16} />
                       {p.coins}
                     </span>
+                    <button onClick={() => { adminClearInventory(p.key); setTimeout(() => adminGetPlayers(), 500); }} className="px-btn small" style={{ fontSize: 8, padding: '2px 6px', color: 'var(--px-danger)' }}>CLEAR INV</button>
                   </div>
                 ))}
               </div>

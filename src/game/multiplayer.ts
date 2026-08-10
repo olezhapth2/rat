@@ -487,6 +487,10 @@ export function adminAdjustMoney(key: string, amount: number): void {
   socket?.emit('admin:adjust-money', { key, amount });
 }
 
+export function adminClearInventory(key: string): void {
+  socket?.emit('admin:clear-inventory', { key });
+}
+
 export function adminGetAchievements(): void {
   socket?.emit('admin:get-achievements');
 }

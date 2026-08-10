@@ -942,6 +942,22 @@ app.prepare().then(() => {
       }
     });
 
+    // Clear player inventory (furniture + placedItems)
+    socket.on('admin:clear-inventory', (data: { key: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const player = playersDb[data.key];
+      if (!player) return socket.emit('admin:error', 'Player not found');
+      player.furniture = [];
+      player.placedItems = [];
+      savePlayers(playersDb);
+      socket.emit('admin:inventory-cleared', { key: data.key });
+      for (const [sid, sp] of onlinePlayers) {
+        if (sp.name.toLowerCase() === data.key) {
+          io.to(sid).emit('player:data_sync', player);
+        }
+      }
+    });
+
     // Get custom achievements
     socket.on('admin:get-achievements', () => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');

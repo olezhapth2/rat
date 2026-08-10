@@ -11,7 +11,7 @@ export const RETRO_DEFAULTS: RetroSettings = {
   scanlines: 'rgb_light',
   noise: 'off',
   color: 'retro',
-  vignette: 'tunnel_strong',
+  vignette: 'tunnel_light',
 };
 
 // Forced preset — always active,不可 configurable
@@ -74,7 +74,7 @@ export function getScanlineType(s: RetroSettings): 'crt' | 'rgb' | 'h' | 'none' 
 // Vignette
 export function getVignetteOpacity(s: RetroSettings): number {
   if (s.vignette.includes('strong')) return 0.6;
-  if (s.vignette.includes('light')) return 0.25;
+  if (s.vignette.includes('light')) return 0.15;
   return 0;
 }
 export function getVignetteType(s: RetroSettings): 'dark' | 'corner' | 'tunnel' | 'none' {

@@ -298,6 +298,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Retro FX panel
   const [retroPanelOpen, setRetroPanelOpen] = useState(false);
 
+  // Custom cursor state
+  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+  const [clickRipples, setClickRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+
   // Context menu state
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null);
 
@@ -307,6 +311,24 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Load retro settings from localStorage on client mount (avoid SSR hydration mismatch)
   useEffect(() => {
     setRetroSettings(loadRetroSettings());
+  }, []);
+
+  // Custom cursor tracking
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX, y: e.clientY });
+    };
+    const onClick = (e: MouseEvent) => {
+      const id = Date.now() + Math.random();
+      setClickRipples(prev => [...prev, { id, x: e.clientX, y: e.clientY }]);
+      setTimeout(() => setClickRipples(prev => prev.filter(r => r.id !== id)), 500);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mousedown', onClick);
+    };
   }, []);
 
   // Minigame canvas state refs
@@ -1616,6 +1638,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           position: 'fixed',
           inset: 0,
           overflow: 'hidden',
+          cursor: 'none',
           borderRadius: crtI > 0 ? `${8 + crtI * 12}px` : 0,
           transform: crtI > 0
             ? `perspective(${800 - crtI * 200}px) rotateX(${crtI * 1.5}deg) scale(${1 + crtI * 0.02})`
@@ -1627,6 +1650,44 @@ function GameInner({ authUser }: { authUser: UserData }) {
       >
         <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings) }} />
       </div>
+
+      {/* Custom cursor */}
+      <img
+        src="/sprites/cursor.webp"
+        alt=""
+        draggable={false}
+        style={{
+          position: 'fixed',
+          left: cursorPos.x,
+          top: cursorPos.y,
+          width: 24,
+          height: 24,
+          imageRendering: 'pixelated',
+          pointerEvents: 'none',
+          zIndex: 9999,
+          transform: 'translate(-2px, -2px)',
+        }}
+      />
+
+      {/* Click ripples */}
+      {clickRipples.map(r => (
+        <div
+          key={r.id}
+          style={{
+            position: 'fixed',
+            left: r.x,
+            top: r.y,
+            width: 4,
+            height: 4,
+            borderRadius: '50%',
+            border: '2px solid rgba(255,255,255,0.7)',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9998,
+            animation: 'clickRipple 0.5s ease-out forwards',
+          }}
+        />
+      ))}
 
       {/* Retro overlays (scanlines, noise, vignette) */}
       <RetroEffects settings={retroSettings}>

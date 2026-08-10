@@ -305,6 +305,11 @@ select.px-input {
   50% { transform: translateX(-50%) scale(1.03); }
 }
 
+@keyframes clickRipple {
+  0% { width: 4px; height: 4px; opacity: 1; border-width: 2px; }
+  100% { width: 36px; height: 36px; opacity: 0; border-width: 1px; }
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 18px; }
 ::-webkit-scrollbar-track {

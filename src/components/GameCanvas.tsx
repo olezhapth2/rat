@@ -2580,7 +2580,7 @@ function drawSmokeOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameSta
 function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
   const [cat, setCat] = useState('desks');
   const [preview, setPreview] = useState<string | null>(null);
-  const labels: Record<string, string> = { minigames: 'ИГРЫ', pets: 'ПИТОМЦЫ' };
+  const labels: Record<string, string> = { desks: 'СТОЛЫ', chairs: 'СТУЛЬЯ', sofas: 'ДИВАНЫ', decorations: 'УКРАШЕНИЯ', windows: 'ОКНА', cabinets: 'ШКАФЫ', posters: 'ПЛАКАТЫ', pets: 'ПИТОМЦЫ' };
 
   return (
     <>

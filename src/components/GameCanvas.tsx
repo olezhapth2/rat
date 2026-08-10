@@ -298,8 +298,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   // Retro FX panel
   const [retroPanelOpen, setRetroPanelOpen] = useState(false);
 
-  // Custom cursor state
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+  // Click ripples
   const [clickRipples, setClickRipples] = useState<{ id: number; x: number; y: number }[]>([]);
 
   // Context menu state
@@ -313,20 +312,15 @@ function GameInner({ authUser }: { authUser: UserData }) {
     setRetroSettings(loadRetroSettings());
   }, []);
 
-  // Custom cursor tracking
+  // Click ripple effect
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      setCursorPos({ x: e.clientX, y: e.clientY });
-    };
     const onClick = (e: MouseEvent) => {
       const id = Date.now() + Math.random();
       setClickRipples(prev => [...prev, { id, x: e.clientX, y: e.clientY }]);
       setTimeout(() => setClickRipples(prev => prev.filter(r => r.id !== id)), 500);
     };
-    document.addEventListener('mousemove', onMove);
     document.addEventListener('mousedown', onClick);
     return () => {
-      document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mousedown', onClick);
     };
   }, []);
@@ -1638,7 +1632,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           position: 'fixed',
           inset: 0,
           overflow: 'hidden',
-          cursor: 'none',
+          cursor: 'url(/sprites/cursor.webp) 0 0, auto',
           borderRadius: crtI > 0 ? `${8 + crtI * 12}px` : 0,
           transform: crtI > 0
             ? `perspective(${800 - crtI * 200}px) rotateX(${crtI * 1.5}deg) scale(${1 + crtI * 0.02})`
@@ -1648,26 +1642,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
             : undefined,
         }}
       >
-        <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings) }} />
+        <canvas ref={canvasRef} style={{ filter: getColorFilter(retroSettings), cursor: 'inherit' }} />
       </div>
-
-      {/* Custom cursor */}
-      <img
-        src="/sprites/cursor.webp"
-        alt=""
-        draggable={false}
-        style={{
-          position: 'fixed',
-          left: cursorPos.x,
-          top: cursorPos.y,
-          width: 24,
-          height: 24,
-          imageRendering: 'pixelated',
-          pointerEvents: 'none',
-          zIndex: 9999,
-          transform: 'translate(-2px, -2px)',
-        }}
-      />
 
       {/* Click ripples */}
       {clickRipples.map(r => (

@@ -1097,7 +1097,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       if (foundBot) {
         if (foundBot.id === 'kryska') {
-          items.push({ icon: 'talk', text: 'Поговорить', fn: () => { addCoins(stateRef.current, 5); addXP(stateRef.current, 10); logActivity(stateRef.current, '🐀', 'Поговорил с Крыской'); unlockAchievement(stateRef.current, 'first_talk'); trackQuestProgress(stateRef.current, 'talk_3'); toast('+5 алт', 'ok'); } });
           if ((foundBot as any)._stolenCoins > 0) {
             const coins = (foundBot as any)._stolenCoins;
             items.push({ icon: 'coins', text: `Вернуть ${coins} алт`, fn: () => {
@@ -1106,9 +1105,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             }});
           }
         } else {
-          items.push({ icon: 'talk', text: `Поговорить с ${foundBot.name}`, fn: () => { logActivity(stateRef.current, '💬', `Поговорил с ${foundBot.name}`); unlockAchievement(stateRef.current, 'first_talk'); addCoins(stateRef.current, 5); addXP(stateRef.current, 10); trackQuestProgress(stateRef.current, 'talk_3'); openModal('talk', { bot: foundBot }); } });
           items.push({ icon: 'rock', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
-          items.push({ icon: 'walk', text: 'Кабинет', fn: () => { logActivity(stateRef.current, '🚶', `Посетил кабинет ${foundBot.name}`); toast(`Ты у ${foundBot.name}`, 'ok'); } });
         }
       }
 

@@ -686,7 +686,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     return;
   }
 
-  // Kryska patrols between rooms
+  // Kryska patrols between rooms — only verified walkable tiles
   if (bot._roomTimer <= 0) {
     const targets = [
       { x: 8 * TILE, y: 5 * TILE },
@@ -695,7 +695,8 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       { x: 36 * TILE, y: 5 * TILE },
       { x: 36 * TILE, y: 14 * TILE },
       { x: 30 * TILE, y: 14 * TILE },
-      { x: 30 * TILE, y: 24 * TILE },
+      { x: 15 * TILE, y: 30 * TILE },
+      { x: 4 * TILE, y: 30 * TILE },
     ];
     const t = targets[Math.floor(Math.random() * targets.length)];
     bot.wanderTargetX = t.x;
@@ -719,8 +720,10 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
         bot._lastVx = (dx / dist) * 0.8;
         bot._lastVy = (dy / dist) * 0.8;
       } else {
+        // Blocked — immediately pick a new target instead of waiting
         bot.wanderTargetX = null;
         bot.wanderTargetY = null;
+        bot._roomTimer = 0;
       }
     } else {
       bot.wanderTargetX = null;

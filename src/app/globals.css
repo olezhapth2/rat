@@ -30,10 +30,16 @@
 }
 
 html, body {
-  margin: 0;
-  padding: 0;
+  margin: 0 !important;
+  padding: 0 !important;
   height: 100%;
   overflow: hidden;
+  background: var(--px-bg);
+  font-family: 'Press Start 2P', monospace;
+  color: var(--px-text);
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
 }
 
 a, button, input, select, textarea, [role="button"], summary, label {
@@ -42,17 +48,6 @@ a, button, input, select, textarea, [role="button"], summary, label {
 
 .clickable {
   cursor: url('/sprites/cursor_active.png') 0 0, auto !important;
-}
-
-body {
-  margin: 0;
-  overflow: hidden;
-  background: var(--px-bg);
-  font-family: 'Press Start 2P', monospace;
-  color: var(--px-text);
-  image-rendering: pixelated;
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: unset;
 }
 
 canvas {

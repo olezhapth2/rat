@@ -1635,15 +1635,12 @@ function GameInner({ authUser }: { authUser: UserData }) {
         height: 75,
         zIndex: 9999,
         pointerEvents: 'none',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
       }}>
-          <img
-            src="/sprites/banner.webp"
-            alt="SickRat Office"
-            style={{ width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' }}
-          />
+        <img
+          src="/sprites/banner.webp"
+          alt="SickRat Office"
+          style={{ width: '100%', height: '100%', objectFit: 'fill', imageRendering: 'pixelated', display: 'block' }}
+        />
       </div>
 
       {/* CRT Container */}

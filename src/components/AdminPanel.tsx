@@ -144,6 +144,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
       name: editName || undefined,
       role: editRole || undefined,
       charId: editCharId || undefined,
+      avatar: newAvatar || undefined,
       password: editPass.length > 0 ? editPass : undefined,
       admin: editAdmin,
     });

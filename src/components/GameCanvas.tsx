@@ -1978,7 +1978,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             width: 52, height: 52, border: '2px solid var(--px-border)',
             background: 'var(--px-bg)', overflow: 'hidden',
           }}>
-            <img src={`/sprites/pers/${player.charId}.webp`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated' }} />
+            <img src={authUser?.avatar || `/sprites/pers/${player.charId}.webp`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -2833,7 +2833,7 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
   return (
     <div style={{ textAlign: 'center', padding: 10 }}>
       <div style={{ width: 64, height: 64, overflow: 'hidden', margin: '0 auto 8px', background: 'var(--px-bg)', border: '2px solid var(--px-border)', borderRadius: 4 }}>
-        <img src={`/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated', display: 'block' }} />
+        <img src={avatar || `/sprites/pers/${charId}.webp`} alt={charId} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', imageRendering: 'pixelated', display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
         <div style={{ fontSize: 13, color: 'var(--px-text)' }}>{name}</div>

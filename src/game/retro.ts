@@ -7,27 +7,24 @@ export interface RetroSettings {
 }
 
 export const RETRO_DEFAULTS: RetroSettings = {
-  crt: 'off',
-  scanlines: 'off',
+  crt: 'glow_light',
+  scanlines: 'rgb_light',
   noise: 'off',
-  color: 'off',
-  vignette: 'off',
+  color: 'retro',
+  vignette: 'tunnel_strong',
 };
+
+// Forced preset — always active,不可 configurable
+const FORCED_PRESET: RetroSettings = { ...RETRO_DEFAULTS };
 
 const STORAGE_KEY = 'secretgang_retro';
 
 export function loadRetroSettings(): RetroSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...RETRO_DEFAULTS, ...JSON.parse(raw) };
-  } catch {}
-  return { ...RETRO_DEFAULTS };
+  return { ...FORCED_PRESET };
 }
 
-export function saveRetroSettings(s: RetroSettings) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {}
+export function saveRetroSettings(_s: RetroSettings) {
+  // No-op — settings are forced
 }
 
 // CRT

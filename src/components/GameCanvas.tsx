@@ -2047,8 +2047,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
           🏆 SCORES
         </div>
 
-        {/* Retro FX button */}
-        {(player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com') && (
+        {/* Retro FX button — hidden, preset is forced globally */}
+        {false && (
           <div
             onClick={() => setRetroPanelOpen(!retroPanelOpen)}
             style={{
@@ -2202,8 +2202,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {/* Confetti */}
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
 
-      {/* Retro Effects Panel */}
-      <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} isOpen={retroPanelOpen} onToggle={() => setRetroPanelOpen(!retroPanelOpen)} />
+      {/* Retro Effects Panel — hidden, preset is forced globally */}
+      {false && <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} isOpen={retroPanelOpen} onToggle={() => setRetroPanelOpen(!retroPanelOpen)} />}
     </>
   );
 }

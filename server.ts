@@ -983,12 +983,12 @@ app.prepare().then(() => {
       // First login: user has no password yet
       if (!user.password) {
         loggedInUsers.set(socket.id, key);
-        return socket.emit('auth:result', { ok: true, firstLogin: true, user: { login: user.login, name: '', charId: user.charId, role: '', avatar: user.avatar, photoTaken: false } });
+        return socket.emit('auth:result', { ok: true, firstLogin: true, user: { login: user.login, name: '', charId: user.charId, role: '', avatar: user.avatar, photoTaken: false, admin: !!user.admin } });
       }
       if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
       loggedInUsers.set(socket.id, key);
       const capName = user.name.charAt(0).toUpperCase() + user.name.slice(1);
-      socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false } });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false, admin: !!user.admin } });
     });
 
     socket.on('auth:reconnect', (data: { login: string }) => {
@@ -1031,7 +1031,7 @@ app.prepare().then(() => {
       user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       saveUsers(usersDb);
       loggedInUsers.set(socket.id, key);
-      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: false } });
+      socket.emit('auth:result', { ok: true, user: { login: user.login, name: user.name, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: false, admin: !!user.admin } });
     });
 
     socket.on('auth:get-users', () => {

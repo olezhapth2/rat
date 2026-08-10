@@ -2016,7 +2016,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         </div>
 
         {/* Admin button */}
-        {(player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com') && (
+        {authUser.admin && (
           <div
             onClick={() => setShowAdmin(true)}
             style={{
@@ -2200,7 +2200,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {confettiTrigger > 0 && <ConfettiEffect trigger={confettiTrigger} />}
 
       {/* Retro Effects Panel — hidden, preset is forced globally */}
-      {false && <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={player.charId === 'pers5' || authUser.login === 'olegdevyatow@gmail.com'} isOpen={retroPanelOpen} onToggle={() => setRetroPanelOpen(!retroPanelOpen)} />}
+      {false && <RetroPanel settings={retroSettings} onChange={setRetroSettings} isAdmin={!!authUser.admin} isOpen={retroPanelOpen} onToggle={() => setRetroPanelOpen(!retroPanelOpen)} />}
     </>
   );
 }

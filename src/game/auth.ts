@@ -5,6 +5,7 @@ export interface UserData {
   avatar: string;
   login: string;
   photoTaken?: boolean;
+  admin?: boolean;
 }
 
 const SESSION_KEY = 'auth_session';
@@ -34,6 +35,7 @@ export function initAuth(): void {
         if (data.role !== undefined) session.role = data.role;
         if (data.avatar !== undefined) session.avatar = data.avatar;
         if (data.photoTaken !== undefined) session.photoTaken = data.photoTaken;
+        if (data.admin !== undefined) session.admin = data.admin;
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       }
     });

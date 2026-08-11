@@ -1,3 +1,7 @@
 node_modules
 .next
+.game-data
 .git
+.gitignore
+*.md
+.DS_Store

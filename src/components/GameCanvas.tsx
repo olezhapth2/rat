@@ -1637,6 +1637,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
         display: 'flex',
         justifyContent: 'center',
         lineHeight: 0,
+        transform: 'scale(0.667)',
+        transformOrigin: 'top center',
       }}>
         <img
           src="/sprites/banner.png"

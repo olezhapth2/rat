@@ -287,6 +287,13 @@ function GameInner({ authUser }: { authUser: UserData }) {
         av: s.player.av,
         role: s.player.role,
         dailyQuests: s.dailyQuests,
+        placedItems: s.player.placedItems,
+        pets: s.player.pets,
+        activePet: s.player.activePet,
+        tileOverrides: s.tileOverrides,
+        posX: Math.round(s.player.x),
+        posY: Math.round(s.player.y),
+        myRoom: s.player.myRoom,
       });
     }, 2000);
   }, []);
@@ -1022,7 +1029,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
     onPlayerDataSync((data) => {
       const s = stateRef.current;
-      // Apply server data to local state (NO placedItems — managed by items:sync)
       if (data.coins !== undefined) s.player.coins = data.coins;
       if (data.xp !== undefined) s.player.xp = data.xp;
       if (data.level !== undefined) s.player.level = data.level;
@@ -1033,6 +1039,13 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (data.dailyQuests) s.dailyQuests = data.dailyQuests;
       if (data.pets) s.player.pets = data.pets;
       if (data.activePet !== undefined) s.player.activePet = data.activePet;
+      if (data.placedItems) s.player.placedItems = data.placedItems;
+      if (data.tileOverrides) s.tileOverrides = data.tileOverrides;
+      if (data.myRoom) s.player.myRoom = data.myRoom;
+      if (data.posX !== undefined && data.posY !== undefined) {
+        s.player.x = data.posX;
+        s.player.y = data.posY;
+      }
       console.log('[MP] Player data synced from server');
     });
 

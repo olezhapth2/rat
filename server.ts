@@ -75,6 +75,10 @@ interface PlayerData {
   dailyQuests: { date: string; progress: Record<string, number>; claimed: string[] };
   pets: string[];
   activePet: string | null;
+  tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
+  posX: number;
+  posY: number;
+  myRoom: string[];
 }
 
 interface CustomAchievement {
@@ -448,6 +452,10 @@ app.prepare().then(() => {
       const saved = playersDb[playerKey];
       if (saved) {
         socket.emit('player:data_sync', saved);
+        if (saved.posX !== undefined && saved.posY !== undefined) {
+          player.x = saved.posX;
+          player.y = saved.posY;
+        }
         console.log(`[Data] Loaded saved data for "${data.name}"`);
       }
     });
@@ -903,6 +911,10 @@ app.prepare().then(() => {
         dailyQuests: { date: '', progress: {}, claimed: [] },
         pets: [],
         activePet: null,
+        tileOverrides: {},
+        posX: 16 * 40 + 20,
+        posY: 13 * 40 + 20,
+        myRoom: [],
       };
       savePlayers(playersDb);
       socket.emit('admin:player-added', { name: data.name, charId: data.charId });

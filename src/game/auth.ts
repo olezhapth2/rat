@@ -81,6 +81,7 @@ export function getCurrentUser(): UserData | null {
       avatar: session.avatar || '',
       login: session.login || '',
       photoTaken: session.photoTaken || false,
+      admin: session.admin || false,
     };
   } catch {
     return null;

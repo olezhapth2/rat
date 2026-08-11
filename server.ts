@@ -1117,7 +1117,7 @@ app.prepare().then(() => {
       // Sync to online player by login email via loggedInUsers
       for (const [sid, loginEmail] of loggedInUsers) {
         if (loginEmail === key) {
-          io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, role: user.role, avatar: user.avatar });
+          io.to(sid).emit('auth:user-updated', { name: user.name, charId: user.charId, role: user.role, avatar: user.avatar, admin: !!user.admin });
         }
       }
       // Confirm to admin panel

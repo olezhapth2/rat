@@ -1634,16 +1634,13 @@ function GameInner({ authUser }: { authUser: UserData }) {
         right: 0,
         zIndex: 9999,
         pointerEvents: 'none',
-        display: 'flex',
-        justifyContent: 'center',
         lineHeight: 0,
-        transform: 'scale(0.667)',
-        transformOrigin: 'top center',
+        fontSize: 0,
       }}>
         <img
           src="/sprites/banner.png"
           alt="SickRat Office"
-          style={{ display: 'block' }}
+          style={{ display: 'block', width: '100vw', height: 'auto' }}
         />
       </div>
 

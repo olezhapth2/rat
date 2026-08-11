@@ -5,8 +5,6 @@ const F = 1; // floor (walkable)
 const W = 2; // wall (solid)
 const S = 3; // side wall — visual-only wall-window overlay on floor (walkable)
 
-export const SIDE_WALL_DEPTH = 3; // S = 3 tiles tall
-
 export const MAP_W = 58;
 export const MAP_H = 45;
 export const MAP_PW = MAP_W * TILE;
@@ -217,7 +215,7 @@ export const BOT_REACTIONS: Record<string, string[]> = {
 };
 
 export const BOT_CONVERSATIONS: string[][] = [
-  ['Олег', 'Олег', 'Код готов', 'Проверяю'],
+  ['Олег', 'Крыска', 'Код готов', 'Проверяю'],
 ];
 
 export interface ShopItem {

@@ -1,4 +1,4 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, SIDE_WALL_DEPTH, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, MAP_W, MAP_H, canMove } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, MAP_W, MAP_H, canMove } from './constants';
 import type { Player, Bot, GameObject } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 

@@ -6,6 +6,8 @@ import { type CardGameState, createGame, joinGame, startGame, playCard, drawCard
 import { type OkiyaGameState, createOkiyaGame, joinOkiyaGame, playOkiyaMove } from './src/game/okiya';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import bcrypt from 'bcryptjs';
+import sharp from 'sharp';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = dev ? 'localhost' : '0.0.0.0';
@@ -101,8 +103,7 @@ interface UserAccount {
 
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) {
-    const fs = require('fs');
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    mkdirSync(DATA_DIR, { recursive: true });
   }
   // Ensure custom sprites directory exists
   const spritesDir = join(DATA_DIR, 'custom-sprites');
@@ -188,8 +189,9 @@ function loadUsers(): Record<string, UserAccount> {
     console.error('[Data] Failed to load users:', e);
   }
   // Default: only admin
+  const defaultHash = bcrypt.hashSync('123456', 10);
   return {
-    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: '123456', name: 'Олег', charId: 'pers1', role: 'Дизайнер', avatar: '', photoTaken: true, admin: true },
+    'olegdevyatow@gmail.com': { login: 'olegdevyatow@gmail.com', password: defaultHash, name: 'Олег', charId: 'pers1', role: 'Дизайнер', avatar: '', photoTaken: true, admin: true },
   };
 }
 
@@ -311,7 +313,6 @@ app.prepare().then(() => {
           // Save as character sprite
           const outName = `sprite_${Date.now()}.webp`;
           const outPath = join(DATA_DIR, 'custom-sprites', outName);
-          const sharp = require('sharp');
           await sharp(fileData).resize(80, 160).webp({ quality: 90 }).toFile(outPath);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ url: `/custom-sprites/${outName}`, charId: outName.replace('.webp', '') }));
@@ -1013,7 +1014,16 @@ app.prepare().then(() => {
         loggedInUsers.set(socket.id, key);
         return socket.emit('auth:result', { ok: true, firstLogin: true, user: { login: user.login, name: '', charId: user.charId, role: '', avatar: user.avatar, photoTaken: false, admin: !!user.admin } });
       }
-      if (user.password !== data.password) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
+      // Support both bcrypt hashes and legacy plaintext (migration)
+      const passwordMatch = user.password.startsWith('$2')
+        ? bcrypt.compareSync(data.password, user.password)
+        : user.password === data.password;
+      // Migrate plaintext to bcrypt on successful login
+      if (!user.password.startsWith('$2') && passwordMatch) {
+        user.password = bcrypt.hashSync(data.password, 10);
+        saveUsers(usersDb);
+      }
+      if (!passwordMatch) return socket.emit('auth:result', { ok: false, msg: 'Неверный пароль' });
       loggedInUsers.set(socket.id, key);
       const capName = user.name.charAt(0).toUpperCase() + user.name.slice(1);
       socket.emit('auth:result', { ok: true, user: { login: user.login, name: capName, charId: user.charId, role: user.role, avatar: user.avatar, photoTaken: user.photoTaken || false, admin: !!user.admin } });
@@ -1054,7 +1064,7 @@ app.prepare().then(() => {
       const user = usersDb[key];
       if (!user) return socket.emit('auth:result', { ok: false, msg: 'Логин не найден' });
       if (user.password) return socket.emit('auth:result', { ok: false, msg: 'Пароль уже установлен' });
-      user.password = data.password;
+      user.password = bcrypt.hashSync(data.password, 10);
       user.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
       user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       saveUsers(usersDb);
@@ -1101,7 +1111,7 @@ app.prepare().then(() => {
       if (data.charId !== undefined) user.charId = data.charId;
       if (data.role !== undefined) user.role = data.role.charAt(0).toUpperCase() + data.role.slice(1);
       if (data.avatar !== undefined) user.avatar = data.avatar;
-      if (data.password !== undefined && data.password.length > 0) user.password = data.password;
+      if (data.password !== undefined && data.password.length > 0) user.password = bcrypt.hashSync(data.password, 10);
       if (data.admin !== undefined) user.admin = data.admin;
       saveUsers(usersDb);
       // Sync to online player by login email via loggedInUsers

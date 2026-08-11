@@ -1632,14 +1632,16 @@ function GameInner({ authUser }: { authUser: UserData }) {
         top: 0,
         left: 0,
         right: 0,
-        height: 75,
         zIndex: 9999,
         pointerEvents: 'none',
+        lineHeight: 0,
       }}>
         <img
-          src="/sprites/banner.webp"
+          src="/sprites/banner.png"
           alt="SickRat Office"
-          style={{ width: '100%', height: '100%', objectFit: 'fill', imageRendering: 'pixelated', display: 'block' }}
+          width={2036}
+          height={75}
+          style={{ width: '100%', display: 'block' }}
         />
       </div>
 

@@ -331,6 +331,13 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'sign_sanya', n: 'Саня', e: '🏷️', p: 0, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/таблички/Плакат_Саня.webp' },
     { id: 'sign_olesya', n: 'Олеся', e: '🏷️', p: 0, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/таблички/Плакат_Oлеся.webp' },
   ],
+  carpets: [
+    { id: 'carpet_puddle', n: 'Лужа', e: '🟦', p: 0, w: 3, h: 3, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/floor/ковры/Ковер_Лужа.webp' },
+    { id: 'carpet_glitch', n: 'Глитч', e: '🟪', p: 0, w: 3, h: 3, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/floor/ковры/Ковер_Глитч.webp' },
+    { id: 'carpet_rainbow', n: 'Радуга', e: '🌈', p: 0, w: 3, h: 3, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/floor/ковры/Ковер_Радуга.webp' },
+    { id: 'carpet_sun', n: 'Солнце', e: '☀️', p: 0, w: 3, h: 3, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/floor/ковры/Ковер_Солнце.webp' },
+    { id: 'carpet_red', n: 'Красный', e: '🟥', p: 0, w: 3, h: 3, surface: 'floor' as const, noCollision: true, sprite: '/sprites/objects/floor/ковры/Ковер_красный.webp' },
+  ],
   pets: [
     { id: 'pet_pony', n: 'Пони', e: '🐴', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp', pet: true },
     { id: 'pet_sloth', n: 'Ленивец', e: '🦥', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.webp', pet: true },

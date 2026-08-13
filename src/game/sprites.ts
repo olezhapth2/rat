@@ -135,10 +135,10 @@ export function hasSprite(charId: string, _hatId: string, _dir: Direction, _stat
 
 // === Pet Sprite Cache ===
 const PET_FILES: Record<string, string> = {
-  pet_cat: '/sprites/pets/pet1.webp',
-  pet_dog: '/sprites/pets/pet2.webp',
-  pet_bird: '/sprites/pets/pet3.webp',
-  pet_bunny: '/sprites/pets/pet4.webp',
+  pet_pony: '/sprites/pets/pet1.webp',
+  pet_sloth: '/sprites/pets/pet2.webp',
+  pet_lizard: '/sprites/pets/pet3.webp',
+  pet_cat: '/sprites/pets/pet4.webp',
   pet_rat: '/sprites/pets/petrat.webp',
 };
 const petCache: Map<string, HTMLImageElement> = new Map();

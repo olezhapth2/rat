@@ -315,10 +315,10 @@ export const SHOP: Record<string, ShopItem[]> = {
     { id: 'poster_chasy', n: 'Часы', e: '🕐', p: 90, w: 2, h: 3, surface: 'wall' as const, noCollision: true, sprite: '/sprites/objects/wall/Плакат_Часы.webp' },
   ],
   pets: [
-    { id: 'pet_cat', n: 'Кот', e: '🐱', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp', pet: true },
-    { id: 'pet_dog', n: 'Пони', e: '🐶', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.webp', pet: true },
-    { id: 'pet_bird', n: 'Ленивец', e: '🐦', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.webp', pet: true },
-    { id: 'pet_bunny', n: 'Ящерица', e: '🐰', p: 130, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.webp', pet: true },
+    { id: 'pet_pony', n: 'Пони', e: '🐴', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet1.webp', pet: true },
+    { id: 'pet_sloth', n: 'Ленивец', e: '🦥', p: 150, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet2.webp', pet: true },
+    { id: 'pet_lizard', n: 'Ящерица', e: '🦎', p: 120, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet3.webp', pet: true },
+    { id: 'pet_cat', n: 'Кот', e: '🐱', p: 130, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/pet4.webp', pet: true },
     { id: 'pet_rat', n: 'Крыса', e: '🐀', p: 100, w: 1, h: 1, surface: 'floor' as const, noCollision: true, sprite: '/sprites/pets/petrat.webp', pet: true },
   ],
 };

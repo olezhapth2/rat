@@ -24,7 +24,7 @@ Browser-гра в стиле top-down RPG с пиксельной графико
 16. [Retro FX](#retro-fx)
 17. [Текущее состояние](#текущее-состояние)
 18. [Что можно доделать](#что-можно-доделать)
-19. [Деплой на Railway](#деплой-на-railway)
+19. [Деплой](#деплой)
 20. [Деплой на VPS + Docker (рекомендуется)](#деплой-на-vps--docker-рекомендуется)
 21. [Вынос данных с локала](#вынос-данных-с-локала)
 22. [Структура файлов](#структура-файлов)
@@ -56,7 +56,7 @@ Browser-гра в стиле top-down RPG с пиксельной графико
 | Мультиплеер | Socket.IO (WebSocket) |
 | Иконки | @iconify/react (streamline-pixel) |
 | Сервер | Кастомный HTTP + Socket.IO на tsx |
-| Деплой | Railway (авто-деплой из GitHub) |
+| Деплой | VPS (systemd + nginx) |
 
 ---
 
@@ -203,7 +203,7 @@ NEXT_PUBLIC_SERVER_URL=http://localhost:3001
 | `custom-achievements.json` | Пользовательские достижения (создаются админом) |
 | `custom-sprites/` | Загруженные пользовательские спрайты |
 
-> **Важно:** На Railway `.game-data/` ephemeral — данные сбрасываются при каждом деплое. Для персистентности нужно подключить внешнее хранилище.
+> **Важно:** Данные хранятся на диске VPS в `.game-data/`. При деплее через `git pull` данные сохраняются.
 
 ---
 
@@ -427,7 +427,7 @@ NEXT_PUBLIC_SERVER_URL=http://localhost:3001
 - Activity feed с авто-скрытием
 - ESC для закрытия оверлеев
 - Единый стиль закрытия окон (X)
-- Деплой на Railway
+- Деплой на VPS
 
 ### Работает частично
 
@@ -441,7 +441,7 @@ NEXT_PUBLIC_SERVER_URL=http://localhost:3001
 
 ### Приоритет высокий
 
-- [ ] **Персистентность данных** — Railway-данные ephemeral. Нужно: PostgreSQL / SQLite / Redis / S3 для хранения
+- [x] **Персистентность данных** — данные хранятся на диске VPS в `.game-data/`
 - [ ] **Система комнат/дверей** — сейчас единая карта, нет физических дверей между кабинетами
 - [ ] **Чат** — сейчас только эмодзи. Добавить текстовый чат
 - [ ] **Оффлайн-сохранение** — сейчас данные теряются при разрыве соединения
@@ -467,21 +467,26 @@ NEXT_PUBLIC_SERVER_URL=http://localhost:3001
 
 ---
 
-## Деплой на Railway
+## Деплой
+
+### Текущий деплой
+
+- URL: `https://office.secretgang.world`
+- Сервер: VPS `5.129.245.202`
+- Путь: `/var/www/rat`
+
+### Быстрый деплой (текущий)
 
 ```bash
-# Автоматический деплой из GitHub
-# Railway деплоит при пуше в main
-
-# Переменные окружения в Railway:
-PORT=3001
-NODE_ENV=production
+ssh root@5.129.245.202 "cd /var/www/rat && git pull && npm install && npm run build && systemctl restart game"
 ```
 
-Текущий URL: `https://rat-production-cf7f.up.railway.app`
+### Первичная установка на VPS
 
-Для работы спрайтов: файлы в `public/` автоматически раздаются статически.
-Для данных: `.game-data/` — ephemeral на Railway (сбрасывается при деплое).
+```bash
+ssh root@5.129.245.202
+bash /var/www/rat/deploy/deploy.sh
+```
 
 ---
 
@@ -535,138 +540,48 @@ game-next/
 ├── package.json
 ├── tsconfig.json
 ├── next.config.ts
-├── railway.json
 └── README.md
 ```
 
 ---
 
-## Деплой на VPS + Docker (рекомендуется)
-
-### Почему VPS + Docker
+## Деплой на VPS (текущий)
 
 | Параметр | Значение |
 |----------|----------|
-| Стоимость | $5-10/мес |
-| Сложность | Средняя |
-| Доступ к файлам | Полный (SSH) |
-| Данные | Persistent на диске |
+| Сервер | VPS `5.129.245.202` |
+| Домен | `https://office.secretgang.world` |
+| Путь | `/var/www/rat` |
+| Сервис | systemd (`game.service`) |
+| Reverse proxy | nginx |
 
-**Преимущества:**
-- Полный контроль над данными
-- SSH доступ для заказчика
-- Данные не теряются при перезапусках
-- Легко бэкапить
-- Масштабируется
-- Профессионально
-
-**Где арендовать VPS:**
-- Hetzner: `https://www.hetzner.com/cloud/` — от €4.5/мес
-- DigitalOcean: `https://www.digitalocean.com/` — от $5/мес
-- TimeWeb: `https://timeweb.cloud/` — от 99₽/мес
-- Yandex Cloud: `https://cloud.yandex.ru/` — от 500₽/мес
-
-### Dockerfile
-
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Копируем зависимости
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Копируем исходники
-COPY . .
-
-# Сборка
-RUN npm run build
-
-# Создаём директорию для данных
-RUN mkdir -p /app/.game-data
-
-EXPOSE 3001
-
-CMD ["node", "server.ts"]
-```
-
-### docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  secret-gang:
-    build: .
-    container_name: secret-gang
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./game-data:/app/.game-data
-      - ./logs:/app/logs
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-```
-
-### Скрипт деплоя (deploy.sh)
+### Быстрый деплой
 
 ```bash
-#!/bin/bash
-echo "🚀 Деплой SECRET GANG..."
-
-# Остановка старой версии
-docker-compose down
-
-# Сборка нового образа
-docker-compose build --no-cache
-
-# Запуск
-docker-compose up -d
-
-echo "✅ Игра запущена на http://$(hostname -I | awk '{print $1}'):3001"
+ssh root@5.129.245.202 "cd /var/www/rat && git pull && npm install && npm run build && systemctl restart game"
 ```
 
-### Структура данных на VPS
-
-```
-/home/client/secret-gang/
-├── docker-compose.yml
-├── game-data/              ← persistent (volume)
-│   ├── users.json
-│   ├── players.json
-│   ├── leaderboards.json
-│   └── custom-achievements.json
-├── logs/
-│   └── server.log
-└── public/sprites/         ← спрайты
-```
-
-### Команды для заказчика
+### Первичная установка
 
 ```bash
-# Запуск
-docker-compose up -d
+ssh root@5.129.245.202
+bash /var/www/rat/deploy/deploy.sh
+```
 
-# Остановка
-docker-compose down
+### Управление сервисом
 
-# Обновление
-git pull
-docker-compose up -d --build
+```bash
+# Статус
+systemctl status game
+
+# Перезапуск
+systemctl restart game
 
 # Логи
-docker-compose logs -f
+journalctl -u game -f
 
-# Резервное копирование
-cp -r game-data game-data-backup-$(date +%Y%m%d)
+# Бэкап данных
+cp -r /var/www/rat/.game-data /var/www/rat/.game-data-backup-$(date +%Y%m%d)
 ```
 
 ---

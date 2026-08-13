@@ -1,0 +1,13 @@
+[Unit]
+Description=Game Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/rat
+ExecStart=/usr/bin/npx tsx server.ts
+Restart=always
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

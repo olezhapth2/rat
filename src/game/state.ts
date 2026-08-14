@@ -631,13 +631,13 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   const dyp = player.y - bot.y;
   const distToPlayer = Math.sqrt(dxp * dxp + dyp * dyp);
 
-  // If kryska has stolen coins — run away from player
+  // If kryska has stolen coins — run away then wander until caught
   if (bot._stolenCoins > 0) {
     bot._chasingPlayer = true;
     const elapsedSinceSteal = now - bot._stealTime;
 
     // Auto-catch: only after 2 seconds grace period
-    if (elapsedSinceSteal > 2000 && distToPlayer < TILE * 2) {
+    if (elapsedSinceSteal > 2000 && distToPlayer < TILE * 1.5) {
       const coins = bot._stolenCoins;
       state.player.coins += coins;
       logActivity(state, '🐀', `Крыска выронила ${coins} алт!`);
@@ -653,39 +653,66 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       return;
     }
 
-    // Chase timer: 15 seconds then give up
-    bot._chaseTimer -= dt;
-    if (bot._chaseTimer <= 0) {
-      state.player.coins += bot._stolenCoins;
-      logActivity(state, '🐀', `Крыска выбросила ${bot._stolenCoins} алт и убежала!`);
-      bot._speechBubble = '*пиии!* 😰';
-      bot._speechTime = now;
-      bot._emoji = '💨';
-      bot._emojiTime = now;
-      bot._stolenCoins = 0;
-      bot._chaseTimer = 0;
-      bot._chasingPlayer = false;
-      bot._stealTime = 0;
-      persistState(state);
-      return;
-    }
-
-    // Flee from player — 2x speed for first 5 seconds
-    const fleeMultiplier = elapsedSinceSteal < 5000 ? 2.0 : 1.0;
-    const fleeX = bot.x - (dxp / (distToPlayer || 1)) * TILE * 15;
-    const fleeY = bot.y - (dyp / (distToPlayer || 1)) * TILE * 15;
-    const fdx = fleeX - bot.x;
-    const fdy = fleeY - bot.y;
-    const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
-    if (fdist > 4) {
-      const spd = 1.0 * fleeMultiplier * bot._speedMultiplier * dt;
-      const nx = bot.x + (fdx / fdist) * spd;
-      const ny = bot.y + (fdy / fdist) * spd;
-      if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
-        bot.x = nx;
-        bot.y = ny;
-        bot._lastVx = (fdx / fdist) * 1.0;
-        bot._lastVy = (fdy / fdist) * 1.0;
+    // Phase 1 (0-5s): flee from player at 2x speed
+    // Phase 2 (5s+): wander randomly, don't seek anyone
+    if (elapsedSinceSteal < 5000) {
+      // Flee from player
+      const fleeMultiplier = 2.0;
+      const fleeX = bot.x - (dxp / (distToPlayer || 1)) * TILE * 15;
+      const fleeY = bot.y - (dyp / (distToPlayer || 1)) * TILE * 15;
+      const fdx = fleeX - bot.x;
+      const fdy = fleeY - bot.y;
+      const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
+      if (fdist > 4) {
+        const spd = fleeMultiplier * bot._speedMultiplier * dt;
+        const nx = bot.x + (fdx / fdist) * spd;
+        const ny = bot.y + (fdy / fdist) * spd;
+        if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
+          bot.x = nx;
+          bot.y = ny;
+          bot._lastVx = (fdx / fdist) * 1.0;
+          bot._lastVy = (fdy / fdist) * 1.0;
+        }
+      }
+    } else {
+      // Wander randomly while holding stolen coins
+      if (bot._roomTimer <= 0) {
+        const targets = [
+          { x: 8 * TILE, y: 5 * TILE },
+          { x: 18 * TILE, y: 14 * TILE },
+          { x: 24 * TILE, y: 14 * TILE },
+          { x: 36 * TILE, y: 5 * TILE },
+          { x: 36 * TILE, y: 14 * TILE },
+          { x: 15 * TILE, y: 30 * TILE },
+          { x: 4 * TILE, y: 30 * TILE },
+        ];
+        const t = targets[Math.floor(Math.random() * targets.length)];
+        bot.wanderTargetX = t.x;
+        bot.wanderTargetY = t.y;
+        bot._roomTimer = 40 + Math.random() * 60;
+      }
+      if (bot.wanderTargetX !== null && bot.wanderTargetY !== null) {
+        const dx = bot.wanderTargetX - bot.x;
+        const dy = bot.wanderTargetY - bot.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 4) {
+          const spd = 0.6 * dt;
+          const nx = bot.x + (dx / dist) * spd;
+          const ny = bot.y + (dy / dist) * spd;
+          if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
+            bot.x = nx;
+            bot.y = ny;
+            bot._lastVx = (dx / dist) * 0.6;
+            bot._lastVy = (dy / dist) * 0.6;
+          } else {
+            bot.wanderTargetX = null;
+            bot.wanderTargetY = null;
+            bot._roomTimer = 0;
+          }
+        } else {
+          bot.wanderTargetX = null;
+          bot.wanderTargetY = null;
+        }
       }
     }
 
@@ -751,7 +778,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   }
 
   // === Steal coins from nearby player ===
-  if (distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
+  if (bot._stolenCoins === 0 && distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
     const stealAmount = Math.min(
       state.player.coins,
       1 + Math.floor(Math.random() * 4) // steal 1-4 coins

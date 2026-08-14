@@ -634,9 +634,10 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   // If kryska has stolen coins — run away from player
   if (bot._stolenCoins > 0) {
     bot._chasingPlayer = true;
+    const elapsedSinceSteal = now - bot._stealTime;
 
-    // Auto-catch: if player is close enough, return coins automatically
-    if (distToPlayer < TILE * 2) {
+    // Auto-catch: only after 2 seconds grace period
+    if (elapsedSinceSteal > 2000 && distToPlayer < TILE * 2) {
       const coins = bot._stolenCoins;
       state.player.coins += coins;
       logActivity(state, '🐀', `Крыска выронила ${coins} алт!`);
@@ -647,6 +648,7 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       bot._stolenCoins = 0;
       bot._chaseTimer = 0;
       bot._chasingPlayer = false;
+      bot._stealTime = 0;
       persistState(state);
       return;
     }
@@ -654,7 +656,6 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     // Chase timer: 15 seconds then give up
     bot._chaseTimer -= dt;
     if (bot._chaseTimer <= 0) {
-      // Drop stolen coins (player gets them back)
       state.player.coins += bot._stolenCoins;
       logActivity(state, '🐀', `Крыска выбросила ${bot._stolenCoins} алт и убежала!`);
       bot._speechBubble = '*пиии!* 😰';
@@ -664,18 +665,20 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       bot._stolenCoins = 0;
       bot._chaseTimer = 0;
       bot._chasingPlayer = false;
+      bot._stealTime = 0;
       persistState(state);
       return;
     }
 
-    // Flee from player
+    // Flee from player — 2x speed for first 5 seconds
+    const fleeMultiplier = elapsedSinceSteal < 5000 ? 2.0 : 1.0;
     const fleeX = bot.x - (dxp / (distToPlayer || 1)) * TILE * 15;
     const fleeY = bot.y - (dyp / (distToPlayer || 1)) * TILE * 15;
     const fdx = fleeX - bot.x;
     const fdy = fleeY - bot.y;
     const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
     if (fdist > 4) {
-      const spd = 1.0 * bot._speedMultiplier * dt;
+      const spd = 1.0 * fleeMultiplier * bot._speedMultiplier * dt;
       const nx = bot.x + (fdx / fdist) * spd;
       const ny = bot.y + (fdy / fdist) * spd;
       if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
@@ -756,8 +759,9 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     if (stealAmount > 0 && Math.random() < 0.3) {
       state.player.coins -= stealAmount;
       bot._stolenCoins = stealAmount;
-      bot._chaseTimer = 15; // 15 seconds to chase
+      bot._chaseTimer = 15;
       bot._chasingPlayer = true;
+      bot._stealTime = now;
       bot._speechBubble = '*ухватила!* 🐀';
       bot._speechTime = now;
       bot._emoji = '🧀';
@@ -881,6 +885,7 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
   kryska._stolenCoins = 0;
   kryska._chaseTimer = 0;
   kryska._chasingPlayer = false;
+  kryska._stealTime = 0;
   kryska._speechBubble = '*пиии!* 😰';
   kryska._speechTime = Date.now();
   kryska._emoji = '😨';

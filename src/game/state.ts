@@ -689,48 +689,61 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
     return;
   }
 
-  // Kryska patrols between rooms — only verified walkable tiles
-  if (bot._roomTimer <= 0) {
-    const targets = [
-      { x: 8 * TILE, y: 5 * TILE },
-      { x: 18 * TILE, y: 14 * TILE },
-      { x: 24 * TILE, y: 14 * TILE },
-      { x: 36 * TILE, y: 5 * TILE },
-      { x: 36 * TILE, y: 14 * TILE },
-      { x: 30 * TILE, y: 14 * TILE },
-      { x: 15 * TILE, y: 30 * TILE },
-      { x: 4 * TILE, y: 30 * TILE },
-    ];
-    const t = targets[Math.floor(Math.random() * targets.length)];
-    bot.wanderTargetX = t.x;
-    bot.wanderTargetY = t.y;
-    bot._roomTimer = 60 + Math.random() * 120;
-  }
+  // === No stolen coins — actively seek the player ===
+  if (bot._stealCooldown <= 0 && state.player.coins > 0) {
+    // Move toward the player
+    const spd = 0.7 * dt;
+    const nx = bot.x + (dxp / (distToPlayer || 1)) * spd;
+    const ny = bot.y + (dyp / (distToPlayer || 1)) * spd;
+    if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
+      bot.x = nx;
+      bot.y = ny;
+      bot._lastVx = (dxp / (distToPlayer || 1)) * 0.7;
+      bot._lastVy = (dyp / (distToPlayer || 1)) * 0.7;
+    }
+  } else {
+    // On cooldown — patrol between rooms
+    if (bot._roomTimer <= 0) {
+      const targets = [
+        { x: 8 * TILE, y: 5 * TILE },
+        { x: 18 * TILE, y: 14 * TILE },
+        { x: 24 * TILE, y: 14 * TILE },
+        { x: 36 * TILE, y: 5 * TILE },
+        { x: 36 * TILE, y: 14 * TILE },
+        { x: 30 * TILE, y: 14 * TILE },
+        { x: 15 * TILE, y: 30 * TILE },
+        { x: 4 * TILE, y: 30 * TILE },
+      ];
+      const t = targets[Math.floor(Math.random() * targets.length)];
+      bot.wanderTargetX = t.x;
+      bot.wanderTargetY = t.y;
+      bot._roomTimer = 60 + Math.random() * 120;
+    }
 
-  // Move toward target
-  if (bot.wanderTargetX !== null && bot.wanderTargetY !== null) {
-    const dx = bot.wanderTargetX - bot.x;
-    const dy = bot.wanderTargetY - bot.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Move toward patrol target
+    if (bot.wanderTargetX !== null && bot.wanderTargetY !== null) {
+      const dx = bot.wanderTargetX - bot.x;
+      const dy = bot.wanderTargetY - bot.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist > 4) {
-      const spd = 0.8 * dt;
-      const nx = bot.x + (dx / dist) * spd;
-      const ny = bot.y + (dy / dist) * spd;
-      if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
-        bot.x = nx;
-        bot.y = ny;
-        bot._lastVx = (dx / dist) * 0.8;
-        bot._lastVy = (dy / dist) * 0.8;
+      if (dist > 4) {
+        const spd = 0.8 * dt;
+        const nx = bot.x + (dx / dist) * spd;
+        const ny = bot.y + (dy / dist) * spd;
+        if (canMove(state.map, state.objects, nx, ny, bot.radius)) {
+          bot.x = nx;
+          bot.y = ny;
+          bot._lastVx = (dx / dist) * 0.8;
+          bot._lastVy = (dy / dist) * 0.8;
+        } else {
+          bot.wanderTargetX = null;
+          bot.wanderTargetY = null;
+          bot._roomTimer = 0;
+        }
       } else {
-        // Blocked — immediately pick a new target instead of waiting
         bot.wanderTargetX = null;
         bot.wanderTargetY = null;
-        bot._roomTimer = 0;
       }
-    } else {
-      bot.wanderTargetX = null;
-      bot.wanderTargetY = null;
     }
   }
 

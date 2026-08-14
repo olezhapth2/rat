@@ -327,7 +327,7 @@ export function dropItem(state: GameState, x: number, y: number): { ok: boolean;
   return { ok: true, msg: `Поставил ${def.e}` };
 }
 
-export function canPlaceItem(state: GameState, def: { w: number; h: number; surface: string }, x: number, y: number): boolean {
+export function canPlaceItem(state: GameState, def: { w: number; h: number; surface: string; noCollision?: boolean }, x: number, y: number): boolean {
   const mapW = state.map[0]?.length || 0;
   const mapH = state.map.length;
 
@@ -354,30 +354,33 @@ export function canPlaceItem(state: GameState, def: { w: number; h: number; surf
     }
   }
 
-  // Check collision with existing placed items (lenient — allow overlap)
-  for (const pi of state.player.placedItems) {
-    const piDef = ALL_ITEMS.find(i => i.id === pi.id);
-    if (!piDef) continue;
-    if ((piDef as any).noCollision) continue;
-    const margin = TILE * 0.3;
-    if (
-      x + margin < pi.x + piDef.w * TILE - margin &&
-      x + def.w * TILE - margin > pi.x + margin &&
-      y + margin < pi.y + piDef.h * TILE - margin &&
-      y + def.h * TILE - margin > pi.y + margin
-    ) return false;
-  }
+  // noCollision items (carpets) can be placed under other items
+  if (!def.noCollision) {
+    // Check collision with existing placed items (lenient — allow overlap)
+    for (const pi of state.player.placedItems) {
+      const piDef = ALL_ITEMS.find(i => i.id === pi.id);
+      if (!piDef) continue;
+      if ((piDef as any).noCollision) continue;
+      const margin = TILE * 0.3;
+      if (
+        x + margin < pi.x + piDef.w * TILE - margin &&
+        x + def.w * TILE - margin > pi.x + margin &&
+        y + margin < pi.y + piDef.h * TILE - margin &&
+        y + def.h * TILE - margin > pi.y + margin
+      ) return false;
+    }
 
-  // Check collision with furniture (lenient)
-  for (const obj of state.objects) {
-    if (!obj.solid || obj.noCollision) continue;
-    const margin = TILE * 0.3;
-    if (
-      x + margin < obj.x + obj.w * TILE - margin &&
-      x + def.w * TILE - margin > obj.x + margin &&
-      y + margin < obj.y + obj.h * TILE - margin &&
-      y + def.h * TILE - margin > obj.y + margin
-    ) return false;
+    // Check collision with furniture (lenient)
+    for (const obj of state.objects) {
+      if (!obj.solid || obj.noCollision) continue;
+      const margin = TILE * 0.3;
+      if (
+        x + margin < obj.x + obj.w * TILE - margin &&
+        x + def.w * TILE - margin > obj.x + margin &&
+        y + margin < obj.y + obj.h * TILE - margin &&
+        y + def.h * TILE - margin > obj.y + margin
+      ) return false;
+    }
   }
 
   return true;

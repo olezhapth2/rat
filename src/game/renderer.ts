@@ -91,7 +91,20 @@ export function render(
     }
   }
 
-  // ===== 2. WALL-WINDOW (S=3) =====
+  // ===== 2. CARPETS — always rendered under everything (on floor, below walls/items/players) =====
+  for (const obj of objects) {
+    if (obj.type !== 'furniture') continue;
+    if (obj.surface === 'wall') continue;
+    if (!obj.id?.includes('carpet_')) continue;
+    drawFurniture(ctx, obj);
+  }
+  for (const obj of placedObjects) {
+    if (obj.surface === 'wall') continue;
+    if (!obj.id?.includes('carpet_')) continue;
+    drawFurniture(ctx, obj);
+  }
+
+  // ===== 3. WALL-WINDOW (S=3) =====
   const sideImg = getSideWallImage();
   for (let y = sy; y < ey; y++) {
     if (!map[y]) continue;
@@ -141,15 +154,17 @@ export function render(
     entities.push({ sortY: bottomY - 1000, draw: () => drawFurniture(ctx, obj) });
   }
 
-  // Floor items
+  // Floor items (excluding carpets — drawn in step 3)
   for (const obj of objects) {
     if (obj.type !== 'furniture') continue;
     if (obj.surface === 'wall') continue;
+    if (obj.id?.includes('carpet_')) continue;
     const bottomY = obj.y + obj.h * TILE;
     entities.push({ sortY: bottomY, draw: () => drawFurniture(ctx, obj) });
   }
   for (const obj of placedObjects) {
     if (obj.surface === 'wall') continue;
+    if (obj.id?.includes('carpet_')) continue;
     const bottomY = obj.y + obj.h * TILE;
     entities.push({ sortY: bottomY, draw: () => drawFurniture(ctx, obj) });
   }

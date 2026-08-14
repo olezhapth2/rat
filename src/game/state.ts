@@ -635,7 +635,23 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   if (bot._stolenCoins > 0) {
     bot._chasingPlayer = true;
 
-    // Chase timer: 5 seconds then give up
+    // Auto-catch: if player is close enough, return coins automatically
+    if (distToPlayer < TILE * 2) {
+      const coins = bot._stolenCoins;
+      state.player.coins += coins;
+      logActivity(state, '🐀', `Крыска выронила ${coins} алт!`);
+      bot._speechBubble = '*пиии!* 😰';
+      bot._speechTime = now;
+      bot._emoji = '😨';
+      bot._emojiTime = now;
+      bot._stolenCoins = 0;
+      bot._chaseTimer = 0;
+      bot._chasingPlayer = false;
+      persistState(state);
+      return;
+    }
+
+    // Chase timer: 15 seconds then give up
     bot._chaseTimer -= dt;
     if (bot._chaseTimer <= 0) {
       // Drop stolen coins (player gets them back)
@@ -670,18 +686,6 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
       }
     }
 
-    // If player is far enough, eat the coins
-    if (distToPlayer > TILE * 12) {
-      bot._speechBubble = '*проглотила* 🧀';
-      bot._speechTime = now;
-      bot._emoji = '💀';
-      bot._emojiTime = now;
-      logActivity(state, '🐀', `Крыска съела ${bot._stolenCoins} алт!`);
-      bot._stolenCoins = 0;
-      bot._chaseTimer = 0;
-      bot._chasingPlayer = false;
-      persistState(state);
-    }
     return;
   }
 
@@ -734,12 +738,12 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   if (distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
     const stealAmount = Math.min(
       state.player.coins,
-      10 + Math.floor(Math.random() * 40) // steal 10-50 coins
+      1 + Math.floor(Math.random() * 4) // steal 1-4 coins
     );
     if (stealAmount > 0 && Math.random() < 0.3) {
       state.player.coins -= stealAmount;
       bot._stolenCoins = stealAmount;
-      bot._chaseTimer = 5; // 5 seconds to chase
+      bot._chaseTimer = 15; // 15 seconds to chase
       bot._chasingPlayer = true;
       bot._speechBubble = '*ухватила!* 🐀';
       bot._speechTime = now;
@@ -864,7 +868,6 @@ export function takeBackFromKryska(state: GameState, kryskaId: string): { ok: bo
   kryska._stolenCoins = 0;
   kryska._chaseTimer = 0;
   kryska._chasingPlayer = false;
-  kryska._speedMultiplier += 0.05; // +5% speed permanently
   kryska._speechBubble = '*пиии!* 😰';
   kryska._speechTime = Date.now();
   kryska._emoji = '😨';

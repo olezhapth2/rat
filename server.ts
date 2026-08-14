@@ -930,13 +930,30 @@ app.prepare().then(() => {
     socket.on('admin:delete-player', (data: { key: string }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       if (!playersDb[data.key]) return socket.emit('admin:error', 'Player not found');
+      // Also delete associated user
+      const userKey = Object.keys(usersDb).find(k => usersDb[k].name?.toLowerCase() === data.key);
+      if (userKey) {
+        delete usersDb[userKey];
+        saveUsers(usersDb);
+      }
       delete playersDb[data.key];
       savePlayers(playersDb);
+      // Kick online player if connected
+      for (const [sid, loginEmail] of loggedInUsers) {
+        if (userKey && loginEmail === userKey) {
+          io.to(sid).emit('auth:force-kick', { reason: 'Player deleted' });
+          loggedInUsers.delete(sid);
+        }
+      }
       socket.emit('admin:player-deleted', { key: data.key });
-      const list = Object.entries(playersDb).map(([k, d]) => ({
+      const pList = Object.entries(playersDb).map(([k, d]) => ({
         key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
       }));
-      socket.emit('admin:players-list', list);
+      socket.emit('admin:players-list', pList);
+      const uList = Object.entries(usersDb).map(([k, u]) => ({
+        login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
+      }));
+      socket.emit('auth:users-list', uList);
     });
 
     // Adjust money
@@ -1134,6 +1151,14 @@ app.prepare().then(() => {
       const key = data.login.trim().toLowerCase();
       if (!usersDb[key]) return socket.emit('admin:error', 'User not found');
       if (usersDb[key].admin) return socket.emit('admin:error', 'Нельзя удалить админа');
+      // Also delete associated player
+      if (usersDb[key].name) {
+        const playerKey = usersDb[key].name.toLowerCase();
+        if (playersDb[playerKey]) {
+          delete playersDb[playerKey];
+          savePlayers(playersDb);
+        }
+      }
       delete usersDb[key];
       saveUsers(usersDb);
       // Kick online player if connected
@@ -1148,6 +1173,10 @@ app.prepare().then(() => {
         login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
       socket.emit('auth:users-list', list);
+      const pList = Object.entries(playersDb).map(([k, d]) => ({
+        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
+      }));
+      socket.emit('admin:players-list', pList);
     });
 
     // === Leaderboards ===

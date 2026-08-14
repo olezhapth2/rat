@@ -332,6 +332,25 @@ app.prepare().then(() => {
     cors: { origin: '*' },
   });
 
+  // Daily whiteboard reset at 00:00 Moscow time (UTC+3)
+  function scheduleWhiteboardReset() {
+    const now = new Date();
+    const mskOffset = 3 * 60 * 60 * 1000;
+    const mskNow = new Date(now.getTime() + mskOffset);
+    const nextMidnight = new Date(Date.UTC(mskNow.getUTCFullYear(), mskNow.getUTCMonth(), mskNow.getUTCDate() + 1, 0, 0, 0));
+    const nextMidnightLocal = new Date(nextMidnight.getTime() - mskOffset);
+    const delay = nextMidnightLocal.getTime() - now.getTime();
+    console.log(`[Whiteboard] Next reset in ${Math.round(delay / 1000 / 60)} min`);
+    setTimeout(() => {
+      whiteboardData = '';
+      scheduleSave();
+      io.emit('whiteboard:sync', '');
+      console.log('[Whiteboard] Daily reset at 00:00 MSK');
+      scheduleWhiteboardReset();
+    }, delay);
+  }
+  scheduleWhiteboardReset();
+
   // === Player state ===
   interface ServerPlayer {
     id: string;

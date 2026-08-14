@@ -2676,14 +2676,15 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
         const ownedPet = isPet ? state.player.pets.includes(pItem.id) : false;
         const activePetItem = isPet && state.player.activePet === pItem.id;
         return (
-          <div className="px-panel" style={{ position: 'sticky', top: 0, zIndex: 10, padding: 12, marginBottom: 10, display: 'flex', gap: 14, alignItems: 'center', background: 'var(--px-panel)', boxShadow: '0 4px 12px rgba(0,0,0,.5)' }}>
+          <div className="px-panel" style={{ position: 'sticky', top: 0, zIndex: 10, padding: 12, marginBottom: 10, display: 'flex', gap: 14, alignItems: 'center', background: pItem.rarity ? RARITY_COLORS[pItem.rarity] + '18' : 'var(--px-panel)', boxShadow: '0 4px 12px rgba(0,0,0,.5)' }}>
             <div style={{ width: 80, height: 80, background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)', flexShrink: 0 }}>
               <img src={pItem.sprite} alt={pItem.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: 'var(--px-text)', marginBottom: 4 }}>{pItem.n}</div>
-              <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 4 }}>
-                {isPet ? 'ПИТОМЕЦ' : `${pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · ${pItem.w}×${pItem.h}`}
+              <div style={{ fontSize: 9, color: pItem.rarity ? RARITY_COLORS[pItem.rarity] : 'var(--px-text-dim)', marginBottom: 4, textTransform: 'uppercase' }}>
+                {pItem.rarity || (isPet ? 'ПИТОМЕЦ' : `${pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · ${pItem.w}×${pItem.h}`)}
+                {pItem.rarity && ` · ${pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · ${pItem.w}×${pItem.h}`}
               </div>
               <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>
                 {isPet ? (ownedPet ? (activePetItem ? 'АКТИВЕН' : 'КУПЛЕН') : `${pItem.p} COINS`) : `${pItem.p} COINS`}
@@ -2714,7 +2715,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
       })()}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-        {(SHOP as any)[cat]?.map((item: any) => {
+        {(SHOP as Record<string, import('../game/constants').ShopItem[]>)?.[cat]?.map((item) => {
           const isPet = item.pet;
           const petOwned = isPet ? state.player.pets.includes(item.id) : false;
           const petActive = isPet && state.player.activePet === item.id;
@@ -2728,12 +2729,16 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                 padding: 8,
                 textAlign: 'center',
                 borderColor: preview === item.id ? 'var(--px-accent)' : petActive ? '#4ecca3' : undefined,
+                background: item.rarity ? RARITY_COLORS[item.rarity] + '18' : undefined,
               }}
             >
               <div style={{ width: '100%', aspectRatio: '1', background: 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 120 }}>
                 <img src={item.sprite} alt={item.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{item.n}</div>
+              <div style={{ fontSize: 9, color: item.rarity ? RARITY_COLORS[item.rarity] : 'var(--px-text-dim)', marginTop: 2, textTransform: 'uppercase' }}>
+                {item.rarity || ''}
+              </div>
               <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginTop: 2 }}>
                 {isPet ? (
                   petOwned ? (
@@ -2967,7 +2972,7 @@ function ProfileView({ state, profilePlayer }: { state: GameState; profilePlayer
 }
 
 const AVATARS = ['🧑‍🚀', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🔧', '👩‍🔬', '🧑‍🍳', '🦊', '🐱', '🐨', '🐸', '👻'];
-import { SHOP } from '../game/constants';
+import { SHOP, RARITY_COLORS } from '../game/constants';
 
 // ===== ACHIEVEMENTS =====
 function AchievementsView({ state }: { state: GameState }) {

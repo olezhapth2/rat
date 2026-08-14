@@ -5,6 +5,7 @@ import {
   adminGetPlayers,
   adminAdjustMoney,
   adminClearInventory,
+  adminDeletePlayer,
   adminGetAchievements,
   adminCreateAchievement,
   adminGrantAchievement,
@@ -330,6 +331,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
               <Icon icon={ICONS.trophy} width={18} height={18} />
                       {p.achievements.length}
                     </div>
+                    <button onClick={() => { if (confirm(`Удалить игрока "${p.name}"?`)) { adminDeletePlayer(p.key); setTimeout(() => adminGetPlayers(), 500); } }} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px' }}>DEL</button>
                   </div>
                 ))}
               </div>

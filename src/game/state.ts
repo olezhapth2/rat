@@ -105,7 +105,6 @@ function savePartial(state: GameState) {
       role: state.player.role,
       furniture: state.player.furniture,
       myRoom: state.player.myRoom,
-      placedItems: state.player.placedItems,
       achievements: state.player.achievements,
       charId: state.player.charId,
       hatId: state.player.hatId,
@@ -113,7 +112,6 @@ function savePartial(state: GameState) {
       doorName: state.player.doorName,
       pets: state.player.pets,
       activePet: state.player.activePet,
-      tileOverrides: state.tileOverrides,
     })
   );
 }
@@ -138,7 +136,7 @@ export function createInitialState(authUser?: { charId: string; name: string; ro
     daily: (saved?.daily as string) || null,
     furniture: (saved?.furniture as string[]) || [],
     myRoom: (saved?.myRoom as string[]) || [],
-    placedItems: (saved?.placedItems as PlacedItem[]) || [],
+    placedItems: [] as PlacedItem[],
     carrying: null as string | null,
     _dropPreview: null as { x: number; y: number; w: number; h: number } | null,
     activities: [] as Activity[],
@@ -162,8 +160,7 @@ export function createInitialState(authUser?: { charId: string; name: string; ro
   const botAnims: Record<string, AnimState> = {};
   for (const b of bots) botAnims[b.id] = createAnimState();
 
-  const tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> =
-    (saved?.tileOverrides as Record<string, { type: 'floor' | 'wall'; textureIndex: number }>) || {};
+  const tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
 
   const state: GameState = {
     player,

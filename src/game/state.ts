@@ -156,7 +156,6 @@ export function createInitialState(authUser?: { charId: string; name: string; ro
 
   if (player.daily !== today) {
     player.daily = today;
-    player.coins += 100;
   }
 
   const bots = createBots();
@@ -466,7 +465,7 @@ export function rpsGame(state: GameState): {
   let reward = 0;
   if ((pc === 0 && bc === 2) || (pc === 1 && bc === 0) || (pc === 2 && bc === 1)) {
     result = 'Ты выиграл!';
-    reward = 20;
+    reward = 2;
     addXP(state, 20);
   } else if (pc !== bc) {
     result = 'Ты проиграл!';
@@ -493,16 +492,16 @@ export function microwaveGame(state: GameState, stoppedAtMs: number): {
 
   if (diffSec < 0.3) {
     result = 'Идеально! 🔥';
-    reward = 35;
+    reward = 4;
   } else if (diffSec < 0.8) {
     result = 'Отлично! ⚡';
-    reward = 25;
+    reward = 3;
   } else if (diffSec < 1.5) {
     result = 'Неплохо 👍';
-    reward = 15;
+    reward = 2;
   } else if (diffSec < 3.0) {
     result = 'Можно лучше 😐';
-    reward = 5;
+    reward = 1;
   } else {
     result = 'Промах 😅';
     reward = 0;

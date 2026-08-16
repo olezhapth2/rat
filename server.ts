@@ -448,6 +448,17 @@ app.prepare().then(() => {
     }
     socket.emit('tile:sync', tileOverrides);
 
+    // Send user list for bot generation
+    const userList = Object.entries(usersDb)
+      .filter(([_, u]) => u.password) // only users who completed first login
+      .map(([key, u]) => ({
+        login: key,
+        name: u.name,
+        charId: u.charId,
+        avatar: u.avatar || '',
+      }));
+    socket.emit('users:list', userList);
+
     // Player registers
     socket.on('player:register', (data: { name: string; charId: string; hatId: string }) => {
       // Remove any existing entry with the same name (e.g. reconnect from another tab)

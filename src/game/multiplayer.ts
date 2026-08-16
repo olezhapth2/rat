@@ -135,6 +135,9 @@ export function connectAuth(): void {
   socket.on('admin:user-deleted', (data: any) => {
     onAuthUserDeletedCb?.(data);
   });
+  socket.on('users:list', (list: any[]) => {
+    onUsersListCb?.(list);
+  });
   socket.on('auth:force-kick', (data: { reason: string }) => {
     localStorage.removeItem('auth_session');
     window.location.reload();
@@ -557,12 +560,14 @@ let onAuthUsersListCb: ((list: any[]) => void) | null = null;
 let onAuthUserUpdatedCb: ((data: any) => void) | null = null;
 let onAuthUserDeletedCb: ((data: any) => void) | null = null;
 let onAuthUserSyncCb: ((data: any) => void) | null = null;
+let onUsersListCb: ((list: any[]) => void) | null = null;
 
 export function onAuthResult(cb: (data: { ok: boolean; msg?: string; user?: any; firstLogin?: boolean }) => void): void { onAuthResultCb = cb; }
 export function onAuthUsersList(cb: (list: any[]) => void): void { onAuthUsersListCb = cb; }
 export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpdatedCb = cb; }
 export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }
 export function onAuthUserSync(cb: (data: any) => void): void { onAuthUserSyncCb = cb; }
+export function onUsersList(cb: (list: any[]) => void): void { onUsersListCb = cb; }
 
 // === LEADERBOARD API ===
 export function submitLeaderboard(game: string, score: number): void {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS } from '../game/constants';
+import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, type Bot } from '../game/constants';
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
@@ -25,6 +25,7 @@ import {
   sendPlayerSave, onPlayerDataSync,
   submitLeaderboard, onLeaderboardSync, onLeaderboardUpdated,
   onOkiyaLobby, onCardgameLobby, startOkiyaGameMp, startCardGameMp,
+  onUsersList,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem, type LobbyGame,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
@@ -235,6 +236,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const [rpsSentChoice, setRpsSentChoice] = useState(false);
   const lastPosSentRef = useRef(0);
   const remoteEmojisRef = useRef<Record<string, { emoji: string; time: number }>>({});
+  const usersListRef = useRef<Array<{ login: string; name: string; charId: string; avatar: string }>>([]);
   const cardGameRef = useRef<any>(null);
   const cardGameMyHandRef = useRef<any[]>([]);
   const cardGameSelectedCardRef = useRef<string | null>(null);
@@ -922,6 +924,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
     });
     onDisconnected(() => setMpConnected(false));
 
+    onUsersList((list) => {
+      usersListRef.current = list;
+    });
+
     onPlayers((players) => {
       // Filter out self
       const myId = (window as any).__mpMyId;
@@ -1339,6 +1345,46 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
       const onlineCharIds = new Set(remotePlayersRef.current.map(rp => rp.charId));
       onlineCharIds.add(s.player.charId);
+
+      // Sync bots with user list from server
+      if (usersListRef.current.length > 0) {
+        const existingBotSpriteIds = new Set(s.bots.map(b => b.spriteId));
+        for (const user of usersListRef.current) {
+          if (!existingBotSpriteIds.has(user.charId)) {
+            // Find a walkable position near center
+            const spawnX = 15 * TILE + Math.random() * 10 * TILE;
+            const spawnY = 15 * TILE + Math.random() * 10 * TILE;
+            s.bots.push({
+              id: `bot_${user.login}`,
+              name: user.name || user.login,
+              color: '#888',
+              spriteId: user.charId,
+              x: spawnX,
+              y: spawnY,
+              radius: 8,
+              role: '',
+              wanderTimer: 0,
+              wanderTargetX: null,
+              wanderTargetY: null,
+              _speechBubble: null,
+              _speechTime: 0,
+              _emoji: null,
+              _emojiTime: 0,
+              _targetRoomId: null,
+              _roomTimer: 0,
+              _stealCooldown: 0,
+              _lastVx: 0,
+              _lastVy: 0,
+              _stolenCoins: 0,
+              _chaseTimer: 0,
+              _speedMultiplier: 1,
+              _chasingPlayer: false,
+              _stealTime: 0,
+            });
+          }
+        }
+      }
+
       updateBots(s, dt, onlineCharIds);
       const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.spriteId));
       // Update bot animations (only for visible bots)

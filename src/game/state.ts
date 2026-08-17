@@ -568,7 +568,22 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
           bot.y = ny;
           bot._lastVx = (dx / dist) * 0.5;
           bot._lastVy = (dy / dist) * 0.5;
+          bot._stuckFrames = 0;
         } else {
+          bot._stuckFrames++;
+          // If stuck for too long, teleport to a walkable tile
+          if (bot._stuckFrames > 60) {
+            for (let attempt = 0; attempt < 30; attempt++) {
+              const rx = Math.floor(Math.random() * MAP_W);
+              const ry = Math.floor(Math.random() * MAP_H);
+              if (map[ry]?.[rx] === 1 && canMove(map, objects, rx * TILE + TILE / 2, ry * TILE + TILE / 2, bot.radius)) {
+                bot.x = rx * TILE + TILE / 2;
+                bot.y = ry * TILE + TILE / 2;
+                bot._stuckFrames = 0;
+                break;
+              }
+            }
+          }
           bot.wanderTargetX = null;
           bot.wanderTargetY = null;
           bot._lastVx = 0;
@@ -580,6 +595,28 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
         bot._lastVx = 0;
         bot._lastVy = 0;
         bot._roomTimer = 200 + Math.random() * 300;
+      }
+    } else {
+      // No target — check if stuck in a wall (can't move in any direction)
+      if (!canMove(map, objects, bot.x + TILE, bot.y, bot.radius) &&
+          !canMove(map, objects, bot.x - TILE, bot.y, bot.radius) &&
+          !canMove(map, objects, bot.x, bot.y + TILE, bot.radius) &&
+          !canMove(map, objects, bot.x, bot.y - TILE, bot.radius)) {
+        bot._stuckFrames++;
+        if (bot._stuckFrames > 30) {
+          for (let attempt = 0; attempt < 30; attempt++) {
+            const rx = Math.floor(Math.random() * MAP_W);
+            const ry = Math.floor(Math.random() * MAP_H);
+            if (map[ry]?.[rx] === 1 && canMove(map, objects, rx * TILE + TILE / 2, ry * TILE + TILE / 2, bot.radius)) {
+              bot.x = rx * TILE + TILE / 2;
+              bot.y = ry * TILE + TILE / 2;
+              bot._stuckFrames = 0;
+              break;
+            }
+          }
+        }
+      } else {
+        bot._stuckFrames = 0;
       }
     }
 

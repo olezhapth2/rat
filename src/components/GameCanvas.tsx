@@ -1351,9 +1351,18 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const existingBotSpriteIds = new Set(s.bots.map(b => b.spriteId));
         for (const user of usersListRef.current) {
           if (!existingBotSpriteIds.has(user.charId)) {
-            // Find a walkable position near center
-            const spawnX = 15 * TILE + Math.random() * 10 * TILE;
-            const spawnY = 15 * TILE + Math.random() * 10 * TILE;
+            // Find a walkable tile to spawn on
+            let spawnX = 15 * TILE;
+            let spawnY = 15 * TILE;
+            for (let attempt = 0; attempt < 50; attempt++) {
+              const rx = Math.floor(Math.random() * 40);
+              const ry = Math.floor(Math.random() * 40);
+              if (s.map[ry]?.[rx] === 1) {
+                spawnX = rx * TILE + TILE / 2;
+                spawnY = ry * TILE + TILE / 2;
+                break;
+              }
+            }
             s.bots.push({
               id: `bot_${user.login}`,
               name: user.name || user.login,
@@ -1380,6 +1389,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
               _speedMultiplier: 1,
               _chasingPlayer: false,
               _stealTime: 0,
+              _stuckFrames: 0,
             });
           }
         }

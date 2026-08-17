@@ -397,6 +397,17 @@ app.prepare().then(() => {
 
   console.log(`[Data] Loaded: ${Object.keys(tileOverrides).length} tile overrides, ${sharedItems.length} items`);
 
+  function buildPlayersList() {
+    return Object.entries(playersDb).map(([key, data]) => {
+      const userEntry = Object.entries(usersDb).find(([_, u]) => u.name?.toLowerCase() === key);
+      return {
+        key, name: data.name, charId: data.charId, coins: data.coins,
+        level: data.level, achievements: data.achievements,
+        login: userEntry?.[0] || '', admin: userEntry?.[1]?.admin || false,
+      };
+    });
+  }
+
   function broadcastPlayers() {
     const list = Array.from(onlinePlayers.values()).map(p => {
       const playerData = playersDb[p.name.toLowerCase()];
@@ -908,14 +919,19 @@ app.prepare().then(() => {
     // Get all players list
     socket.on('admin:get-players', () => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
-      const list = Object.entries(playersDb).map(([key, data]) => ({
-        key,
-        name: data.name,
-        charId: data.charId,
-        coins: data.coins,
-        level: data.level,
-        achievements: data.achievements,
-      }));
+      const list = Object.entries(playersDb).map(([key, data]) => {
+        const userEntry = Object.entries(usersDb).find(([_, u]) => u.name?.toLowerCase() === key);
+        return {
+          key,
+          name: data.name,
+          charId: data.charId,
+          coins: data.coins,
+          level: data.level,
+          achievements: data.achievements,
+          login: userEntry?.[0] || '',
+          admin: userEntry?.[1]?.admin || false,
+        };
+      });
       socket.emit('admin:players-list', list);
     });
 
@@ -949,11 +965,7 @@ app.prepare().then(() => {
       };
       savePlayers(playersDb);
       socket.emit('admin:player-added', { name: data.name, charId: data.charId });
-      // Refresh list
-      const list = Object.entries(playersDb).map(([k, d]) => ({
-        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
-      }));
-      socket.emit('admin:players-list', list);
+      socket.emit('admin:players-list', buildPlayersList());
     });
 
     // Delete player
@@ -976,10 +988,7 @@ app.prepare().then(() => {
         }
       }
       socket.emit('admin:player-deleted', { key: data.key });
-      const pList = Object.entries(playersDb).map(([k, d]) => ({
-        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
-      }));
-      socket.emit('admin:players-list', pList);
+      socket.emit('admin:players-list', buildPlayersList());
       const uList = Object.entries(usersDb).map(([k, u]) => ({
         login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
@@ -1203,10 +1212,7 @@ app.prepare().then(() => {
         login: k, name: u.name, charId: u.charId, role: u.role, avatar: u.avatar, admin: u.admin || false,
       }));
       socket.emit('auth:users-list', list);
-      const pList = Object.entries(playersDb).map(([k, d]) => ({
-        key: k, name: d.name, charId: d.charId, coins: d.coins, level: d.level, achievements: d.achievements,
-      }));
-      socket.emit('admin:players-list', pList);
+      socket.emit('admin:players-list', buildPlayersList());
     });
 
     // === Leaderboards ===

@@ -44,6 +44,8 @@ interface PlayerEntry {
   coins: number;
   level: number;
   achievements: string[];
+  login: string;
+  admin: boolean;
 }
 
 interface CustomAchievement {
@@ -348,6 +350,24 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       {p.achievements.length}
                     </div>
                     <button onClick={() => { if (confirm(`Удалить игрока "${p.name}"?`)) { adminDeletePlayer(p.key); setTimeout(() => adminGetPlayers(), 500); } }} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px' }}>DEL</button>
+                    {p.login && (
+                      <button
+                        onClick={() => {
+                          const newAdmin = !p.admin;
+                          if (newAdmin) {
+                            if (!confirm(`Выдать админку ${p.name}?`)) return;
+                          } else {
+                            if (!confirm(`Снять админку ${p.name}?`)) return;
+                          }
+                          authUpdateUser({ login: p.login, admin: newAdmin });
+                          setTimeout(() => adminGetPlayers(), 500);
+                        }}
+                        className={`px-btn small ${p.admin ? 'danger' : 'accent'}`}
+                        style={{ fontSize: 8, padding: '3px 8px' }}
+                      >
+                        {p.admin ? '− ADM' : '+ ADM'}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

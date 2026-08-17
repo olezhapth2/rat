@@ -1148,7 +1148,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
           }
         } else {
           items.push({ icon: 'profile', text: `Профиль ${foundBot.name}`, fn: () => { setFetchedProfile(null); requestPlayerProfile(foundBot.name); openModal('profile', { remotePlayer: { name: foundBot.name, charId: foundBot.spriteId, role: foundBot.role } }); } });
-          items.push({ icon: 'rock', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
         }
       }
 

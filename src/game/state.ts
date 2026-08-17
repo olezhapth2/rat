@@ -449,14 +449,14 @@ export function unlockAchievement(state: GameState, id: string): string | null {
   return id;
 }
 
-export function rpsGame(state: GameState): {
+export function rpsGame(state: GameState, playerChoiceIdx?: number): {
   playerChoice: string;
   botChoice: string;
   result: string;
   reward: number;
 } {
   const choices = ['✊', '✋', '✌️'];
-  const pc = Math.floor(Math.random() * 3);
+  const pc = playerChoiceIdx !== undefined ? playerChoiceIdx : Math.floor(Math.random() * 3);
   const bc = Math.floor(Math.random() * 3);
   let result = 'Ничья!';
   let reward = 0;

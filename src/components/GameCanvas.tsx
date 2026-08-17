@@ -3151,10 +3151,29 @@ function TalkView({ data, state, onToast }: { data: Record<string, unknown>; sta
 
 // ===== RPS =====
 function RpsView({ data, state, onToast, onConfetti }: { data: Record<string, unknown>; state: GameState; onToast: (m: string, t?: 'ok' | 'info') => void; onConfetti: () => void }) {
-  const [result] = useState(() => rpsGame(state));
-  useEffect(() => {
-    if (result.reward > 0) { unlockAchievement(state, 'rps_win'); onToast(`+${result.reward} COINS`, 'ok'); onConfetti(); }
-  }, []);
+  const [result, setResult] = useState<{ playerChoice: string; botChoice: string; result: string; reward: number } | null>(null);
+
+  const handleChoice = (idx: number) => {
+    const r = rpsGame(state, idx);
+    setResult(r);
+    if (r.reward > 0) { unlockAchievement(state, 'rps_win'); onToast(`+${r.reward} COINS`, 'ok'); onConfetti(); }
+  };
+
+  if (!result) {
+    return (
+      <div style={{ textAlign: 'center', padding: 20 }}>
+        <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 16 }}>VS {(data.bot as any)?.name || 'Bot'}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 16 }}>
+          {[{ emoji: '✊', label: 'Камень' }, { emoji: '✋', label: 'Бумага' }, { emoji: '✌️', label: 'Ножницы' }].map((c, i) => (
+            <button key={i} onClick={() => handleChoice(i)} className="px-btn" style={{ fontSize: 36, padding: '16px 20px', lineHeight: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              {c.emoji}
+              <span style={{ fontSize: 9 }}>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ textAlign: 'center', padding: 20 }}>

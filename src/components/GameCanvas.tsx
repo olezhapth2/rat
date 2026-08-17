@@ -124,13 +124,7 @@ export default function GameCanvas() {
                 onClick={() => {
                   setSecretClicks(prev => {
                     if (prev + 1 >= 5) {
-                      try {
-                        const raw = localStorage.getItem('secretgang');
-                        const saved = raw ? JSON.parse(raw) : {};
-                        saved.coins = (saved.coins || 100) + 50;
-                        localStorage.setItem('secretgang', JSON.stringify(saved));
-                      } catch {}
-                      setSecretToast('🎁 СЕКРЕТ! +50 алт');
+                      setSecretToast('🎁 СЕКРЕТ!');
                       setTimeout(() => setSecretToast(''), 2500);
                       return 0;
                     }
@@ -696,10 +690,8 @@ function GameInner({ authUser }: { authUser: UserData }) {
         g.attempts--;
         if (g.attempts <= 0) {
           setTimeout(() => {
-            const coins = g.score * 10;
             submitLeaderboard('furniture_toss', g.score);
-            addCoins(stateRef.current, coins);
-            toast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8 → +${coins} алт` : `${g.score}/8 → +${coins} алт`, g.score >= 5 ? 'ok' : 'info');
+            toast(g.score >= 5 ? `🏆 ОТЛИЧНО! ${g.score}/8` : `${g.score}/8`, g.score >= 5 ? 'ok' : 'info');
             if (g.score >= 5) { /* confetti handled via toast */ }
             g.score = 0;
             g.attempts = 8;
@@ -2432,10 +2424,8 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
       g.ball.vy = 0;
       g.attempts--;
       if (g.attempts <= 0) {
-        const coins = g.score * 15;
         submitLeaderboard('basketball', g.score);
-        addCoins(state, coins);
-        toast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10 → +${coins} алт` : `${g.score}/10 → +${coins} алт`, g.score >= 7 ? 'ok' : 'info');
+        toast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10` : `${g.score}/10`, g.score >= 7 ? 'ok' : 'info');
         if (g.score >= 7) confetti();
         g.score = 0;
         g.attempts = 10;

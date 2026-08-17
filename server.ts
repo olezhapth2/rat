@@ -1221,9 +1221,11 @@ app.prepare().then(() => {
       if (!key) return;
       const pd = playersDb[key];
       if (!pd) return socket.emit('players:profile', null);
+      const userEntry = Object.entries(usersDb).find(([_, u]) => u.name?.toLowerCase() === key);
       socket.emit('players:profile', {
         name: pd.name, charId: pd.charId, coins: pd.coins,
         level: pd.level, achievements: pd.achievements, role: pd.role || '',
+        avatar: userEntry?.[1]?.avatar || '',
       });
     });
 

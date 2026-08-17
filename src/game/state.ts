@@ -462,8 +462,6 @@ export function rpsGame(state: GameState, playerChoiceIdx?: number): {
   let reward = 0;
   if ((pc === 0 && bc === 2) || (pc === 1 && bc === 0) || (pc === 2 && bc === 1)) {
     result = 'Ты выиграл!';
-    reward = 2;
-    addXP(state, 20);
   } else if (pc !== bc) {
     result = 'Ты проиграл!';
   }
@@ -489,16 +487,16 @@ export function microwaveGame(state: GameState, stoppedAtMs: number): {
 
   if (diffSec < 0.3) {
     result = 'Идеально! 🔥';
-    reward = 4;
+    reward = 0;
   } else if (diffSec < 0.8) {
     result = 'Отлично! ⚡';
-    reward = 3;
+    reward = 0;
   } else if (diffSec < 1.5) {
     result = 'Неплохо 👍';
-    reward = 2;
+    reward = 0;
   } else if (diffSec < 3.0) {
     result = 'Можно лучше 😐';
-    reward = 1;
+    reward = 0;
   } else {
     result = 'Промах 😅';
     reward = 0;
@@ -872,9 +870,8 @@ export function claimQuestReward(state: GameState, questId: string): { ok: boole
   if (progress < quest.target) return { ok: false, msg: 'Ещё не выполнено' };
 
   state.dailyQuests.claimed.push(questId);
-  addCoins(state, quest.reward);
   logActivity(state, quest.icon, `Выполнил квест: ${quest.name}`);
-  return { ok: true, msg: `+${quest.reward} алт!` };
+  return { ok: true, msg: `Квест выполнен!` };
 }
 
 export function getQuestProgress(state: GameState, questId: string): number {

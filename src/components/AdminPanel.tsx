@@ -272,7 +272,23 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       </div>
                     )}
                     {!u.name && <div style={{ fontSize: 8, color: 'var(--px-accent)' }}>ожидает входа</div>}
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button
+                        onClick={() => {
+                          const newAdmin = !u.admin;
+                          if (newAdmin) {
+                            if (!confirm(`Выдать админку ${u.name || u.login}?`)) return;
+                          } else {
+                            if (!confirm(`Снять админку ${u.name || u.login}?`)) return;
+                          }
+                          authUpdateUser({ login: u.login, admin: newAdmin });
+                          setTimeout(() => authGetUsers(), 500);
+                        }}
+                        className={`px-btn small ${u.admin ? 'danger' : 'accent'}`}
+                        style={{ fontSize: 8, padding: '3px 8px' }}
+                      >
+                        {u.admin ? '− ADMIN' : '+ ADMIN'}
+                      </button>
                       <button onClick={() => { setEditUser(u.login); setEditName(u.name); setEditRole(u.role); setEditPass(''); setEditCharId(u.charId); setEditAdmin(u.admin); }} className="px-btn small" style={{ fontSize: 8, padding: '3px 8px' }}>EDIT</button>
                       <button onClick={() => handleDeleteUser(u.login)} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px' }}>DEL</button>
                     </div>

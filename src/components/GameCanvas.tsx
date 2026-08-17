@@ -26,6 +26,7 @@ import {
   submitLeaderboard, onLeaderboardSync, onLeaderboardUpdated,
   onOkiyaLobby, onCardgameLobby, startOkiyaGameMp, startCardGameMp,
   onUsersList,
+  requestPlayerProfile, onPlayerProfile,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem, type LobbyGame,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
@@ -232,6 +233,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const [rpsInvite, setRpsInvite] = useState<RpsInvite | null>(null);
   const [rpsGameState, setRpsGameState] = useState<RpsStarted | null>(null);
   const [rpsResult, setRpsResult] = useState<RpsResult | null>(null);
+  const [fetchedProfile, setFetchedProfile] = useState<any>(null);
   const [rpsMyChoice, setRpsMyChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
   const [rpsSentChoice, setRpsSentChoice] = useState(false);
   const lastPosSentRef = useRef(0);
@@ -354,6 +356,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const closeModal = useCallback(() => {
     setModalType(null);
     setModalData({});
+    setFetchedProfile(null);
   }, []);
 
   const toast = useCallback((msg: string, type: 'ok' | 'info' = 'info') => {
@@ -1029,6 +1032,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
       setLeaderboards(prev => ({ ...prev, [data.game]: data.entries }));
     });
 
+    onPlayerProfile((data) => {
+      setFetchedProfile(data);
+    });
+
     onTileSync((overrides) => {
       stateRef.current.tileOverrides = overrides;
     });
@@ -1140,7 +1147,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             }});
           }
         } else {
-          items.push({ icon: 'profile', text: `Профиль ${foundBot.name}`, fn: () => openModal('profile', { remotePlayer: { name: foundBot.name, charId: foundBot.spriteId, role: foundBot.role } }) });
+          items.push({ icon: 'profile', text: `Профиль ${foundBot.name}`, fn: () => { setFetchedProfile(null); requestPlayerProfile(foundBot.name); openModal('profile', { remotePlayer: { name: foundBot.name, charId: foundBot.spriteId, role: foundBot.role } }); } });
           items.push({ icon: 'rock', text: 'КНБ', fn: () => { trackQuestProgress(stateRef.current, 'rps_3'); openModal('rps', { bot: foundBot }); } });
         }
       }
@@ -1150,7 +1157,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         const dx = worldX - rp.x;
         const dy = worldY - rp.y;
         if (Math.sqrt(dx * dx + dy * dy) < TILE * 1.5) {
-          items.push({ icon: 'profile', text: `Профиль ${rp.name}`, fn: () => openModal('profile', { remotePlayer: rp }) });
+          items.push({ icon: 'profile', text: `Профиль ${rp.name}`, fn: () => { setFetchedProfile(null); requestPlayerProfile(rp.name); openModal('profile', { remotePlayer: rp }); } });
           items.push({ icon: 'game', text: `КНБ с ${rp.name}`, fn: () => { sendRpsInvite(rp.id); toast(`Приглашение отправлено ${rp.name}`, 'info'); } });
           break;
         }
@@ -2219,7 +2226,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             <div style={{ padding: 16, maxHeight: '60vh', overflowY: 'auto' }}>
               {modalType === 'shop' && <ShopView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'inventory' && <InventoryView state={stateRef.current} onToast={toast} />}
-              {modalType === 'profile' && <ProfileView state={stateRef.current} profilePlayer={modalData.remotePlayer as { name: string; charId: string; role?: string; avatar?: string; coins?: number; level?: number; achievements?: string[] } | undefined} />}
+              {modalType === 'profile' && <ProfileView state={stateRef.current} profilePlayer={fetchedProfile || (modalData.remotePlayer as { name: string; charId: string; role?: string; avatar?: string; coins?: number; level?: number; achievements?: string[] } | undefined)} />}
               {modalType === 'quests' && <QuestsView state={stateRef.current} onToast={toast} onConfetti={confetti} />}
               {modalType === 'talk' && <TalkView data={modalData} state={stateRef.current} onToast={toast} />}
               {modalType === 'rps' && <RpsView key={Date.now()} data={modalData} state={stateRef.current} onToast={toast} onConfetti={confetti} />}

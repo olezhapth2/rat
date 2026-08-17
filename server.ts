@@ -1215,6 +1215,18 @@ app.prepare().then(() => {
       socket.emit('admin:players-list', buildPlayersList());
     });
 
+    // === Player profile lookup ===
+    socket.on('players:get-profile', (data: { name: string }) => {
+      const key = data.name?.toLowerCase();
+      if (!key) return;
+      const pd = playersDb[key];
+      if (!pd) return socket.emit('players:profile', null);
+      socket.emit('players:profile', {
+        name: pd.name, charId: pd.charId, coins: pd.coins,
+        level: pd.level, achievements: pd.achievements, role: pd.role || '',
+      });
+    });
+
     // === Leaderboards ===
     socket.on('leaderboard:submit', (data: { game: LeaderboardKey; score: number }) => {
       const { game, score } = data;

@@ -240,6 +240,10 @@ function registerGameListeners(): void {
       onLeaderboardUpdatedCb?.(data);
     });
 
+    socket.on('players:profile', (data: any) => {
+      onPlayerProfileCb?.(data);
+    });
+
     // Admin events
     socket.on('admin:players-list', (list: any[]) => {
       onAdminPlayersListCb?.(list);
@@ -568,6 +572,14 @@ export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpd
 export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }
 export function onAuthUserSync(cb: (data: any) => void): void { onAuthUserSyncCb = cb; }
 export function onUsersList(cb: (list: any[]) => void): void { onUsersListCb = cb; }
+
+// === PLAYER PROFILE LOOKUP ===
+export function requestPlayerProfile(name: string): void {
+  socket?.emit('players:get-profile', { name });
+}
+
+let onPlayerProfileCb: ((data: any) => void) | null = null;
+export function onPlayerProfile(cb: (data: any) => void): void { onPlayerProfileCb = cb; }
 
 // === LEADERBOARD API ===
 export function submitLeaderboard(game: string, score: number): void {

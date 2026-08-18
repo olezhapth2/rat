@@ -351,6 +351,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
     setModalType(null);
     setModalData({});
     setFetchedProfile(null);
+    setRpsResult(null);
+    setRpsMyChoice(null);
+    setRpsSentChoice(false);
   }, []);
 
   const toast = useCallback((msg: string, type: 'ok' | 'info' = 'info') => {
@@ -948,6 +951,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       setRpsInvite(null);
       setRpsMyChoice(null);
       setRpsSentChoice(false);
+      setRpsResult(null);
       openModal('mp_rps', { gameId: data.gameId, opponentName: data.opponentName });
     });
 

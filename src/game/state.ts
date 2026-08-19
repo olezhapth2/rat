@@ -1,4 +1,4 @@
-import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, MAP_W, MAP_H, canMove } from './constants';
+import { createPlayer, createBots, createObjects, buildMap, SHOP, ALL_ITEMS, TILE, BOT_PHRASES, DEFAULT_BOT_PHRASES, BOT_REACTIONS, BOT_CONVERSATIONS, DAILY_QUESTS, MAP_W, MAP_H, canMove } from './constants';
 import type { Player, Bot, GameObject } from './constants';
 import { createAnimState, type AnimState } from './sprites';
 
@@ -643,8 +643,8 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
 
     // === 5. Random idle phrases ===
     if (Math.random() < 0.01 * dt && now - bot._speechTime > 10000) {
-      const phrases = BOT_PHRASES[bot.id];
-      if (phrases && Math.random() < 0.5) {
+      const phrases = BOT_PHRASES[bot.id] || DEFAULT_BOT_PHRASES;
+      if (Math.random() < 0.5) {
         bot._speechBubble = phrases[Math.floor(Math.random() * phrases.length)];
         bot._speechTime = now;
       }

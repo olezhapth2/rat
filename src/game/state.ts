@@ -642,9 +642,9 @@ export function updateBots(state: GameState, dt: number, onlineCharIds?: Set<str
     }
 
     // === 5. Random idle phrases ===
-    if (Math.random() < 0.001 * dt && now - bot._speechTime > 20000) {
+    if (Math.random() < 0.01 * dt && now - bot._speechTime > 10000) {
       const phrases = BOT_PHRASES[bot.id];
-      if (phrases && Math.random() < 0.3) {
+      if (phrases && Math.random() < 0.5) {
         bot._speechBubble = phrases[Math.floor(Math.random() * phrases.length)];
         bot._speechTime = now;
       }

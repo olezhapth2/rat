@@ -27,6 +27,7 @@ import {
   onOkiyaLobby, onCardgameLobby, startOkiyaGameMp, startCardGameMp,
   onUsersList,
   requestPlayerProfile, onPlayerProfile,
+  requestKryskaSteal, onKryskaStealResult,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem, type LobbyGame,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
@@ -1032,6 +1033,30 @@ function GameInner({ authUser }: { authUser: UserData }) {
       setFetchedProfile(data);
     });
 
+    onKryskaStealResult((data) => {
+      const s = stateRef.current;
+      const kryska = s.bots.find(b => b.id === 'bot_kryska');
+      if (!kryska) return;
+      kryska._pendingSteal = false;
+      if (data.ok) {
+        s.player.coins = Math.max(0, s.player.coins - 1);
+        kryska._stolenCoins = 1;
+        kryska._chaseTimer = 15;
+        kryska._chasingPlayer = true;
+        kryska._stealTime = Date.now();
+        kryska._speechBubble = '*ухватила!* 🐀';
+        kryska._speechTime = Date.now();
+        kryska._emoji = '🧀';
+        kryska._emojiTime = Date.now();
+        kryska._stealCooldown = 300;
+        logActivity(s, '🐀', `Крыска украла 1 алт!`);
+        persistState(s);
+        toast('🐀 Крыска украла 1 алт!', 'info');
+      } else {
+        kryska._stealCooldown = 30;
+      }
+    });
+
     onTileSync((overrides) => {
       stateRef.current.tileOverrides = overrides;
     });
@@ -1393,12 +1418,19 @@ function GameInner({ authUser }: { authUser: UserData }) {
               _chasingPlayer: false,
               _stealTime: 0,
               _stuckFrames: 0,
+              _pendingSteal: false,
             });
           }
         }
       }
 
       updateBots(s, dt, onlineCharIds);
+      // Check if kryska wants to steal — request server approval
+      const kryska = s.bots.find(b => b.id === 'bot_kryska');
+      if (kryska && (kryska as any)._pendingSteal) {
+        (kryska as any)._pendingSteal = false; // prevent re-trigger
+        requestKryskaSteal(s.player.name?.toLowerCase() || '');
+      }
       const visibleBots = s.bots.filter(b => !onlineCharIds.has(b.spriteId));
       // Update bot animations (only for visible bots)
       for (const bot of visibleBots) {

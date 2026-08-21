@@ -240,6 +240,10 @@ function registerGameListeners(): void {
       onLeaderboardUpdatedCb?.(data);
     });
 
+    socket.on('kryska:steal-result', (data: { ok: boolean }) => {
+      onKryskaStealResultCb?.(data);
+    });
+
     socket.on('players:profile', (data: any) => {
       onPlayerProfileCb?.(data);
     });
@@ -572,6 +576,14 @@ export function onAuthUserUpdated(cb: (data: any) => void): void { onAuthUserUpd
 export function onAuthUserDeleted(cb: (data: any) => void): void { onAuthUserDeletedCb = cb; }
 export function onAuthUserSync(cb: (data: any) => void): void { onAuthUserSyncCb = cb; }
 export function onUsersList(cb: (list: any[]) => void): void { onUsersListCb = cb; }
+
+// === KRYSKA STEAL ===
+export function requestKryskaSteal(playerKey: string): void {
+  socket?.emit('kryska:steal', { playerKey });
+}
+
+let onKryskaStealResultCb: ((data: { ok: boolean }) => void) | null = null;
+export function onKryskaStealResult(cb: (data: { ok: boolean }) => void): void { onKryskaStealResultCb = cb; }
 
 // === PLAYER PROFILE LOOKUP ===
 export function requestPlayerProfile(name: string): void {

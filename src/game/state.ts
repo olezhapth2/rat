@@ -810,25 +810,8 @@ function updateKryska(bot: Bot, state: GameState, dt: number) {
   }
 
   // === Steal coins from nearby player ===
-  if (bot._stolenCoins === 0 && distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
-    const stealAmount = Math.min(
-      state.player.coins,
-      1 + Math.floor(Math.random() * 4) // steal 1-4 coins
-    );
-    if (stealAmount > 0 && Math.random() < 0.3) {
-      state.player.coins -= stealAmount;
-      bot._stolenCoins = stealAmount;
-      bot._chaseTimer = 15;
-      bot._chasingPlayer = true;
-      bot._stealTime = now;
-      bot._speechBubble = '*ухватила!* 🐀';
-      bot._speechTime = now;
-      bot._emoji = '🧀';
-      bot._emojiTime = now;
-      bot._stealCooldown = 300;
-      logActivity(state, '🐀', `Крыска украла ${stealAmount} алт!`);
-      persistState(state);
-    }
+  if (bot._stolenCoins === 0 && bot._pendingSteal === false && distToPlayer < TILE * 2 && bot._stealCooldown <= 0 && state.player.coins > 0) {
+    bot._pendingSteal = true;
   }
 
   // Random emoji

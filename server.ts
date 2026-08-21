@@ -1215,6 +1215,20 @@ app.prepare().then(() => {
       socket.emit('admin:players-list', buildPlayersList());
     });
 
+    // === Kryska daily steal ===
+    socket.on('kryska:steal', (data: { playerKey: string }) => {
+      const pd = playersDb[data.playerKey];
+      if (!pd) return socket.emit('kryska:steal-result', { ok: false });
+      const today = new Date().toISOString().slice(0, 10);
+      const lastStealDate = (pd as any)._kryskaLastStealDate || '';
+      if (lastStealDate === today) return socket.emit('kryska:steal-result', { ok: false });
+      if (pd.coins < 1) return socket.emit('kryska:steal-result', { ok: false });
+      pd.coins -= 1;
+      (pd as any)._kryskaLastStealDate = today;
+      savePlayers(playersDb);
+      socket.emit('kryska:steal-result', { ok: true });
+    });
+
     // === Player profile lookup ===
     socket.on('players:get-profile', (data: { name: string }) => {
       const key = data.name?.toLowerCase();

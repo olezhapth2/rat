@@ -48,6 +48,7 @@ export interface SharedItem {
   w: number;
   h: number;
   color?: string;
+  uid?: string;
 }
 
 // === Callbacks ===
@@ -336,9 +337,9 @@ export function sendItemPlace(item: SharedItem): void {
   socket.emit('item:place', item);
 }
 
-export function sendItemRemove(index: number, id: string): void {
+export function sendItemRemove(index: number, id: string, uid?: string): void {
   if (!socket?.connected) return;
-  socket.emit('item:remove', { index, id });
+  socket.emit('item:remove', { index, id, uid });
 }
 
 export function updateWhiteboard(data: string): void {

@@ -23,7 +23,7 @@ const LEADERBOARDS_FILE = join(DATA_DIR, 'leaderboards.json');
 
 interface PersistedState {
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
-  sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }>;
+  sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string; uid?: string }>;
   whiteboardData: string;
 }
 
@@ -242,7 +242,7 @@ const handle = app.getRequestHandler();
 
 // Shared state variables (declared here so scheduleSave can access them)
 let tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }> = {};
-let sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string }> = [];
+let sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number; color?: string; uid?: string }> = [];
 let whiteboardData: string = '';
 let leaderboards: LeaderboardData = { smoking: [], microwave: [], basketball: [], rps: [], cardgame: [], furniture_toss: [] };
 leaderboards = loadLeaderboards();
@@ -556,17 +556,23 @@ app.prepare().then(() => {
 
     // === Shared items ===
     socket.on('item:place', (data: { id: string; x: number; y: number; w: number; h: number; color?: string }) => {
-      sharedItems.push(data);
-      console.log(`[Items] Placed: ${data.id} at (${data.x},${data.y})`);
+      const uid = data.id + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      sharedItems.push({ ...data, uid });
+      console.log(`[Items] Placed: ${data.id} uid=${uid} at (${data.x},${data.y})`);
       io.emit('items:sync', sharedItems);
       scheduleSave();
     });
 
-    socket.on('item:remove', (data: { index: number; id: string }) => {
-      const idx = sharedItems.findIndex((item, i) => i === data.index && item.id === data.id);
+    socket.on('item:remove', (data: { index: number; id: string; uid?: string }) => {
+      let idx: number;
+      if (data.uid) {
+        idx = sharedItems.findIndex((item) => (item as any).uid === data.uid);
+      } else {
+        idx = sharedItems.findIndex((item) => item.id === data.id);
+      }
       if (idx !== -1) {
         sharedItems.splice(idx, 1);
-        console.log(`[Items] Removed: ${data.id} at index ${data.index}`);
+        console.log(`[Items] Removed: ${data.id}`);
         io.emit('items:sync', sharedItems);
         scheduleSave();
       }

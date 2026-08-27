@@ -994,6 +994,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           y: si.y,
           surface: def?.surface || 'floor',
           placedBy: 'server',
+          uid: (si as any).uid,
         };
       });
       s._placedItemsVersion++;
@@ -1197,7 +1198,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
           fn: () => {
             const removedItem = s.player.placedItems[nearestPlacedIdx];
             const res = pickUpItem(s, nearestPlacedIdx);
-            if (res.ok) { toast(res.msg, 'ok'); sendItemRemove(nearestPlacedIdx, removedItem?.id || ''); }
+            if (res.ok) { toast(res.msg, 'ok'); sendItemRemove(nearestPlacedIdx, removedItem?.id || '', removedItem?.uid); }
             else toast(res.msg, 'info');
           }
         });
@@ -1209,7 +1210,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             const res = pickUpItem(s, nearestPlacedIdx);
             if (res.ok) {
               s.player.carrying = pi.id;
-              sendItemRemove(nearestPlacedIdx, removedItem?.id || '');
+              sendItemRemove(nearestPlacedIdx, removedItem?.id || '', removedItem?.uid);
               toast(`Переставь ${piDef?.e || ''}`, 'ok');
             } else toast(res.msg, 'info');
           }

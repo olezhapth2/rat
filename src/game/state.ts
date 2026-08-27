@@ -17,6 +17,7 @@ export interface PlacedItem {
   y: number; // pixel position
   surface: 'floor' | 'wall';
   placedBy: string; // player id
+  uid?: string;
 }
 
 export interface GameState {

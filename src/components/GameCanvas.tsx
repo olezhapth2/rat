@@ -2021,7 +2021,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
             {state.tilePaintMode.type === 'floor' ? '🎨 ПОЛ' : '🎨 СТЕНА'}
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
-            {[0, 1, 2, 3, 4].map((idx) => {
+            {[0, 1, 2, 3, 4, 5].map((idx) => {
                 const imgPath = state.tilePaintMode!.type === 'floor'
                   ? `/sprites/tiles/floor${idx + 1}.webp`
                   : `/sprites/walls/wall${idx + 1}.webp`;
@@ -2046,18 +2046,21 @@ function GameInner({ authUser }: { authUser: UserData }) {
             })}
           </div>
           <span style={{ fontSize: 8, color: 'var(--px-text-dim)' }}>ESC для выхода</span>
-          <div
-            onClick={() => {
-              resetAllTileOverrides(state);
-              sendTileReset();
-            }}
-            style={{
-              fontSize: 9, color: '#ff6b6b',
-              border: '1px solid #ff6b6b44', borderRadius: 4, padding: '2px 6px',
-            }}
-          >
-            СБРОСИТЬ ВСЁ
-          </div>
+          {authUser.admin && (
+            <div
+              onClick={() => {
+                resetAllTileOverrides(state);
+                sendTileReset();
+              }}
+              style={{
+                fontSize: 9, color: '#ff6b6b',
+                border: '1px solid #ff6b6b44', borderRadius: 4, padding: '2px 6px',
+                cursor: 'pointer',
+              }}
+            >
+              СБРОСИТЬ ВСЁ
+            </div>
+          )}
         </div>
       )}
 

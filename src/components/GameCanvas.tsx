@@ -2923,29 +2923,6 @@ function InventoryView({ state, onToast }: { state: GameState; onToast: (m: stri
       {tab === 'placed' && (
         <div>
           <div style={{ fontSize: 10, color: 'var(--px-text-dim)', marginBottom: 8 }}>APPROACH ITEM → RIGHT-CLICK → TAKE</div>
-          {placed.length > 0 && (
-            <div
-              onClick={() => {
-                if (!confirm('Вернуть все предметы в инвентарь?')) return;
-                for (let i = placed.length - 1; i >= 0; i--) {
-                  const pi = placed[i];
-                  state.player.furniture.push(pi.id);
-                  sendItemRemove(i, pi.id, pi.uid);
-                }
-                state.player.placedItems = [];
-                state.player.carrying = null;
-                state._placedItemsVersion++;
-                persistState(state);
-                onToast('Все предметы возвращены', 'ok');
-              }}
-              style={{
-                fontSize: 9, color: 'var(--px-accent)', cursor: 'pointer', marginBottom: 8,
-                border: '1px solid var(--px-accent)', borderRadius: 4, padding: '4px 10px', display: 'inline-block',
-              }}
-            >
-              ВЕРНУТЬ ВСЁ ({placed.length})
-            </div>
-          )}
           {placed.length === 0 && (
             <div style={{ color: 'var(--px-text-dim)', fontSize: 11, textAlign: 'center', padding: 20 }}>NOTHING PLACED</div>
           )}

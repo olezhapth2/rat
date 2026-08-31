@@ -332,7 +332,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   }, []);
 
   // Minigame canvas state refs
-  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null, _endButtons: null as { play: { x: number; y: number; w: number; h: number }; close: { x: number; y: number; w: number; h: number } } | null });
+  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null as { x: number; y: number } | null, _endButtons: null as { play: { x: number; y: number; w: number; h: number }; close: { x: number; y: number; w: number; h: number } } | null });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
   const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
   const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
@@ -430,7 +430,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (e.key === 'Escape' && activeGameRef.current) {
         const game = activeGameRef.current;
         if (game === 'basketball') {
-          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null, _endButtons: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null };
         } else if (game === 'furniture_toss') {
           furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
         } else if (game === 'microwave') {
@@ -1873,7 +1873,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
           onClick={() => {
-          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null, _endButtons: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null };
             setActiveGame('basketball');
           }}
           className="px-btn"
@@ -2527,18 +2527,17 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
       g.ball.x = backboardX - BALL_R;
     }
 
-    // Scoring: ball must cross through hoop line from above while going down
-    if (!g.ball.scored &&
-      g.ball.x > hoopLeft && g.ball.x < hoopRight &&
-      g.ball.vy > 0) {
-      // Check if ball was above hoop last frame and is now below
-      const prevY = g.ball.y - g.ball.vy;
-      if (prevY <= HOOP_Y && g.ball.y > HOOP_Y + 5) {
+    // Scoring: track ball entering hoop from above, score when it drops below
+    if (!g.ball.scored && g.ball.vy > 0) {
+      if (g.ball.x > hoopLeft && g.ball.x < hoopRight && g.ball.y > HOOP_Y - BALL_R && g.ball.y < HOOP_Y + BALL_R) {
+        g.ball._inHoop = true;
+      }
+      if (g.ball._inHoop && g.ball.y > HOOP_Y + 10) {
         g.ball.scored = true;
+        g.ball._inHoop = false;
         g.score++;
         addXP(state, 10);
         toast('🏀 Забросил! +1', 'ok');
-        // Move hoop after each basket
         const dx = (Math.random() - 0.5) * 200;
         const dy = (Math.random() - 0.5) * 100;
         g.hoopX = Math.max(80, Math.min(360, HOOP_X + dx));
@@ -2548,6 +2547,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
 
     if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
       g.ball.flying = false;
+      g.ball._inHoop = false;
       g.ball.x = BALL_START_X;
       g.ball.y = BALL_START_Y;
       g.ball.vx = 0;

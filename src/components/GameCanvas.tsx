@@ -332,7 +332,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   }, []);
 
   // Minigame canvas state refs
-  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null as { x: number; y: number } | null, _endButtons: null as { play: { x: number; y: number; w: number; h: number }; close: { x: number; y: number; w: number; h: number } } | null });
+  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null as { x: number; y: number } | null, _endButtons: null as { play: { x: number; y: number; w: number; h: number }; close: { x: number; y: number; w: number; h: number } } | null, _submitted: false });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
   const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
   const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
@@ -430,7 +430,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (e.key === 'Escape' && activeGameRef.current) {
         const game = activeGameRef.current;
         if (game === 'basketball') {
-          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null, _submitted: false };
         } else if (game === 'furniture_toss') {
           furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
         } else if (game === 'microwave') {
@@ -551,8 +551,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (g.timer <= 0 && !g.ball.flying && g._endButtons) {
         const btn = g._endButtons;
         if (localX > btn.play.x && localX < btn.play.x + btn.play.w && localY > btn.play.y && localY < btn.play.y + btn.play.h) {
-          submitLeaderboard('basketball', g.score);
-          if (g.score >= 7) confetti();
           g.score = 0;
           g.timer = 60;
           g.startTime = Date.now();
@@ -562,10 +560,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
           g.ball.y = 320;
           g.ball.flying = false;
           g.ball.scored = false;
+          g.ball._inHoop = false;
           g._endButtons = null;
+          g._submitted = false;
         } else if (localX > btn.close.x && localX < btn.close.x + btn.close.w && localY > btn.close.y && localY < btn.close.y + btn.close.h) {
-          submitLeaderboard('basketball', g.score);
-          if (g.score >= 7) confetti();
           setActiveGame(null);
           g.score = 0;
           g.timer = 60;
@@ -576,7 +574,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
           g.ball.y = 320;
           g.ball.flying = false;
           g.ball.scored = false;
+          g.ball._inHoop = false;
           g._endButtons = null;
+          g._submitted = false;
         }
         return;
       }
@@ -1873,7 +1873,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
           onClick={() => {
-          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false, _inHoop: false }, dragStart: null, _endButtons: null, _submitted: false };
             setActiveGame('basketball');
           }}
           className="px-btn"
@@ -2353,11 +2353,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
               <button onClick={() => setShowLeaderboard(null)} className="win-btn" style={{ fontWeight: 'bold' }}>X</button>
             </div>
             <div style={{ padding: 12 }}>
-              {(['smoking', 'microwave', 'basketball', 'rps', 'cardgame', 'furniture_toss'] as const).map(game => {
+              {(['smoking', 'microwave', 'rps', 'cardgame', 'furniture_toss'] as const).map(game => {
                 const labels: Record<string, string> = {
                   smoking: '🚬 SMOKING (fastest wins)',
                   microwave: '⏱️ MICROWAVE (best reward)',
-                  basketball: '🏀 BASKETBALL (most scored in 1min)',
                   rps: '✊ ROCK PAPER SCISSORS (most wins)',
                   cardgame: '🃏 OKIYA (most wins)',
                   furniture_toss: '🪑 FURNITURE TOSS (most scored)',
@@ -2377,7 +2376,6 @@ function GameInner({ authUser }: { authUser: UserData }) {
                         <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
                         <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
                           {game === 'smoking' ? `${(r.score / 1000).toFixed(1)}s` :
-                           game === 'basketball' ? `${r.score}` :
                            game === 'furniture_toss' ? `${r.score}/8` :
                            r.score}
                         </span>
@@ -2444,8 +2442,14 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
   const hoopLeft = HOOP_X - HOOP_W / 2;
   const hoopRight = HOOP_X + HOOP_W / 2;
 
-  // End game overlay
-  if (g.timer <= 0 && !g.ball.flying) {
+  // End game overlay - submit score once, then show overlay
+  if (g.timer <= 0) {
+    if (!g._submitted) {
+      g._submitted = true;
+      submitLeaderboard('basketball', g.score);
+      if (g.score >= 7) confetti();
+    }
+    // Draw end overlay even while ball is still flying
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, 400, 400);
     ctx.fillStyle = '#fff';
@@ -2463,7 +2467,6 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.fillRect(120, 260, 70, 30);
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
     ctx.fillText('ИГРАТЬ', 155, 280);
     // Close button
     ctx.fillStyle = '#666';

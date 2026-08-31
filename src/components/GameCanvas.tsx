@@ -480,8 +480,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (activeGameRef.current) {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        const isBB = activeGameRef.current === 'basketball';
         const gx = (canvas.width - 400) / 2;
-        const gy = (canvas.height - 400) / 2;
+        const gy = (canvas.height - (isBB ? 520 : 400)) / 2;
         const localX = e.clientX - gx;
         const localY = e.clientY - gy;
         handleMinigameClick(localX, localY);
@@ -581,7 +582,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       }
       const dx = localX - g.ball.x;
       const dy = localY - g.ball.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 60 && !g.ball.flying && g.timer > 0) {
+      if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.timer > 0) {
         g.dragStart = { x: localX, y: localY };
       }
     } else if (game === 'furniture_toss') {
@@ -679,8 +680,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
         return;
       }
       if (!activeGameRef.current) return;
+      const isBB = activeGameRef.current === 'basketball';
       const gx = (canvas.width - 400) / 2;
-      const gy = (canvas.height - 400) / 2;
+      const gy = (canvas.height - (isBB ? 520 : 400)) / 2;
       const localX = e.clientX - gx;
       const localY = e.clientY - gy;
       minigameMouseRef.current.x = localX;
@@ -694,8 +696,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
     };
     const onMouseUp = (e: MouseEvent) => {
       if (!activeGameRef.current) return;
+      const isBB = activeGameRef.current === 'basketball';
       const gx = (canvas.width - 400) / 2;
-      const gy = (canvas.height - 400) / 2;
+      const gy = (canvas.height - (isBB ? 520 : 400)) / 2;
       const localX = e.clientX - gx;
       const localY = e.clientY - gy;
       const game = activeGameRef.current;
@@ -743,8 +746,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (!activeGameRef.current) return;
       e.preventDefault();
       const t = e.touches[0];
+      const isBB = activeGameRef.current === 'basketball';
       const gx = (canvas.width - 400) / 2;
-      const gy = (canvas.height - 400) / 2;
+      const gy = (canvas.height - (isBB ? 520 : 400)) / 2;
       const localX = t.clientX - gx;
       const localY = t.clientY - gy;
       handleMinigameClick(localX, localY);
@@ -753,8 +757,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (!activeGameRef.current) return;
       e.preventDefault();
       const t = e.touches[0];
+      const isBB = activeGameRef.current === 'basketball';
       const gx = (canvas.width - 400) / 2;
-      const gy = (canvas.height - 400) / 2;
+      const gy = (canvas.height - (isBB ? 520 : 400)) / 2;
       const localX = t.clientX - gx;
       const localY = t.clientY - gy;
       const game = activeGameRef.current;
@@ -2427,7 +2432,7 @@ function spawnFurnitureItem(g: { currentItem: any; targetZone: any }) {
 }
 
 function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void, leaderboards?: Record<string, any[]>) {
-  const HOOP_W = 45, GRAVITY = 0.12, BALL_R = 14;
+  const HOOP_W = 45, GRAVITY = 0.12, BALL_R = 10;
   const BALL_START_X = 80, BALL_START_Y = 320;
   g.frame = (g.frame || 0) + 1;
 
@@ -2455,17 +2460,17 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.fillText(g.score >= 7 ? '🏆 Отлично!' : g.score >= 4 ? '👍 Неплохо' : 'Попробуй ещё', 200, 230);
     // Play again button
     ctx.fillStyle = '#ff6600';
-    ctx.fillRect(100, 260, 90, 36);
+    ctx.fillRect(120, 260, 70, 30);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 13px sans-serif';
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ИГРАТЬ', 145, 283);
+    ctx.fillText('ИГРАТЬ', 155, 280);
     // Close button
     ctx.fillStyle = '#666';
-    ctx.fillRect(210, 260, 90, 36);
+    ctx.fillRect(210, 260, 70, 30);
     ctx.fillStyle = '#fff';
-    ctx.fillText('ЗАКРЫТЬ', 255, 283);
-    g._endButtons = { play: { x: 100, y: 260, w: 90, h: 36 }, close: { x: 210, y: 260, w: 90, h: 36 } };
+    ctx.fillText('ЗАКРЫТЬ', 245, 280);
+    g._endButtons = { play: { x: 120, y: 260, w: 70, h: 30 }, close: { x: 210, y: 260, w: 70, h: 30 } };
     return;
   }
 

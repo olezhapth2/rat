@@ -332,7 +332,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   }, []);
 
   // Minigame canvas state refs
-  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
+  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null, _endButtons: null as { play: { x: number; y: number; w: number; h: number }; close: { x: number; y: number; w: number; h: number } } | null });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
   const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
   const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
@@ -430,7 +430,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (e.key === 'Escape' && activeGameRef.current) {
         const game = activeGameRef.current;
         if (game === 'basketball') {
-            basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null, _endButtons: null };
         } else if (game === 'furniture_toss') {
           furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
         } else if (game === 'microwave') {
@@ -547,6 +547,38 @@ function GameInner({ authUser }: { authUser: UserData }) {
     if (!game) return;
     if (game === 'basketball') {
       const g = basketballRef.current;
+      if (g.timer <= 0 && !g.ball.flying && g._endButtons) {
+        const btn = g._endButtons;
+        if (localX > btn.play.x && localX < btn.play.x + btn.play.w && localY > btn.play.y && localY < btn.play.y + btn.play.h) {
+          submitLeaderboard('basketball', g.score);
+          if (g.score >= 7) confetti();
+          g.score = 0;
+          g.timer = 60;
+          g.startTime = Date.now();
+          g.hoopX = 320;
+          g.hoopY = 120;
+          g.ball.x = 80;
+          g.ball.y = 320;
+          g.ball.flying = false;
+          g.ball.scored = false;
+          g._endButtons = null;
+        } else if (localX > btn.close.x && localX < btn.close.x + btn.close.w && localY > btn.close.y && localY < btn.close.y + btn.close.h) {
+          submitLeaderboard('basketball', g.score);
+          if (g.score >= 7) confetti();
+          setActiveGame(null);
+          g.score = 0;
+          g.timer = 60;
+          g.startTime = Date.now();
+          g.hoopX = 320;
+          g.hoopY = 120;
+          g.ball.x = 80;
+          g.ball.y = 320;
+          g.ball.flying = false;
+          g.ball.scored = false;
+          g._endButtons = null;
+        }
+        return;
+      }
       const dx = localX - g.ball.x;
       const dy = localY - g.ball.y;
       if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.timer > 0) {
@@ -1665,8 +1697,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (activeGameRef.current) {
         const W = canvas.width;
         const H = canvas.height;
+        const isBasketball = activeGameRef.current === 'basketball';
+        const gameH = isBasketball ? 520 : 400;
         const gx = (W - 400) / 2;
-        const gy = (H - 400) / 2;
+        const gy = (H - gameH) / 2;
 
         // Dark overlay
         ctx.fillStyle = 'rgba(0,128,128,0.85)';
@@ -1676,7 +1710,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
         ctx.translate(gx, gy);
 
         if (activeGameRef.current === 'basketball') {
-          drawBasketballOnCanvas(ctx, basketballRef.current, s, toast, confetti);
+          drawBasketballOnCanvas(ctx, basketballRef.current, s, toast, confetti, leaderboards);
         } else if (activeGameRef.current === 'furniture_toss') {
           drawFurnitureTossOnCanvas(ctx, furnitureTossRef.current, s, toast);
         } else if (activeGameRef.current === 'microwave') {
@@ -1834,7 +1868,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
           onClick={() => {
-          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null, _endButtons: null };
             setActiveGame('basketball');
           }}
           className="px-btn"
@@ -2392,31 +2426,47 @@ function spawnFurnitureItem(g: { currentItem: any; targetZone: any }) {
   g.currentItem = { x: 60, y: 300, vx: 0, vy: 0, w, h, color: COLORS[Math.floor(Math.random() * COLORS.length)], landed: false, prevY: 300 };
 }
 
-function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void) {
-  const HOOP_W = 40, GRAVITY = 0.12, BALL_R = 10;
+function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void, leaderboards?: Record<string, any[]>) {
+  const HOOP_W = 45, GRAVITY = 0.12, BALL_R = 10;
   const BALL_START_X = 80, BALL_START_Y = 320;
   g.frame = (g.frame || 0) + 1;
 
   const elapsed = (Date.now() - g.startTime) / 1000;
   g.timer = Math.max(0, 60 - elapsed);
 
-  if (g.timer <= 0 && !g.ball.flying) {
-    submitLeaderboard('basketball', g.score);
-    toast(g.score >= 7 ? `🏆 Отлично! ${g.score} за минуту` : `${g.score} за минуту`, g.score >= 7 ? 'ok' : 'info');
-    if (g.score >= 7) confetti();
-    g.score = 0;
-    g.timer = 60;
-    g.startTime = Date.now();
-    g.hoopX = 320;
-    g.hoopY = 120;
-    g.ball.x = BALL_START_X;
-    g.ball.y = BALL_START_Y;
-    g.ball.flying = false;
-    return;
-  }
-
   const HOOP_X = g.hoopX;
   const HOOP_Y = g.hoopY;
+  const hoopLeft = HOOP_X - HOOP_W / 2;
+  const hoopRight = HOOP_X + HOOP_W / 2;
+
+  // End game overlay
+  if (g.timer <= 0 && !g.ball.flying) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, 400, 400);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⏱ ВРЕМЯ ВЫШЛО', 200, 150);
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillStyle = '#ff6600';
+    ctx.fillText(`${g.score}`, 200, 200);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#ccc';
+    ctx.fillText(g.score >= 7 ? '🏆 Отлично!' : g.score >= 4 ? '👍 Неплохо' : 'Попробуй ещё', 200, 230);
+    // Play again button
+    ctx.fillStyle = '#ff6600';
+    ctx.fillRect(120, 260, 70, 30);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('ИГРАТЬ', 155, 280);
+    // Close button
+    ctx.fillStyle = '#666';
+    ctx.fillRect(210, 260, 70, 30);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('ЗАКРЫТЬ', 245, 280);
+    g._endButtons = { play: { x: 120, y: 260, w: 70, h: 30 }, close: { x: 210, y: 260, w: 70, h: 30 } };
+    return;
+  }
 
   ctx.fillStyle = '#f5e6c8';
   ctx.fillRect(0, 0, 400, 400);
@@ -2428,6 +2478,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
   }
 
+  // Backboard
   ctx.fillStyle = '#8B4513';
   ctx.fillRect(HOOP_X + HOOP_W / 2 + 2, HOOP_Y - 30, 8, 60);
   ctx.fillStyle = '#fff';
@@ -2436,17 +2487,19 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
   ctx.lineWidth = 2;
   ctx.strokeRect(HOOP_X + HOOP_W / 2 - 10, HOOP_Y - 20, 22, 22);
 
+  // Hoop rim
   ctx.strokeStyle = '#ff6600';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(HOOP_X - HOOP_W / 2, HOOP_Y);
-  ctx.lineTo(HOOP_X + HOOP_W / 2, HOOP_Y);
+  ctx.moveTo(hoopLeft, HOOP_Y);
+  ctx.lineTo(hoopRight, HOOP_Y);
   ctx.stroke();
 
+  // Net
   ctx.strokeStyle = '#ffffff80';
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
-    const nx = HOOP_X - HOOP_W / 2 + (HOOP_W / 4) * i;
+    const nx = hoopLeft + (HOOP_W / 4) * i;
     ctx.beginPath();
     ctx.moveTo(nx, HOOP_Y);
     ctx.lineTo(nx + (i - 2) * 3, HOOP_Y + 25);
@@ -2458,6 +2511,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     g.ball.x += g.ball.vx;
     g.ball.y += g.ball.vy;
 
+    // Backboard collision
     const backboardX = HOOP_X + HOOP_W / 2 + 2;
     const backboardTop = HOOP_Y - 30;
     const backboardBottom = HOOP_Y + 30;
@@ -2467,19 +2521,23 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
       g.ball.x = backboardX - BALL_R;
     }
 
+    // Scoring: ball must cross through hoop line from above while going down
     if (!g.ball.scored &&
-      g.ball.x > HOOP_X - HOOP_W / 2 && g.ball.x < HOOP_X + HOOP_W / 2 &&
-      g.ball.y > HOOP_Y - 30 && g.ball.y < HOOP_Y + 25 &&
+      g.ball.x > hoopLeft && g.ball.x < hoopRight &&
       g.ball.vy > 0) {
-      g.ball.scored = true;
-      g.score++;
-      addXP(state, 10);
-      toast('🏀 Забросил! +1', 'ok');
-      // Move hoop after each basket
-      const dx = (Math.random() - 0.5) * 200;
-      const dy = (Math.random() - 0.5) * 100;
-      g.hoopX = Math.max(80, Math.min(360, HOOP_X + dx));
-      g.hoopY = Math.max(60, Math.min(200, HOOP_Y + dy));
+      // Check if ball was above hoop last frame and is now below
+      const prevY = g.ball.y - g.ball.vy;
+      if (prevY <= HOOP_Y && g.ball.y > HOOP_Y + 5) {
+        g.ball.scored = true;
+        g.score++;
+        addXP(state, 10);
+        toast('🏀 Забросил! +1', 'ok');
+        // Move hoop after each basket
+        const dx = (Math.random() - 0.5) * 200;
+        const dy = (Math.random() - 0.5) * 100;
+        g.hoopX = Math.max(80, Math.min(360, HOOP_X + dx));
+        g.hoopY = Math.max(60, Math.min(200, HOOP_Y + dy));
+      }
     }
 
     if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
@@ -2502,6 +2560,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.setLineDash([]);
   }
 
+  // Ball
   ctx.fillStyle = '#ff6600';
   ctx.beginPath();
   ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
@@ -2514,6 +2573,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
   ctx.beginPath(); ctx.moveTo(g.ball.x - BALL_R, g.ball.y); ctx.lineTo(g.ball.x + BALL_R, g.ball.y); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(g.ball.x, g.ball.y - BALL_R); ctx.lineTo(g.ball.x, g.ball.y + BALL_R); ctx.stroke();
 
+  // HUD
   ctx.fillStyle = '#333';
   ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'left';
@@ -2525,6 +2585,32 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Зажми и потяни от мяча, отпусти для броска', 200, 380);
+  }
+
+  // Leaderboard below game
+  if (leaderboards) {
+    const entries = (leaderboards.basketball || []).slice(0, 10);
+    const lbY = 415;
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🏆 ТОП ИГРОКОВ', 10, lbY);
+    if (entries.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.font = '9px sans-serif';
+      ctx.fillText('Пока нет результатов', 10, lbY + 16);
+    } else {
+      entries.forEach((r: any, i: number) => {
+        const y = lbY + 16 + i * 14;
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+        ctx.fillStyle = i === 0 ? '#B8860B' : i === 1 ? '#808080' : i === 2 ? '#CD7F32' : '#555';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${medal} ${r.name}`, 10, y);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${r.score}`, 190, y);
+      });
+    }
   }
 }
 

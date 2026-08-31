@@ -1274,8 +1274,8 @@ app.prepare().then(() => {
       if (game === 'smoking') {
         board.push(entry);
         board.sort((a, b) => a.score - b.score);
-      } else if (game === 'rps') {
-        // Aggregate wins by player name
+      } else if (game === 'rps' || game === 'basketball') {
+        // Aggregate wins/scores by player name
         const existing = board.find(e => e.name === entry.name);
         if (existing) {
           existing.score += entry.score;

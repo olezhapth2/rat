@@ -2429,6 +2429,32 @@ function spawnFurnitureItem(g: { currentItem: any; targetZone: any }) {
   g.currentItem = { x: 60, y: 300, vx: 0, vy: 0, w, h, color: COLORS[Math.floor(Math.random() * COLORS.length)], landed: false, prevY: 300 };
 }
 
+function drawBasketballLeaderboard(ctx: CanvasRenderingContext2D, leaderboards?: Record<string, any[]>) {
+  if (!leaderboards) return;
+  const entries = (leaderboards.basketball || []).slice(0, 10);
+  const lbY = 415;
+  ctx.fillStyle = '#333';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('🏆 ТОП ИГРОКОВ', 10, lbY);
+  if (entries.length === 0) {
+    ctx.fillStyle = '#999';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('Пока нет результатов', 10, lbY + 16);
+  } else {
+    entries.forEach((r: any, i: number) => {
+      const y = lbY + 16 + i * 14;
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      ctx.fillStyle = i === 0 ? '#B8860B' : i === 1 ? '#808080' : i === 2 ? '#CD7F32' : '#555';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${medal} ${r.name}`, 10, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${r.score}`, 190, y);
+    });
+  }
+}
+
 function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void, leaderboards?: Record<string, any[]>) {
   const HOOP_W = 45, GRAVITY = 0.12, BALL_R = 10;
   const BALL_START_X = 80, BALL_START_Y = 320;
@@ -2474,6 +2500,8 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
     ctx.fillStyle = '#fff';
     ctx.fillText('ЗАКРЫТЬ', 245, 280);
     g._endButtons = { play: { x: 120, y: 260, w: 70, h: 30 }, close: { x: 210, y: 260, w: 70, h: 30 } };
+    // Draw leaderboard below end overlay
+    drawBasketballLeaderboard(ctx, leaderboards);
     return;
   }
 
@@ -2597,30 +2625,7 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
   }
 
   // Leaderboard below game
-  if (leaderboards) {
-    const entries = (leaderboards.basketball || []).slice(0, 10);
-    const lbY = 415;
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🏆 ТОП ИГРОКОВ', 10, lbY);
-    if (entries.length === 0) {
-      ctx.fillStyle = '#999';
-      ctx.font = '9px sans-serif';
-      ctx.fillText('Пока нет результатов', 10, lbY + 16);
-    } else {
-      entries.forEach((r: any, i: number) => {
-        const y = lbY + 16 + i * 14;
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        ctx.fillStyle = i === 0 ? '#B8860B' : i === 1 ? '#808080' : i === 2 ? '#CD7F32' : '#555';
-        ctx.font = '9px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${medal} ${r.name}`, 10, y);
-        ctx.textAlign = 'right';
-        ctx.fillText(`${r.score}`, 190, y);
-      });
-    }
-  }
+  drawBasketballLeaderboard(ctx, leaderboards);
 }
 
 function drawFurnitureTossOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void) {

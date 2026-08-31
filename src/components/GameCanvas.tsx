@@ -332,7 +332,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   }, []);
 
   // Minigame canvas state refs
-  const basketballRef = useRef({ score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
+  const basketballRef = useRef({ score: 0, timer: 60, startTime: 0, frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null as { x: number; y: number } | null });
   const furnitureTossRef = useRef({ score: 0, attempts: 8, items: [] as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number }[], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null as { x: number; y: number } | null, currentItem: null as { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; landed: boolean; prevY: number } | null, spawnTimer: 0 });
   const microwaveRef = useRef({ status: 'waiting' as 'waiting' | 'running' | 'done', startTime: 0, elapsed: 0, result: null as { stoppedAt: string; diff: number; result: string; reward: number } | null });
   const smokeCanvasRef = useRef({ taps: 0, targetTaps: 30, startTime: 0, active: false, done: false, won: false, timeLeft: 20, lastTick: 0 });
@@ -430,7 +430,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       if (e.key === 'Escape' && activeGameRef.current) {
         const game = activeGameRef.current;
         if (game === 'basketball') {
-          basketballRef.current = { score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+            basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
         } else if (game === 'furniture_toss') {
           furnitureTossRef.current = { score: 0, attempts: 8, items: [], targetZone: { x: 140, y: 140, w: 120, h: 80 }, dragging: null, currentItem: null, spawnTimer: 0 };
         } else if (game === 'microwave') {
@@ -549,7 +549,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       const g = basketballRef.current;
       const dx = localX - g.ball.x;
       const dy = localY - g.ball.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.attempts > 0) {
+      if (Math.sqrt(dx * dx + dy * dy) < 40 && !g.ball.flying && g.timer > 0) {
         g.dragStart = { x: localX, y: localY };
       }
     } else if (game === 'furniture_toss') {
@@ -959,7 +959,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
     onGameResult((data) => {
       setRpsResult(data);
       setRpsGameState(null);
-      submitLeaderboard('rps', data.reward);
+      submitLeaderboard('rps', data.winner === 'you' ? 1 : 0);
       if (data.reward > 0) {
         addCoins(stateRef.current, data.reward);
         if (data.winner === 'you') addXP(stateRef.current, 20);
@@ -1834,7 +1834,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
       {nearInteraction && nearInteraction.id === 'basketball' && (
         <button
           onClick={() => {
-            basketballRef.current = { score: 0, attempts: 10, frame: 0, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
+          basketballRef.current = { score: 0, timer: 60, startTime: Date.now(), frame: 0, hoopX: 320, hoopY: 120, ball: { x: 80, y: 320, vx: 0, vy: 0, flying: false, scored: false }, dragStart: null };
             setActiveGame('basketball');
           }}
           className="px-btn"
@@ -2318,7 +2318,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
                 const labels: Record<string, string> = {
                   smoking: '🚬 SMOKING (fastest wins)',
                   microwave: '⏱️ MICROWAVE (best reward)',
-                  basketball: '🏀 BASKETBALL (most scored)',
+                  basketball: '🏀 BASKETBALL (most scored in 1min)',
                   rps: '✊ ROCK PAPER SCISSORS (most wins)',
                   cardgame: '🃏 OKIYA (most wins)',
                   furniture_toss: '🪑 FURNITURE TOSS (most scored)',
@@ -2338,7 +2338,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
                         <span style={{ flex: 1, fontSize: 9, color: 'var(--px-text)' }}>{r.name}</span>
                         <span style={{ fontSize: 9, color: 'var(--px-text-dim)' }}>
                           {game === 'smoking' ? `${(r.score / 1000).toFixed(1)}s` :
-                           game === 'basketball' ? `${r.score}/10` :
+                           game === 'basketball' ? `${r.score}` :
                            game === 'furniture_toss' ? `${r.score}/8` :
                            r.score}
                         </span>
@@ -2393,9 +2393,30 @@ function spawnFurnitureItem(g: { currentItem: any; targetZone: any }) {
 }
 
 function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: GameState, toast: (m: string, t?: 'ok' | 'info') => void, confetti: () => void) {
-  const HOOP_X = 320, HOOP_Y = 120, HOOP_W = 40, GRAVITY = 0.12, BALL_R = 10;
+  const HOOP_W = 40, GRAVITY = 0.12, BALL_R = 10;
   const BALL_START_X = 80, BALL_START_Y = 320;
   g.frame = (g.frame || 0) + 1;
+
+  const elapsed = (Date.now() - g.startTime) / 1000;
+  g.timer = Math.max(0, 60 - elapsed);
+
+  if (g.timer <= 0 && !g.ball.flying) {
+    submitLeaderboard('basketball', g.score);
+    toast(g.score >= 7 ? `🏆 Отлично! ${g.score} за минуту` : `${g.score} за минуту`, g.score >= 7 ? 'ok' : 'info');
+    if (g.score >= 7) confetti();
+    g.score = 0;
+    g.timer = 60;
+    g.startTime = Date.now();
+    g.hoopX = 320;
+    g.hoopY = 120;
+    g.ball.x = BALL_START_X;
+    g.ball.y = BALL_START_Y;
+    g.ball.flying = false;
+    return;
+  }
+
+  const HOOP_X = g.hoopX;
+  const HOOP_Y = g.hoopY;
 
   ctx.fillStyle = '#f5e6c8';
   ctx.fillRect(0, 0, 400, 400);
@@ -2448,12 +2469,17 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
 
     if (!g.ball.scored &&
       g.ball.x > HOOP_X - HOOP_W / 2 && g.ball.x < HOOP_X + HOOP_W / 2 &&
-      g.ball.y > 100 && g.ball.y < 145 &&
+      g.ball.y > HOOP_Y - 30 && g.ball.y < HOOP_Y + 25 &&
       g.ball.vy > 0) {
       g.ball.scored = true;
       g.score++;
       addXP(state, 10);
       toast('🏀 Забросил! +1', 'ok');
+      // Move hoop after each basket
+      const dx = (Math.random() - 0.5) * 200;
+      const dy = (Math.random() - 0.5) * 100;
+      g.hoopX = Math.max(80, Math.min(360, HOOP_X + dx));
+      g.hoopY = Math.max(60, Math.min(200, HOOP_Y + dy));
     }
 
     if (g.ball.y > 420 || g.ball.x > 420 || g.ball.x < -20) {
@@ -2462,14 +2488,6 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
       g.ball.y = BALL_START_Y;
       g.ball.vx = 0;
       g.ball.vy = 0;
-      g.attempts--;
-      if (g.attempts <= 0) {
-        submitLeaderboard('basketball', g.score);
-        toast(g.score >= 7 ? `🏆 Отлично! ${g.score}/10` : `${g.score}/10`, g.score >= 7 ? 'ok' : 'info');
-        if (g.score >= 7) confetti();
-        g.score = 0;
-        g.attempts = 10;
-      }
     }
   }
 
@@ -2499,10 +2517,10 @@ function drawBasketballOnCanvas(ctx: CanvasRenderingContext2D, g: any, state: Ga
   ctx.fillStyle = '#333';
   ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`🏀 ${g.score} / ${10 - (10 - g.attempts)}`, 10, 25);
-  ctx.fillText(`Попытки: ${g.attempts}`, 10, 45);
+  ctx.fillText(`🏀 ${g.score}`, 10, 25);
+  ctx.fillText(`⏱ ${Math.ceil(g.timer)}с`, 10, 45);
 
-  if (!g.ball.flying && g.attempts > 0) {
+  if (!g.ball.flying && g.timer > 0) {
     ctx.fillStyle = '#999';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, canMove, type Bot } from '../game/constants';
+import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, canMove, isWalkable, type Bot } from '../game/constants';
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
@@ -1218,8 +1218,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
             const pushDist = 10;
             const newX = foundBot.x + nx * pushDist;
             const newY = foundBot.y + ny * pushDist;
-            const allObjs = [...s.objects, ...getPlacedObjectsAsGameObjects(s)];
-            if (canMove(s.map, allObjs, newX, newY, foundBot.radius)) {
+            const gx = Math.floor(newX / TILE);
+            const gy = Math.floor(newY / TILE);
+            if (isWalkable(s.map, gx, gy)) {
               foundBot.x = newX;
               foundBot.y = newY;
               toast(`Толкнул ${foundBot.name}`, 'ok');
@@ -1246,8 +1247,9 @@ function GameInner({ authUser }: { authUser: UserData }) {
             const pushDist = 10;
             const newX = rp.x + nx * pushDist;
             const newY = rp.y + ny * pushDist;
-            const allObjs = [...s.objects, ...getPlacedObjectsAsGameObjects(s)];
-            if (canMove(s.map, allObjs, newX, newY, 6)) {
+            const gx = Math.floor(newX / TILE);
+            const gy = Math.floor(newY / TILE);
+            if (isWalkable(s.map, gx, gy)) {
               sendPushPlayer(rp.id, newX, newY);
               toast(`Толкнул ${rp.name}`, 'ok');
             }

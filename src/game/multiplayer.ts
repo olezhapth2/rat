@@ -307,6 +307,11 @@ export function sendPosition(x: number, y: number): void {
   socket.emit('player:move', { x, y });
 }
 
+export function sendPushPlayer(targetId: string, x: number, y: number): void {
+  if (!socket?.connected) return;
+  socket.emit('player:push', { targetId, x, y });
+}
+
 export function sendRpsInvite(targetId: string): void {
   if (!socket?.connected) return;
   socket.emit('rps:invite', { targetId });

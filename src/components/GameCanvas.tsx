@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, type Bot } from '../game/constants';
+import { TILE, EMOJI_CHAT, ALL_ITEMS, ACHIEVEMENTS, DAILY_QUESTS, canMove, type Bot } from '../game/constants';
 import type { GameObject } from '../game/constants';
 import { createInputState, setupInputListeners, updatePlayer } from '../game/input';
 import { createCamera, updateCamera, render } from '../game/renderer';
@@ -27,7 +27,7 @@ import {
   onOkiyaLobby, onCardgameLobby, startOkiyaGameMp, startCardGameMp,
   onUsersList,
   requestPlayerProfile, onPlayerProfile,
-  requestKryskaSteal, onKryskaStealResult,
+  requestKryskaSteal, onKryskaStealResult, sendPushPlayer,
   type RemotePlayer, type RpsInvite, type RpsStarted, type RpsResult, type SharedItem, type LobbyGame,
 } from '../game/multiplayer';
 import { loginAsync, firstLoginAsync, getCurrentUser, logout, initAuth, markPhotoTaken, type UserData } from '../game/auth';
@@ -1207,6 +1207,24 @@ function GameInner({ authUser }: { authUser: UserData }) {
           }
         } else {
           items.push({ icon: 'profile', text: `Профиль ${foundBot.name}`, fn: () => { setFetchedProfile(null); requestPlayerProfile(foundBot.name); openModal('profile', { remotePlayer: { name: foundBot.name, charId: foundBot.spriteId, role: foundBot.role } }); } });
+          items.push({ icon: 'move', text: `Толкнуть ${foundBot.name}`, fn: () => {
+            const s = stateRef.current;
+            const pdx = foundBot.x - s.player.x;
+            const pdy = foundBot.y - s.player.y;
+            const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+            if (pdist < 1 || pdist > TILE * 4) return;
+            const nx = pdx / pdist;
+            const ny = pdy / pdist;
+            const pushDist = 10;
+            const newX = foundBot.x + nx * pushDist;
+            const newY = foundBot.y + ny * pushDist;
+            const allObjs = [...s.objects, ...getPlacedObjectsAsGameObjects(s)];
+            if (canMove(s.map, allObjs, newX, newY, foundBot.radius)) {
+              foundBot.x = newX;
+              foundBot.y = newY;
+              toast(`Толкнул ${foundBot.name}`, 'ok');
+            }
+          }});
         }
       }
 
@@ -1217,6 +1235,23 @@ function GameInner({ authUser }: { authUser: UserData }) {
         if (Math.sqrt(dx * dx + dy * dy) < TILE * 1.5) {
           items.push({ icon: 'profile', text: `Профиль ${rp.name}`, fn: () => { setFetchedProfile(null); requestPlayerProfile(rp.name); openModal('profile', { remotePlayer: rp }); } });
           items.push({ icon: 'game', text: `КНБ с ${rp.name}`, fn: () => { sendRpsInvite(rp.id); toast(`Приглашение отправлено ${rp.name}`, 'info'); } });
+          items.push({ icon: 'move', text: `Толкнуть ${rp.name}`, fn: () => {
+            const s = stateRef.current;
+            const pdx = rp.x - s.player.x;
+            const pdy = rp.y - s.player.y;
+            const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+            if (pdist < 1 || pdist > TILE * 4) return;
+            const nx = pdx / pdist;
+            const ny = pdy / pdist;
+            const pushDist = 10;
+            const newX = rp.x + nx * pushDist;
+            const newY = rp.y + ny * pushDist;
+            const allObjs = [...s.objects, ...getPlacedObjectsAsGameObjects(s)];
+            if (canMove(s.map, allObjs, newX, newY, 6)) {
+              sendPushPlayer(rp.id, newX, newY);
+              toast(`Толкнул ${rp.name}`, 'ok');
+            }
+          } });
           break;
         }
       }

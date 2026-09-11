@@ -512,6 +512,20 @@ app.prepare().then(() => {
       }
     });
 
+    // Player pushes another player
+    socket.on('player:push', (data: { targetId: string; x: number; y: number }) => {
+      const pusher = onlinePlayers.get(socket.id);
+      const target = onlinePlayers.get(data.targetId);
+      if (!pusher || !target) return;
+      const dx = pusher.x - target.x;
+      const dy = pusher.y - target.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 120) return;
+      target.x = data.x;
+      target.y = data.y;
+      io.emit('player:moved', { id: data.targetId, x: data.x, y: data.y });
+    });
+
     // === Player saves their data to server ===
     socket.on('player:save', (data: PlayerData) => {
       const playerKey = data.name.toLowerCase();

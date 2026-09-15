@@ -4,6 +4,7 @@ import next from 'next';
 import { Server } from 'socket.io';
 import { type CardGameState, createGame, joinGame, startGame, playCard, drawCard } from './src/game/cardgame';
 import { type OkiyaGameState, createOkiyaGame, joinOkiyaGame, playOkiyaMove } from './src/game/okiya';
+import { buildMap, isWalkable } from './src/game/constants';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import bcrypt from 'bcryptjs';
@@ -246,6 +247,17 @@ let sharedItems: Array<{ id: string; x: number; y: number; w: number; h: number;
 let whiteboardData: string = '';
 let leaderboards: LeaderboardData = { smoking: [], microwave: [], basketball: [], rps: [], cardgame: [], furniture_toss: [] };
 leaderboards = loadLeaderboards();
+
+// Server-side map for position validation
+const serverMap = buildMap();
+const DEFAULT_SPAWN_X = 29 * 40 + 20;
+const DEFAULT_SPAWN_Y = 15 * 40 + 20;
+
+function isValidSpawn(posX: number, posY: number): boolean {
+  const gx = Math.floor(posX / 40);
+  const gy = Math.floor(posY / 40);
+  return isWalkable(serverMap, gx, gy);
+}
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
@@ -495,8 +507,18 @@ app.prepare().then(() => {
       if (saved) {
         socket.emit('player:data_sync', saved);
         if (saved.posX !== undefined && saved.posY !== undefined) {
-          player.x = saved.posX;
-          player.y = saved.posY;
+          if (isValidSpawn(saved.posX, saved.posY)) {
+            player.x = saved.posX;
+            player.y = saved.posY;
+          } else {
+            player.x = DEFAULT_SPAWN_X;
+            player.y = DEFAULT_SPAWN_Y;
+            saved.posX = DEFAULT_SPAWN_X;
+            saved.posY = DEFAULT_SPAWN_Y;
+            playersDb[playerKey] = saved;
+            savePlayers(playersDb);
+            console.log(`[Data] Fixed invalid spawn for "${data.name}"`);
+          }
         }
         console.log(`[Data] Loaded saved data for "${data.name}"`);
       }
@@ -529,6 +551,10 @@ app.prepare().then(() => {
     // === Player saves their data to server ===
     socket.on('player:save', (data: PlayerData) => {
       const playerKey = data.name.toLowerCase();
+      if (data.posX !== undefined && data.posY !== undefined && !isValidSpawn(data.posX, data.posY)) {
+        data.posX = DEFAULT_SPAWN_X;
+        data.posY = DEFAULT_SPAWN_Y;
+      }
       playersDb[playerKey] = data;
       savePlayers(playersDb);
     });

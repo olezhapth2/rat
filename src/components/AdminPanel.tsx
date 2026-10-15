@@ -117,6 +117,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [itemRarity, setItemRarity] = useState('common');
   const [itemNoCol, setItemNoCol] = useState(false);
   const [itemImageData, setItemImageData] = useState<string | null>(null);
+  const [itemSaving, setItemSaving] = useState(false);
   const pendingAddIdRef = useRef<string | null>(null);
 
   const showError = (msg: string) => { setError(msg); setSuccess(''); setTimeout(() => setError(''), 3000); };
@@ -125,7 +126,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     onAdminPlayersList((list) => setPlayers(list));
     onAdminAchievementsList((list) => setCustomAchs(list));
-    onAdminError((msg) => showError(msg));
+    onAdminError((msg) => { pendingAddIdRef.current = null; showError(msg); });
     onAdminMoneyAdjusted((data) => showSuccess(`Money updated: ${data.coins} coins`));
     onAuthUsersList((list) => setUsers(list));
     onAuthUserUpdated(() => showSuccess('User updated'));
@@ -239,7 +240,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     reader.readAsDataURL(file);
   };
 
-  const handleAddShopItem = () => {
+  const handleAddShopItem = async () => {
+    if (itemSaving) return;
     if (!itemName.trim()) return showError('Введите название');
     if (!itemImageData) return showError('Загрузите картинку');
     const id = itemId.trim() || `item_${Date.now().toString(36)}`;
@@ -248,19 +250,37 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     const h = Math.max(1, Math.min(6, parseInt(itemH) || 1));
     const allIds = [...Object.values(SHOP).flat().map((i) => i.id), ...shopItems.map((i) => i.id)];
     if (allIds.includes(id)) return showError('Такой ID уже существует');
-    pendingAddIdRef.current = id;
-    adminAddShopItem({
-      id,
-      n: itemName.trim(),
-      e: itemEmoji || '📦',
-      p: Math.max(0, parseInt(itemPrice) || 0),
-      w,
-      h,
-      surface: itemSurface,
-      rarity: itemRarity,
-      noCollision: itemNoCol ? true : undefined,
-      cat: itemCat,
-    }, itemImageData);
+    setItemSaving(true);
+    try {
+      const res = await fetch('/api/upload-shop-sprite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: itemImageData, w, h, id }),
+      });
+      const data = await res.json().catch(() => ({} as { url?: string; error?: string }));
+      if (!res.ok || !data.url) {
+        showError(data.error || 'Ошибка загрузки картинки');
+        return;
+      }
+      pendingAddIdRef.current = id;
+      adminAddShopItem({
+        id,
+        n: itemName.trim(),
+        e: itemEmoji || '📦',
+        p: Math.max(0, parseInt(itemPrice) || 0),
+        w,
+        h,
+        surface: itemSurface,
+        rarity: itemRarity,
+        noCollision: itemNoCol ? true : undefined,
+        cat: itemCat,
+        sprite: data.url,
+      });
+    } catch {
+      showError('Ошибка сети при загрузке');
+    } finally {
+      setItemSaving(false);
+    }
   };
 
   const handleRemoveShopItem = (id: string, name: string) => {
@@ -648,7 +668,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       <input type="checkbox" checked={itemNoCol} onChange={e => setItemNoCol(e.target.checked)} />
                       Без коллизии (можно проходить сквозь)
                     </label>
-                    <button onClick={handleAddShopItem} className="px-btn accent small" style={{ fontSize: 10, width: '100%' }} disabled={!itemName.trim() || !itemImageData}>ДОБАВИТЬ В МАГАЗИН</button>
+                    <button onClick={handleAddShopItem} className="px-btn accent small" style={{ fontSize: 10, width: '100%' }} disabled={!itemName.trim() || !itemImageData || itemSaving}>{itemSaving ? 'ЗАГРУЗКА...' : 'ДОБАВИТЬ В МАГАЗИН'}</button>
                   </div>
                 </div>
               </div>

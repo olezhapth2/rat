@@ -365,6 +365,64 @@ app.prepare().then(() => {
       return;
     }
 
+    // Shop item sprite upload endpoint (admin adds items to the shop)
+    if (req.method === 'POST' && parsedUrl.pathname === '/api/upload-shop-sprite') {
+      const chunks: Buffer[] = [];
+      let bodyTooLarge = false;
+      req.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+        const total = chunks.reduce((sum, c) => sum + c.length, 0);
+        if (total > 12 * 1024 * 1024) {
+          bodyTooLarge = true;
+          req.destroy();
+        }
+      });
+      req.on('end', async () => {
+        if (bodyTooLarge) {
+          res.statusCode = 413;
+          res.end(JSON.stringify({ error: 'Изображение больше 8 МБ' }));
+          return;
+        }
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          const id = String(body.id || '').trim();
+          if (!/^[a-z0-9_]{2,40}$/.test(id)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Неверный ID' }));
+            return;
+          }
+          const m = String(body.image || '').match(/^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+          if (!m) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Неверный формат изображения' }));
+            return;
+          }
+          const w = Math.max(1, Math.min(6, Math.floor(Number(body.w) || 1)));
+          const h = Math.max(1, Math.min(6, Math.floor(Number(body.h) || 1)));
+          const imgBuf = Buffer.from(m[2], 'base64');
+          if (imgBuf.length > 8 * 1024 * 1024) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Изображение больше 8 МБ' }));
+            return;
+          }
+          ensureDataDir();
+          const outName = `item_${id}.webp`;
+          const outPath = join(DATA_DIR, 'custom-sprites', outName);
+          await sharp(imgBuf)
+            .resize(w * 40, h * 40, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .webp({ quality: 90 })
+            .toFile(outPath);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ url: `/custom-sprites/${outName}` }));
+        } catch (e) {
+          console.error('[Shop] sprite upload failed:', e);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Ошибка обработки изображения' }));
+        }
+      });
+      return;
+    }
+
     handle(req, res, parsedUrl);
   });
 
@@ -1141,7 +1199,7 @@ app.prepare().then(() => {
       socket.emit('admin:shop-items-list', customShop);
     });
 
-    socket.on('admin:add-shop-item', async (data: { item?: Partial<ShopItem> & { cat?: string }; image?: string }) => {
+    socket.on('admin:add-shop-item', (data: { item?: Partial<ShopItem> & { cat?: string } }) => {
       if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
       const it = data.item;
       if (!it) return socket.emit('admin:error', 'No item data');
@@ -1161,40 +1219,27 @@ app.prepare().then(() => {
       const surface = it.surface === 'wall' ? ('wall' as const) : ('floor' as const);
       const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
       const rarity = rarities.includes(String(it.rarity)) ? String(it.rarity) as ShopItem['rarity'] : ('common' as const);
-      const m = String(data.image || '').match(/^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
-      if (!m) return socket.emit('admin:error', 'Нужно загрузить изображение');
-      const imgBuf = Buffer.from(m[2], 'base64');
-      if (imgBuf.length > 8 * 1024 * 1024) return socket.emit('admin:error', 'Изображение больше 8 МБ');
-      try {
-        ensureDataDir();
-        const outName = `item_${id}.webp`;
-        const outPath = join(DATA_DIR, 'custom-sprites', outName);
-        await sharp(imgBuf)
-          .resize(w * 40, h * 40, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-          .webp({ quality: 90 })
-          .toFile(outPath);
-        const custom: CustomShopItem = {
-          id,
-          n,
-          e: Array.from(String(it.e || '📦')).slice(0, 2).join('') || '📦',
-          p,
-          w,
-          h,
-          surface,
-          sprite: `/custom-sprites/${outName}`,
-          rarity,
-          cat,
-        };
-        if (it.noCollision === true) custom.noCollision = true;
-        customShop.push(custom);
-        saveCustomShop(customShop);
-        io.emit('shop:sync', customShop);
-        socket.emit('admin:shop-items-list', customShop);
-        console.log(`[Shop] Admin added item: ${id} (${n}) -> ${cat}`);
-      } catch (e) {
-        console.error('[Shop] add item failed:', e);
-        socket.emit('admin:error', 'Ошибка обработки изображения');
-      }
+      const sprite = String(it.sprite || '');
+      if (sprite !== `/custom-sprites/item_${id}.webp`) return socket.emit('admin:error', 'Сначала загрузите картинку');
+      if (!existsSync(join(DATA_DIR, 'custom-sprites', `item_${id}.webp`))) return socket.emit('admin:error', 'Файл картинки не найден — загрузите заново');
+      const custom: CustomShopItem = {
+        id,
+        n,
+        e: Array.from(String(it.e || '📦')).slice(0, 2).join('') || '📦',
+        p,
+        w,
+        h,
+        surface,
+        sprite,
+        rarity,
+        cat,
+      };
+      if (it.noCollision === true) custom.noCollision = true;
+      customShop.push(custom);
+      saveCustomShop(customShop);
+      io.emit('shop:sync', customShop);
+      socket.emit('admin:shop-items-list', customShop);
+      console.log(`[Shop] Admin added item: ${id} (${n}) -> ${cat}`);
     });
 
     socket.on('admin:remove-shop-item', (data: { id: string }) => {

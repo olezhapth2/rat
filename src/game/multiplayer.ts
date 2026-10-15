@@ -539,8 +539,8 @@ export function adminGetShopItems(): void {
   socket?.emit('admin:get-shop-items');
 }
 
-export function adminAddShopItem(item: Record<string, unknown>, image: string): void {
-  socket?.emit('admin:add-shop-item', { item, image });
+export function adminAddShopItem(item: Record<string, unknown>): void {
+  socket?.emit('admin:add-shop-item', { item });
 }
 
 export function adminRemoveShopItem(id: string): void {

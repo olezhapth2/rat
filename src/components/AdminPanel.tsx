@@ -613,6 +613,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       <span style={{ color: 'var(--px-accent)' }}>{Math.max(1, Math.min(6, parseInt(itemW) || 1)) * 40}×{Math.max(1, Math.min(6, parseInt(itemH) || 1)) * 40} px</span> (WebP/PNG).<br />
                       Автоматически ужимается под тайлы.
                     </div>
+                    {itemImageData && <div style={{ fontSize: 8, color: '#4ecca3', marginTop: 4, textAlign: 'center' }}>✓ картинка загружена</div>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
@@ -668,7 +669,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       <input type="checkbox" checked={itemNoCol} onChange={e => setItemNoCol(e.target.checked)} />
                       Без коллизии (можно проходить сквозь)
                     </label>
-                    <button onClick={handleAddShopItem} className="px-btn accent small" style={{ fontSize: 10, width: '100%' }} disabled={!itemName.trim() || !itemImageData || itemSaving}>{itemSaving ? 'ЗАГРУЗКА...' : 'ДОБАВИТЬ В МАГАЗИН'}</button>
+                    <button onClick={handleAddShopItem} className="px-btn accent small" style={{ fontSize: 10, width: '100%' }} disabled={itemSaving}>{itemSaving ? 'ЗАГРУЗКА...' : 'ДОБАВИТЬ В МАГАЗИН'}</button>
+                    <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginTop: 4, textAlign: 'center' }}>Обязательно: название + картинка</div>
                   </div>
                 </div>
               </div>

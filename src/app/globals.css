@@ -154,6 +154,19 @@ canvas {
   box-shadow: inset 1px 1px 0 var(--px-panel-dark);
   transform: translate(1px, 1px);
 }
+.px-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.px-btn:disabled:hover {
+  background: var(--px-panel);
+  color: var(--px-text);
+}
+.px-btn:disabled:active {
+  border-color: var(--px-border-light) var(--px-border-dark) var(--px-border-dark) var(--px-border-light);
+  box-shadow: inset 1px 1px 0 var(--px-panel-light), inset -1px -1px 0 var(--px-panel-dark);
+  transform: none;
+}
 .px-btn.accent {
   background: var(--px-panel);
   outline-color: var(--px-accent);

@@ -646,27 +646,30 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                      <div style={{ width: 60 }}>
-                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>КОЛ-ВО</div>
-                        <input className="px-input" type="number" min={1} max={99} value={itemQty} onChange={e => setItemQty(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
-                      </div>
-                      <div style={{ width: 56 }}>
-                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ШИР. (тайлы)</div>
+                      <div style={{ width: 76 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2, whiteSpace: 'nowrap' }}>ШИРИНА</div>
                         <input className="px-input" type="number" min={1} max={6} value={itemW} onChange={e => setItemW(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
                       </div>
-                      <div style={{ width: 56 }}>
-                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ВЫС. (тайлы)</div>
+                      <div style={{ width: 76 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2, whiteSpace: 'nowrap' }}>ВЫСОТА</div>
                         <input className="px-input" type="number" min={1} max={6} value={itemH} onChange={e => setItemH(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
                       </div>
+                      <div style={{ width: 84 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2, whiteSpace: 'nowrap' }}>КОЛ-ВО ШТ.</div>
+                        <input className="px-input" type="number" min={1} max={99} value={itemQty} onChange={e => setItemQty(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                      <div style={{ fontSize: 8, color: 'var(--px-text-dim)', alignSelf: 'flex-end', paddingBottom: 8, lineHeight: 1.3 }}>тайлы<br />1-6</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ПОВЕРХНОСТЬ</div>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2, whiteSpace: 'nowrap' }}>ПОВЕРХНОСТЬ</div>
                         <select value={itemSurface} onChange={e => setItemSurface(e.target.value as 'floor' | 'wall')} className="px-input" style={{ width: '100%', fontSize: 10 }}>
                           <option value="floor">Пол</option>
                           <option value="wall">Стена</option>
                         </select>
                       </div>
-                      <div style={{ flex: 1.2 }}>
-                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>РЕДКОСТЬ</div>
+                      <div style={{ flex: 1.4 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2, whiteSpace: 'nowrap' }}>РЕДКОСТЬ</div>
                         <select value={itemRarity} onChange={e => setItemRarity(e.target.value)} className="px-input" style={{ width: '100%', fontSize: 10 }}>
                           {Object.keys(RARITY_LABELS).map(r => <option key={r} value={r}>{RARITY_LABELS[r]}</option>)}
                         </select>

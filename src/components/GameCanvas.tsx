@@ -14,7 +14,7 @@ import {
   sendRpsInvite, acceptRpsInvite, declineRpsInvite, sendRpsChoice, cancelRps,
   sendItemPlace, sendItemRemove,
   onPlayers, onPlayerMove, onInviteReceived, onInviteSent, onGameStarted, onGameResult, onGameDeclined, onGameCancelled,
-  onConnected, onDisconnected, onItems,
+  onConnected, onDisconnected, onItems, onShopSync,
   updateWhiteboard, requestWhiteboardSync, onWhiteboardUpdate,
   sendEmoji as mpSendEmoji, onEmoji,
   createCardGame as mpCreateCardGame, joinCardGame as mpJoinCardGame,
@@ -301,6 +301,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
   const [tilePicker, setTilePicker] = useState<{ type: 'floor' | 'wall'; x: number; y: number } | null>(null);
   // Admin panel
   const [showAdmin, setShowAdmin] = useState(false);
+  const [, setShopTick] = useState(0);
   // Retro FX panel
   const [retroPanelOpen, setRetroPanelOpen] = useState(false);
 
@@ -1024,7 +1025,7 @@ function GameInner({ authUser }: { authUser: UserData }) {
     onItems((items: SharedItem[]) => {
       const s = stateRef.current;
       s.player.placedItems = items.map(si => {
-        const def = itemsMap.get(si.id);
+        const def = itemsMap.get(si.id) || ALL_ITEMS.find(i => i.id === si.id);
         return {
           id: si.id,
           x: si.x,
@@ -1069,6 +1070,10 @@ function GameInner({ authUser }: { authUser: UserData }) {
 
     onPlayerProfile((data) => {
       setFetchedProfile(data);
+    });
+
+    onShopSync(() => {
+      setShopTick(t => t + 1);
     });
 
     onKryskaStealResult((data) => {

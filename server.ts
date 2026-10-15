@@ -4,7 +4,7 @@ import next from 'next';
 import { Server } from 'socket.io';
 import { type CardGameState, createGame, joinGame, startGame, playCard, drawCard } from './src/game/cardgame';
 import { type OkiyaGameState, createOkiyaGame, joinOkiyaGame, playOkiyaMove } from './src/game/okiya';
-import { buildMap, isWalkable } from './src/game/constants';
+import { buildMap, isWalkable, SHOP, type ShopItem } from './src/game/constants';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import bcrypt from 'bcryptjs';
@@ -21,6 +21,7 @@ const PLAYERS_FILE = join(DATA_DIR, 'players.json');
 const ACHIEVEMENTS_FILE = join(DATA_DIR, 'custom-achievements.json');
 const USERS_FILE = join(DATA_DIR, 'users.json');
 const LEADERBOARDS_FILE = join(DATA_DIR, 'leaderboards.json');
+const CUSTOM_SHOP_FILE = join(DATA_DIR, 'custom-shop.json');
 
 interface PersistedState {
   tileOverrides: Record<string, { type: 'floor' | 'wall'; textureIndex: number }>;
@@ -179,6 +180,32 @@ function saveCustomAchievements(achievements: CustomAchievement[]) {
   }
 }
 
+// === Custom shop items (added by admin at runtime) ===
+type CustomShopItem = ShopItem & { cat: string };
+
+function loadCustomShop(): CustomShopItem[] {
+  ensureDataDir();
+  try {
+    if (existsSync(CUSTOM_SHOP_FILE)) {
+      const raw = readFileSync(CUSTOM_SHOP_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('[Data] Failed to load custom shop:', e);
+  }
+  return [];
+}
+
+function saveCustomShop(items: CustomShopItem[]) {
+  ensureDataDir();
+  try {
+    writeFileSync(CUSTOM_SHOP_FILE, JSON.stringify(items, null, 2));
+  } catch (e) {
+    console.error('[Data] Failed to save custom shop:', e);
+  }
+}
+
 function loadUsers(): Record<string, UserAccount> {
   ensureDataDir();
   try {
@@ -210,6 +237,7 @@ const persistedState = loadState();
 const playersDb = loadPlayers();
 const customAchievements = loadCustomAchievements();
 const usersDb = loadUsers();
+const customShop: CustomShopItem[] = loadCustomShop();
 
 // One-time migration: capitalize all names in DB
 let namesFixed = false;
@@ -465,6 +493,7 @@ app.prepare().then(() => {
     console.log(`[+] Player connected: ${socket.id}`);
 
     // Send current shared state to new player
+    socket.emit('shop:sync', customShop);
     socket.emit('items:sync', sharedItems);
     if (whiteboardData) {
       socket.emit('whiteboard:sync', whiteboardData);
@@ -1104,6 +1133,79 @@ app.prepare().then(() => {
           io.to(sid).emit('player:data_sync', player);
         }
       }
+    });
+
+    // === CUSTOM SHOP ITEMS (admin adds items to the shop at runtime) ===
+    socket.on('admin:get-shop-items', () => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      socket.emit('admin:shop-items-list', customShop);
+    });
+
+    socket.on('admin:add-shop-item', async (data: { item?: Partial<ShopItem> & { cat?: string }; image?: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const it = data.item;
+      if (!it) return socket.emit('admin:error', 'No item data');
+      const id = String(it.id || '').trim();
+      const n = String(it.n || '').trim();
+      const cat = String(it.cat || '');
+      if (!/^[a-z0-9_]{2,40}$/.test(id)) return socket.emit('admin:error', 'ID: только a-z, 0-9, _ (2-40 символов)');
+      if (!n || n.length > 30) return socket.emit('admin:error', 'Название: 1-30 символов');
+      if (!(cat in SHOP)) return socket.emit('admin:error', 'Неизвестная категория');
+      if (Object.values(SHOP).some((arr) => arr.some((i) => i.id === id)) || customShop.some((i) => i.id === id)) {
+        return socket.emit('admin:error', 'Такой ID уже существует');
+      }
+      const p = Math.max(0, Math.min(100000, Math.floor(Number(it.p) || 0)));
+      const w = Math.floor(Number(it.w) || 0);
+      const h = Math.floor(Number(it.h) || 0);
+      if (w < 1 || w > 6 || h < 1 || h > 6) return socket.emit('admin:error', 'Размер: 1-6 тайлов');
+      const surface = it.surface === 'wall' ? ('wall' as const) : ('floor' as const);
+      const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+      const rarity = rarities.includes(String(it.rarity)) ? String(it.rarity) as ShopItem['rarity'] : ('common' as const);
+      const m = String(data.image || '').match(/^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+      if (!m) return socket.emit('admin:error', 'Нужно загрузить изображение');
+      const imgBuf = Buffer.from(m[2], 'base64');
+      if (imgBuf.length > 8 * 1024 * 1024) return socket.emit('admin:error', 'Изображение больше 8 МБ');
+      try {
+        ensureDataDir();
+        const outName = `item_${id}.webp`;
+        const outPath = join(DATA_DIR, 'custom-sprites', outName);
+        await sharp(imgBuf)
+          .resize(w * 40, h * 40, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .webp({ quality: 90 })
+          .toFile(outPath);
+        const custom: CustomShopItem = {
+          id,
+          n,
+          e: Array.from(String(it.e || '📦')).slice(0, 2).join('') || '📦',
+          p,
+          w,
+          h,
+          surface,
+          sprite: `/custom-sprites/${outName}`,
+          rarity,
+          cat,
+        };
+        if (it.noCollision === true) custom.noCollision = true;
+        customShop.push(custom);
+        saveCustomShop(customShop);
+        io.emit('shop:sync', customShop);
+        socket.emit('admin:shop-items-list', customShop);
+        console.log(`[Shop] Admin added item: ${id} (${n}) -> ${cat}`);
+      } catch (e) {
+        console.error('[Shop] add item failed:', e);
+        socket.emit('admin:error', 'Ошибка обработки изображения');
+      }
+    });
+
+    socket.on('admin:remove-shop-item', (data: { id: string }) => {
+      if (!isAdmin()) return socket.emit('admin:error', 'Access denied');
+      const idx = customShop.findIndex((i) => i.id === data.id);
+      if (idx < 0) return socket.emit('admin:error', 'Предмет не найден');
+      const removed = customShop.splice(idx, 1)[0];
+      saveCustomShop(customShop);
+      io.emit('shop:sync', customShop);
+      socket.emit('admin:shop-items-list', customShop);
+      console.log(`[Shop] Admin removed item: ${removed.id}`);
     });
 
     // === AUTH EVENTS ===

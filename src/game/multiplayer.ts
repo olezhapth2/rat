@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import { syncCustomItems } from './constants';
 
 // === Types ===
 export interface RemotePlayer {
@@ -191,6 +192,19 @@ function registerGameListeners(): void {
 
   socket.on('items:sync', (items: SharedItem[]) => {
     onItemsSync?.(items);
+  });
+
+  socket.on('shop:sync', (items: any[]) => {
+    try {
+      syncCustomItems(items);
+    } catch (e) {
+      console.error('[MP] shop:sync failed:', e);
+    }
+    onShopSyncCb?.(items);
+  });
+
+  socket.on('admin:shop-items-list', (list: any[]) => {
+    onAdminShopItemsListCb?.(list);
   });
 
   socket.on('emoji:show', (data: { playerId: string; emoji: string }) => {
@@ -519,6 +533,25 @@ export function adminCreateAchievement(name: string, icon: string, desc: string)
 export function adminGrantAchievement(key: string, achievementId: string): void {
   socket?.emit('admin:grant-achievement', { key, achievementId });
 }
+
+// === CUSTOM SHOP ITEMS (admin) ===
+export function adminGetShopItems(): void {
+  socket?.emit('admin:get-shop-items');
+}
+
+export function adminAddShopItem(item: Record<string, unknown>, image: string): void {
+  socket?.emit('admin:add-shop-item', { item, image });
+}
+
+export function adminRemoveShopItem(id: string): void {
+  socket?.emit('admin:remove-shop-item', { id });
+}
+
+let onShopSyncCb: ((items: any[]) => void) | null = null;
+let onAdminShopItemsListCb: ((list: any[]) => void) | null = null;
+
+export function onShopSync(cb: (items: any[]) => void): void { onShopSyncCb = cb; }
+export function onAdminShopItemsList(cb: (list: any[]) => void): void { onAdminShopItemsListCb = cb; }
 
 // Admin callbacks
 let onAdminPlayersListCb: ((list: any[]) => void) | null = null;

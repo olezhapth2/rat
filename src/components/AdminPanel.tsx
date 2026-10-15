@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   adminGetPlayers,
   adminAdjustMoney,
@@ -9,8 +9,12 @@ import {
   adminGetAchievements,
   adminCreateAchievement,
   adminGrantAchievement,
+  adminGetShopItems,
+  adminAddShopItem,
+  adminRemoveShopItem,
   onAdminPlayersList,
   onAdminAchievementsList,
+  onAdminShopItemsList,
   onAdminError,
   onAdminMoneyAdjusted,
   authGetUsers,
@@ -24,7 +28,7 @@ import {
   isAuthReady,
 } from '../game/multiplayer';
 import { uploadAvatar } from '../game/auth';
-import { ACHIEVEMENTS } from '../game/constants';
+import { ACHIEVEMENTS, SHOP, RARITY_COLORS } from '../game/constants';
 import { Icon } from '@iconify/react';
 import { ICONS, ACHIEVEMENT_ICON_KEYS, type IconKey } from '../game/icons';
 
@@ -55,8 +59,25 @@ interface CustomAchievement {
   desc: string;
 }
 
+interface CustomShopItemEntry {
+  id: string;
+  n: string;
+  e: string;
+  p: number;
+  w: number;
+  h: number;
+  surface: 'floor' | 'wall';
+  sprite: string;
+  rarity?: string;
+  cat: string;
+  noCollision?: boolean;
+}
+
+const SHOP_CAT_LABELS: Record<string, string> = { desks: 'СТОЛЫ', chairs: 'СТУЛЬЯ', sofas: 'ДИВАНЫ', decorations: 'УКРАШЕНИЯ', windows: 'ОКНА', cabinets: 'ШКАФЫ', posters: 'ПЛАКАТЫ', signs: 'ТАБЛИЧКИ', carpets: 'КОВРЫ', pets: 'ПИТОМЦЫ' };
+const RARITY_LABELS: Record<string, string> = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
+
 export default function AdminPanel({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'users' | 'players' | 'money' | 'achievements'>('users');
+  const [tab, setTab] = useState<'users' | 'players' | 'money' | 'achievements' | 'items'>('users');
   const [users, setUsers] = useState<UserEntry[]>([]);
   const [players, setPlayers] = useState<PlayerEntry[]>([]);
   const [customAchs, setCustomAchs] = useState<CustomAchievement[]>([]);
@@ -84,6 +105,20 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [grantTarget, setGrantTarget] = useState('');
   const [grantAchId, setGrantAchId] = useState('');
 
+  const [shopItems, setShopItems] = useState<CustomShopItemEntry[]>([]);
+  const [itemCat, setItemCat] = useState('desks');
+  const [itemName, setItemName] = useState('');
+  const [itemId, setItemId] = useState('');
+  const [itemEmoji, setItemEmoji] = useState('📦');
+  const [itemPrice, setItemPrice] = useState('100');
+  const [itemW, setItemW] = useState('1');
+  const [itemH, setItemH] = useState('1');
+  const [itemSurface, setItemSurface] = useState<'floor' | 'wall'>('floor');
+  const [itemRarity, setItemRarity] = useState('common');
+  const [itemNoCol, setItemNoCol] = useState(false);
+  const [itemImageData, setItemImageData] = useState<string | null>(null);
+  const pendingAddIdRef = useRef<string | null>(null);
+
   const showError = (msg: string) => { setError(msg); setSuccess(''); setTimeout(() => setError(''), 3000); };
   const showSuccess = (msg: string) => { setSuccess(msg); setError(''); setTimeout(() => setSuccess(''), 3000); };
 
@@ -95,6 +130,16 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     onAuthUsersList((list) => setUsers(list));
     onAuthUserUpdated(() => showSuccess('User updated'));
     onAuthUserDeleted(() => showSuccess('User deleted'));
+    onAdminShopItemsList((list) => {
+      setShopItems(list);
+      if (pendingAddIdRef.current) {
+        if (list.some((i) => i.id === pendingAddIdRef.current)) {
+          showSuccess(`Предмет "${pendingAddIdRef.current}" добавлен в магазин`);
+          pendingAddIdRef.current = null;
+          setItemName(''); setItemId(''); setItemEmoji('📦'); setItemImageData(null); setItemNoCol(false);
+        }
+      }
+    });
 
     // Wait for auth reconnect to complete before requesting users
     const fetchUsers = () => authGetUsers();
@@ -108,6 +153,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     const t2 = setTimeout(fetchUsers, 3000);
     adminGetPlayers();
     adminGetAchievements();
+    adminGetShopItems();
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -184,6 +230,44 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     showSuccess('Achievement granted');
   };
 
+  const handleItemImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) return showError('Файл больше 8 МБ');
+    const reader = new FileReader();
+    reader.onload = () => setItemImageData(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddShopItem = () => {
+    if (!itemName.trim()) return showError('Введите название');
+    if (!itemImageData) return showError('Загрузите картинку');
+    const id = itemId.trim() || `item_${Date.now().toString(36)}`;
+    if (!/^[a-z0-9_]{2,40}$/.test(id)) return showError('ID: только a-z, 0-9, _ (2-40 символов)');
+    const w = Math.max(1, Math.min(6, parseInt(itemW) || 1));
+    const h = Math.max(1, Math.min(6, parseInt(itemH) || 1));
+    const allIds = [...Object.values(SHOP).flat().map((i) => i.id), ...shopItems.map((i) => i.id)];
+    if (allIds.includes(id)) return showError('Такой ID уже существует');
+    pendingAddIdRef.current = id;
+    adminAddShopItem({
+      id,
+      n: itemName.trim(),
+      e: itemEmoji || '📦',
+      p: Math.max(0, parseInt(itemPrice) || 0),
+      w,
+      h,
+      surface: itemSurface,
+      rarity: itemRarity,
+      noCollision: itemNoCol ? true : undefined,
+      cat: itemCat,
+    }, itemImageData);
+  };
+
+  const handleRemoveShopItem = (id: string, name: string) => {
+    if (!confirm(`Удалить предмет "${name}" из магазина?\nЕсли он уже куплен игроками — пропадёт из их инвентаря.`)) return;
+    adminRemoveShopItem(id);
+  };
+
   const allAchs = [...ACHIEVEMENTS, ...customAchs];
 
   return (
@@ -219,6 +303,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
             <button onClick={() => setTab('achievements')} className={`px-btn small${tab === 'achievements' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Icon icon={ICONS.trophy} width={20} height={20} />
               ACHIEVEMENTS
+            </button>
+            <button onClick={() => setTab('items')} className={`px-btn small${tab === 'items' ? ' accent' : ''}`} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon={ICONS.shop} width={20} height={20} />
+              SHOP ({shopItems.length})
             </button>
           </div>
 
@@ -475,6 +563,107 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <span style={{ color: 'var(--px-title)' }}>{a.name}</span>
                     <span style={{ color: 'var(--px-text-dim)', fontSize: 9, marginLeft: 'auto' }}>{a.desc}</span>
                     {a.id.startsWith('custom_') && <span style={{ fontSize: 8, color: 'var(--px-accent)' }}>CUSTOM</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* === SHOP ITEMS TAB === */}
+          {tab === 'items' && (
+            <div>
+              <div className="px-panel" style={{ padding: 10, marginBottom: 12 }}>
+                <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 8 }}>ДОБАВИТЬ ПРЕДМЕТ В МАГАЗИН</div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ flexShrink: 0 }}>
+                    <div style={{ width: 80, height: 80, background: (RARITY_COLORS as Record<string, string>)[itemRarity] || 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--px-border-dark)', marginBottom: 6 }}>
+                      {itemImageData ? (
+                        <img src={itemImageData} alt="" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                      ) : (
+                        <span style={{ fontSize: 24, opacity: .5 }}>{itemEmoji}</span>
+                      )}
+                    </div>
+                    <label className="px-btn small" style={{ fontSize: 8, display: 'flex', alignItems: 'center', gap: 4, width: '100%', justifyContent: 'center' }}>
+                      <Icon icon={ICONS.camera} width={16} height={16} />
+                      КАРТИНКА
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleItemImageFile} style={{ display: 'none' }} />
+                    </label>
+                    <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginTop: 6, lineHeight: 1.4 }}>
+                      Рекомендуемый размер:<br />
+                      <span style={{ color: 'var(--px-accent)' }}>{Math.max(1, Math.min(6, parseInt(itemW) || 1)) * 40}×{Math.max(1, Math.min(6, parseInt(itemH) || 1)) * 40} px</span> (WebP/PNG).<br />
+                      Автоматически ужимается под тайлы.
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <div style={{ flex: 2 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>НАЗВАНИЕ</div>
+                        <input className="px-input" placeholder="Моя лампа" value={itemName} onChange={e => setItemName(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ID (авто)</div>
+                        <input className="px-input" placeholder="my_lamp" value={itemId} onChange={e => setItemId(e.target.value.toLowerCase())} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 60 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ЭМОДЗИ</div>
+                        <input className="px-input" value={itemEmoji} onChange={e => setItemEmoji(e.target.value)} style={{ width: '100%', fontSize: 12, textAlign: 'center' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ЦЕНА (алты)</div>
+                        <input className="px-input" type="number" min={0} value={itemPrice} onChange={e => setItemPrice(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                      <div style={{ flex: 1.4 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>КАТЕГОРИЯ</div>
+                        <select value={itemCat} onChange={e => setItemCat(e.target.value)} className="px-input" style={{ width: '100%', fontSize: 10 }}>
+                          {Object.keys(SHOP).map(c => <option key={c} value={c}>{SHOP_CAT_LABELS[c] || c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 56 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ШИР. (тайлы)</div>
+                        <input className="px-input" type="number" min={1} max={6} value={itemW} onChange={e => setItemW(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                      <div style={{ width: 56 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ВЫС. (тайлы)</div>
+                        <input className="px-input" type="number" min={1} max={6} value={itemH} onChange={e => setItemH(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ПОВЕРХНОСТЬ</div>
+                        <select value={itemSurface} onChange={e => setItemSurface(e.target.value as 'floor' | 'wall')} className="px-input" style={{ width: '100%', fontSize: 10 }}>
+                          <option value="floor">Пол</option>
+                          <option value="wall">Стена</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1.2 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>РЕДКОСТЬ</div>
+                        <select value={itemRarity} onChange={e => setItemRarity(e.target.value)} className="px-input" style={{ width: '100%', fontSize: 10 }}>
+                          {Object.keys(RARITY_LABELS).map(r => <option key={r} value={r}>{RARITY_LABELS[r]}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <label style={{ fontSize: 9, color: 'var(--px-text-dim)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+                      <input type="checkbox" checked={itemNoCol} onChange={e => setItemNoCol(e.target.checked)} />
+                      Без коллизии (можно проходить сквозь)
+                    </label>
+                    <button onClick={handleAddShopItem} className="px-btn accent small" style={{ fontSize: 10, width: '100%' }} disabled={!itemName.trim() || !itemImageData}>ДОБАВИТЬ В МАГАЗИН</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: 9, color: 'var(--px-text-dim)', marginBottom: 6 }}>ДОБАВЛЕННЫЕ ПРЕДМЕТЫ ({shopItems.length})</div>
+              {shopItems.length === 0 && <div style={{ fontSize: 10, color: 'var(--px-text-dim)', padding: 20, textAlign: 'center' }}>Пока ничего не добавлено</div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {shopItems.map(si => (
+                  <div key={si.id} className="px-panel" style={{ padding: 8, textAlign: 'center' }}>
+                    <div style={{ width: '100%', aspectRatio: '1', background: (RARITY_COLORS as Record<string, string>)[si.rarity || 'common'] || 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 100 }}>
+                      <img src={si.sprite} alt={si.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{si.n}</div>
+                    <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginTop: 2 }}>{si.p} 🪙 · {si.w}×{si.h} · {SHOP_CAT_LABELS[si.cat] || si.cat}</div>
+                    <button onClick={() => handleRemoveShopItem(si.id, si.n)} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px', marginTop: 6, width: '100%' }}>УДАЛИТЬ</button>
                   </div>
                 ))}
               </div>

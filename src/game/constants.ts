@@ -367,6 +367,53 @@ if (typeof window !== 'undefined') {
   (window as any).__itemSprites = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.sprite]));
 }
 
+const STATIC_ITEM_IDS: Set<string> = new Set(ALL_ITEMS.map((i) => i.id));
+const customItemIds: Set<string> = new Set<string>();
+
+function rebuildItemMaps(): void {
+  if (typeof window !== 'undefined') {
+    (window as any).__itemEmojis = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.e]));
+    (window as any).__itemDefs = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, { w: i.w, h: i.h }]));
+    (window as any).__itemSprites = Object.fromEntries(ALL_ITEMS.map((i: ShopItem) => [i.id, i.sprite]));
+  }
+}
+
+export function syncCustomItems(items: Array<ShopItem & { cat?: string }>): void {
+  for (const id of customItemIds) {
+    for (const key of Object.keys(SHOP)) {
+      const arr = SHOP[key];
+      const idx = arr.findIndex((i) => i.id === id);
+      if (idx >= 0) arr.splice(idx, 1);
+    }
+    const ai = ALL_ITEMS.findIndex((i) => i.id === id);
+    if (ai >= 0) ALL_ITEMS.splice(ai, 1);
+  }
+  customItemIds.clear();
+  for (const raw of items || []) {
+    if (!raw || typeof raw.id !== 'string') continue;
+    if (STATIC_ITEM_IDS.has(raw.id) || customItemIds.has(raw.id)) continue;
+    const cat = raw.cat && SHOP[raw.cat] ? raw.cat : 'decorations';
+    const item: ShopItem = {
+      id: raw.id,
+      n: raw.n,
+      e: raw.e,
+      p: raw.p,
+      w: raw.w,
+      h: raw.h,
+      surface: raw.surface,
+      sprite: raw.sprite,
+    };
+    if (raw.rarity) item.rarity = raw.rarity;
+    if (raw.noCollision) item.noCollision = true;
+    if (raw.minigame) item.minigame = raw.minigame;
+    if (raw.pet) item.pet = true;
+    SHOP[cat].push(item);
+    ALL_ITEMS.push(item);
+    customItemIds.add(item.id);
+  }
+  rebuildItemMaps();
+}
+
 export const AVATARS = ['🧑‍🚀', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🔧', '👩‍🔬', '🧑‍🍳', '🦊', '🐱', '🐨', '🐸', '👻'];
 
 export const ACHIEVEMENTS = [

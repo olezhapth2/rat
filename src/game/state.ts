@@ -203,7 +203,8 @@ export function buyItem(state: GameState, itemId: string): { ok: boolean; msg: s
     state.player.pets.push(itemId);
     state.player.activePet = itemId;
   } else {
-    state.player.furniture.push(itemId);
+    const qty = Math.max(1, Math.min(99, item.q || 1));
+    for (let i = 0; i < qty; i++) state.player.furniture.push(itemId);
     state.player.carrying = itemId;
   }
 

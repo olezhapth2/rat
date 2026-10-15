@@ -237,8 +237,9 @@ export interface ShopItem {
   noCollision?: boolean;
   sprite: string;
   rarity?: Rarity;
-  minigame?: 'smoke' | 'microwave' | 'furniture_toss' | 'book_prediction' | 'cardgame' | 'basketball' | 'okiya';
+  minigame?: 'smoke'|'microwave'|'furniture_toss'|'book_prediction'|'cardgame'|'basketball'|'okiya';
   pet?: boolean;
+  q?: number; // сколько штук выдаёт покупка (1-99)
 }
 
 export const SHOP: Record<string, ShopItem[]> = {
@@ -407,6 +408,7 @@ export function syncCustomItems(items: Array<ShopItem & { cat?: string }>): void
     if (raw.noCollision) item.noCollision = true;
     if (raw.minigame) item.minigame = raw.minigame;
     if (raw.pet) item.pet = true;
+    if (raw.q && raw.q > 1) item.q = Math.max(1, Math.min(99, Math.floor(raw.q)));
     SHOP[cat].push(item);
     ALL_ITEMS.push(item);
     customItemIds.add(item.id);

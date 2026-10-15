@@ -1234,6 +1234,8 @@ app.prepare().then(() => {
         rarity,
         cat,
       };
+      const q = Math.max(1, Math.min(99, Math.floor(Number(it.q) || 1)));
+      if (q > 1) custom.q = q;
       if (it.noCollision === true) custom.noCollision = true;
       customShop.push(custom);
       saveCustomShop(customShop);
@@ -1248,9 +1250,38 @@ app.prepare().then(() => {
       if (idx < 0) return socket.emit('admin:error', 'Предмет не найден');
       const removed = customShop.splice(idx, 1)[0];
       saveCustomShop(customShop);
+
+      // Remove all placed copies of this item from the map
+      const keptItems = sharedItems.filter((si) => si.id !== removed.id);
+      const removedFromMap = sharedItems.length - keptItems.length;
+      if (removedFromMap > 0) {
+        sharedItems.length = 0;
+        sharedItems.push(...keptItems);
+        io.emit('items:sync', sharedItems);
+        scheduleSave();
+      }
+
+      // Remove from player inventories & placed items
+      let cleanedPlayers = 0;
+      for (const [key, p] of Object.entries(playersDb)) {
+        const beforeF = p.furniture?.length ?? 0;
+        const beforeP = p.placedItems?.length ?? 0;
+        if (p.furniture) p.furniture = p.furniture.filter((id) => id !== removed.id);
+        if (p.placedItems) p.placedItems = p.placedItems.filter((x) => x.id !== removed.id);
+        if ((p.furniture?.length ?? 0) !== beforeF || (p.placedItems?.length ?? 0) !== beforeP) {
+          cleanedPlayers++;
+          savePlayers(playersDb);
+          for (const [sid, sp] of onlinePlayers) {
+            if (sp.name.toLowerCase() === key) {
+              io.to(sid).emit('player:data_sync', p);
+            }
+          }
+        }
+      }
+
       io.emit('shop:sync', customShop);
       socket.emit('admin:shop-items-list', customShop);
-      console.log(`[Shop] Admin removed item: ${removed.id}`);
+      console.log(`[Shop] Admin removed item: ${removed.id} (from map: ${removedFromMap}, players cleaned: ${cleanedPlayers})`);
     });
 
     // === AUTH EVENTS ===

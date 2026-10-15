@@ -71,6 +71,7 @@ interface CustomShopItemEntry {
   rarity?: string;
   cat: string;
   noCollision?: boolean;
+  q?: number;
 }
 
 const SHOP_CAT_LABELS: Record<string, string> = { desks: 'СТОЛЫ', chairs: 'СТУЛЬЯ', sofas: 'ДИВАНЫ', decorations: 'УКРАШЕНИЯ', windows: 'ОКНА', cabinets: 'ШКАФЫ', posters: 'ПЛАКАТЫ', signs: 'ТАБЛИЧКИ', carpets: 'КОВРЫ', pets: 'ПИТОМЦЫ' };
@@ -113,6 +114,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const [itemPrice, setItemPrice] = useState('100');
   const [itemW, setItemW] = useState('1');
   const [itemH, setItemH] = useState('1');
+  const [itemQty, setItemQty] = useState('1');
   const [itemSurface, setItemSurface] = useState<'floor' | 'wall'>('floor');
   const [itemRarity, setItemRarity] = useState('common');
   const [itemNoCol, setItemNoCol] = useState(false);
@@ -137,7 +139,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
         if (list.some((i) => i.id === pendingAddIdRef.current)) {
           showSuccess(`Предмет "${pendingAddIdRef.current}" добавлен в магазин`);
           pendingAddIdRef.current = null;
-          setItemName(''); setItemId(''); setItemEmoji('📦'); setItemImageData(null); setItemNoCol(false);
+          setItemName(''); setItemId(''); setItemEmoji('📦'); setItemImageData(null); setItemNoCol(false); setItemQty('1');
         }
       }
     });
@@ -270,6 +272,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
         p: Math.max(0, parseInt(itemPrice) || 0),
         w,
         h,
+        q: Math.max(1, Math.min(99, parseInt(itemQty) || 1)),
         surface: itemSurface,
         rarity: itemRarity,
         noCollision: itemNoCol ? true : undefined,
@@ -643,6 +646,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 60 }}>
+                        <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>КОЛ-ВО</div>
+                        <input className="px-input" type="number" min={1} max={99} value={itemQty} onChange={e => setItemQty(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
+                      </div>
                       <div style={{ width: 56 }}>
                         <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginBottom: 2 }}>ШИР. (тайлы)</div>
                         <input className="px-input" type="number" min={1} max={6} value={itemW} onChange={e => setItemW(e.target.value)} style={{ width: '100%', fontSize: 10 }} />
@@ -683,7 +690,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     <div style={{ width: '100%', aspectRatio: '1', background: (RARITY_COLORS as Record<string, string>)[si.rarity || 'common'] || 'var(--px-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6, maxHeight: 100 }}>
                       <img src={si.sprite} alt={si.n} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', imageRendering: 'pixelated' }} />
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{si.n}</div>
+                    <div style={{ fontSize: 10, color: 'var(--px-text)' }}>{si.n}{si.q && si.q > 1 ? <span style={{ color: 'var(--px-accent)' }}> ×{si.q}</span> : null}</div>
                     <div style={{ fontSize: 8, color: 'var(--px-text-dim)', marginTop: 2 }}>{si.p} 🪙 · {si.w}×{si.h} · {SHOP_CAT_LABELS[si.cat] || si.cat}</div>
                     <button onClick={() => handleRemoveShopItem(si.id, si.n)} className="px-btn danger small" style={{ fontSize: 8, padding: '3px 8px', marginTop: 6, width: '100%' }}>УДАЛИТЬ</button>
                   </div>

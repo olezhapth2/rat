@@ -2939,7 +2939,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                 {isPet ? 'ПИТОМЕЦ' : `${pItem.surface === 'wall' ? 'WALL' : 'FLOOR'} · ${pItem.w}×${pItem.h}`}
               </div>
               <div style={{ fontSize: 11, color: 'var(--px-accent)', marginBottom: 8 }}>
-                {isPet ? (ownedPet ? (activePetItem ? 'АКТИВЕН' : 'КУПЛЕН') : `${pItem.p} COINS`) : `${pItem.p} COINS`}
+                {isPet ? (ownedPet ? (activePetItem ? 'АКТИВЕН' : 'КУПЛЕН') : `${pItem.p} COINS`) : `${pItem.p} COINS${pItem.q && pItem.q > 1 ? ` ×${pItem.q} шт.` : ''}`}
               </div>
               {isPet && ownedPet ? (
                 <button
@@ -2997,7 +2997,7 @@ function ShopView({ state, onToast, onConfetti }: { state: GameState; onToast: (
                     <span>{item.p} COINS</span>
                   )
                 ) : (
-                  <span>{item.p} {itemCount > 0 && <span style={{ color: 'var(--px-accent)' }}>({itemCount})</span>}</span>
+                  <span>{item.p}{item.q && item.q > 1 ? ` ×${item.q}` : ''} {itemCount > 0 && <span style={{ color: 'var(--px-accent)' }}>({itemCount})</span>}</span>
                 )}
               </div>
             </div>
